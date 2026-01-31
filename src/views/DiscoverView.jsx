@@ -43,8 +43,11 @@ const DiscoverView = ({ onSelectMovie }) => {
                         {trending.map(m => (
                             <div
                                 key={m.id}
-                                onClick={() => onSelectMovie(m)}
-                                className="snap-start shrink-0 w-[140px] md:w-[180px] cursor-pointer hover:opacity-80 transition-all active:scale-95"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onSelectMovie(m);
+                                }}
+                                className="snap-start shrink-0 w-[140px] md:w-[180px] cursor-pointer hover:opacity-80 transition-all active:scale-95 relative z-10"
                             >
                                 <div className="aspect-[2/3] bg-surface rounded-xl overflow-hidden mb-2">
                                     <img

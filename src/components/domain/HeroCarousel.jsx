@@ -41,7 +41,7 @@ const HeroCarousel = ({ movies, onRegisterAction }) => {
                 </motion.div>
             </AnimatePresence>
 
-            <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12 z-10">
+            <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12 z-50">
                 <motion.div
                     key={`text-${movie.id}`}
                     initial={{ y: 20, opacity: 0 }}
@@ -58,16 +58,24 @@ const HeroCarousel = ({ movies, onRegisterAction }) => {
                         {movie.overview}
                     </p>
 
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 relative z-50">
                         <button
-                            onClick={() => onRegisterAction(movie)}
-                            className="flex items-center gap-2 px-6 py-3 bg-white text-black rounded-full font-bold text-sm tracking-wide active:scale-95 transition-transform"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                console.log('Hero Button 1 Clicked', movie.title);
+                                onRegisterAction(movie);
+                            }}
+                            className="flex items-center gap-2 px-6 py-3 bg-white text-black rounded-full font-bold text-sm tracking-wide active:scale-95 transition-transform cursor-pointer"
                         >
                             Ver Info
                         </button>
                         <button
-                            onClick={() => onRegisterAction(movie)}
-                            className="flex items-center gap-2 px-6 py-3 bg-surface/40 backdrop-blur-md border border-white/10 text-white rounded-full font-medium text-sm active:scale-95 transition-transform hover:bg-white/10"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                console.log('Hero Button 2 Clicked', movie.title);
+                                onRegisterAction(movie);
+                            }}
+                            className="flex items-center gap-2 px-6 py-3 bg-surface/40 backdrop-blur-md border border-white/10 text-white rounded-full font-medium text-sm active:scale-95 transition-transform hover:bg-white/10 cursor-pointer"
                         >
                             <PlusIcon className="w-5 h-5" />
                             Mi lista
