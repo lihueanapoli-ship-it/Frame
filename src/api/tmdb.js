@@ -60,57 +60,62 @@ export const getList = async (listId) => {
     }
 };
 
-export const getCustomCollection = async (type) => {
+export const getCustomCollection = async (type, page = 1) => {
     try {
-        let params = { sort_by: 'popularity.desc', 'vote_count.gte': 100 };
+        let params = { sort_by: 'popularity.desc', 'vote_count.gte': 100, page };
 
         switch (type) {
             case 'oscars':
-                // Strict "Best Picture Winners" using a community maintained list ID (e.g. 634 or similar)
+                // Strict "Best Picture Winners" using a community maintained list ID (e.g. 634)
                 // We use List ID 634 ("Academy Award Best Picture Winners") or a reliable one.
+                // Note: Lists usually don't support simple pagination like discover, they return items.
+                // We will simulate pagination if list is long, or just return all and slice in frontend if needed.
+                // But for now, let's keep it simple. If it's a list, we return all (or max 100).
                 const oscarList = await getList('634');
                 if (oscarList && oscarList.length > 0) {
-                    // Sort Chronologically Reverse (Newest first)
-                    return oscarList.sort((a, b) => new Date(b.release_date) - new Date(a.release_date));
+                    // Sort Chronologically Reverse
+                    const sorted = oscarList.sort((a, b) => new Date(b.release_date) - new Date(a.release_date));
+                    // Simulate pagination for list
+                    const pageSize = 20;
+                    return sorted.slice((page - 1) * pageSize, page * pageSize);
                 }
-                // Fallback if list fetch fails
-                params = { sort_by: 'vote_average.desc', 'vote_count.gte': 5000, without_genres: '16,99', with_awards: true };
+                params = { sort_by: 'vote_average.desc', 'vote_count.gte': 5000, without_genres: '16,99', with_awards: true, page };
                 break;
             case 'argentina':
-                params = { with_original_language: 'es', region: 'AR', sort_by: 'popularity.desc' };
+                params = { ...params, with_original_language: 'es', region: 'AR', sort_by: 'popularity.desc' };
                 // TMDB filter for Argentina as production country is 'with_origin_country=AR'
                 break;
             case 'short':
-                params = { 'with_runtime.lte': 90, sort_by: 'popularity.desc', 'vote_average.gte': 7 };
+                params = { ...params, 'with_runtime.lte': 90, sort_by: 'popularity.desc', 'vote_average.gte': 7 };
                 break;
             case 'mind_bending':
                 // Keywords: mindfuck, psychological thriller, philosophy
-                params = { with_keywords: '1701|9866|156094', sort_by: 'popularity.desc' };
+                params = { ...params, with_keywords: '1701|9866|156094', sort_by: 'popularity.desc' };
                 break;
             case 'hidden_gems':
-                params = { 'vote_average.gte': 8.0, 'vote_count.lte': 3000, 'vote_count.gte': 100, sort_by: 'vote_average.desc' };
+                params = { ...params, 'vote_average.gte': 8.0, 'vote_count.lte': 3000, 'vote_count.gte': 100, sort_by: 'vote_average.desc' };
                 break;
             case 'cult':
-                params = { with_keywords: '9799', sort_by: 'vote_count.desc' }; // 9799 = cult film
+                params = { ...params, with_keywords: '9799', sort_by: 'vote_count.desc' }; // 9799 = cult film
                 break;
             case 'true_story':
-                params = { with_keywords: '9672|3205', sort_by: 'popularity.desc' }; // based on true story
+                params = { ...params, with_keywords: '9672|3205', sort_by: 'popularity.desc' }; // based on true story
                 break;
             case 'visuals':
                 // Hard to filter by visuals. We'll use a specific director list or high budget sci-fi
-                params = { with_genres: '878,14', 'vote_average.gte': 7.5, sort_by: 'popularity.desc' };
+                params = { ...params, with_genres: '878,14', 'vote_average.gte': 7.5, sort_by: 'popularity.desc' };
                 break;
             case 'sagas':
                 // Collections. We can't fetch collections easily in discover. 
                 // We will fetch simple popular franchise movies via keyword 'sequel' or similar?
                 // Better: Just fetch popular movies, many are sagas.
-                params = { with_keywords: '11322', sort_by: 'revenue.desc' }; // Franchise keyword? No reliable one.
+                params = { ...params, with_keywords: '11322', sort_by: 'revenue.desc' }; // Franchise keyword? No reliable one.
                 // Fallback to high revenue
-                params = { sort_by: 'revenue.desc' };
+                params = { ...params, sort_by: 'revenue.desc' };
                 break;
             case 'conversation':
                 // Drama + Romance, no Action
-                params = { with_genres: '18,10749', without_genres: '28,878,12', sort_by: 'vote_average.desc' };
+                params = { ...params, with_genres: '18,10749', without_genres: '28,878,12', sort_by: 'vote_average.desc' };
                 break;
             default:
                 break;
@@ -133,12 +138,13 @@ export const getCustomCollection = async (type) => {
     }
 };
 
-export const getMoviesByGenre = async (genreId) => {
+export const getMoviesByGenre = async (genreId, page = 1) => {
     try {
         const response = await tmdbClient.get('/discover/movie', {
             params: {
                 with_genres: genreId,
-                sort_by: 'popularity.desc'
+                sort_by: 'popularity.desc',
+                page
             }
         });
         return response.data.results;
@@ -148,9 +154,11 @@ export const getMoviesByGenre = async (genreId) => {
     }
 };
 
-export const getTrendingMovies = async () => {
+export const getTrendingMovies = async (page = 1) => {
     try {
-        const response = await tmdbClient.get('/trending/movie/week');
+        const response = await tmdbClient.get('/trending/movie/week', {
+            params: { page }
+        });
         return response.data.results;
     } catch (error) {
         console.error("Error getting trending movies:", error);

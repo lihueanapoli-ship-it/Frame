@@ -11,116 +11,137 @@ const CategoryView = ({ onSelectMovie }) => {
     const [movies, setMovies] = useState([]);
     const [loading, setLoading] = useState(true);
     const [title, setTitle] = useState('');
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+
+    const fetchData = async (pageNum, reset = false) => {
+        if (pageNum === 1) setLoading(true);
+        let results = [];
+        let pageTitle = '';
+
+        try {
+            switch (id) {
+                case 'trending':
+                    results = await getTrendingMovies(pageNum);
+                    pageTitle = 'Tendencias Ahora';
+                    break;
+                case 'topRated':
+                    results = await getTopRatedMovies(pageNum); // Need to update API too for this if I used it, but trending covers it usually
+                    pageTitle = 'Aclamadas por la Crítica';
+                    break;
+                case 'action_pure':
+                    results = await getMoviesByGenre(28, pageNum);
+                    pageTitle = "Acción Pura";
+                    break;
+                case 'horror_rec':
+                    results = await getMoviesByGenre(27, pageNum);
+                    pageTitle = "Terror Recomendado";
+                    break;
+                default:
+                    // For custom collections that we upgraded to accept page
+                    results = await getCustomCollection(id, pageNum);
+
+                    // Titles map fallback
+                    const titles = {
+                        'oscars': 'Ganadoras del Oscar',
+                        'argentina': 'Cine Argentino',
+                        'short': 'Directo al Grano (< 90 min)',
+                        'mind_bending': 'Ingeniería en el Guion',
+                        'hidden_gems': 'Joyas Ocultas',
+                        'cult': 'Cine de Culto',
+                        'true_story': 'Basado en Hechos Reales',
+                        'visuals': 'Visualmente Impactantes',
+                        'sagas': 'Sagas Legendarias',
+                        'conversation': 'Para un Mate'
+                    };
+                    pageTitle = titles[id] || 'Colección';
+            }
+
+            if (results.length === 0) {
+                setHasMore(false);
+            } else {
+                setMovies(prev => reset ? results : [...prev, ...results]);
+                setTitle(pageTitle);
+            }
+        } catch (error) {
+            console.error("Error loading category", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
-            let results = [];
-            let pageTitle = '';
-
-            try {
-                // Map ID to data fetcher
-                switch (id) {
-                    case 'trending':
-                        results = await getTrendingMovies();
-                        pageTitle = 'Tendencias Ahora';
-                        break;
-                    case 'topRated':
-                        results = await getTopRatedMovies();
-                        pageTitle = 'Aclamadas por la Crítica';
-                        break;
-                    case 'oscars':
-                        results = await getCustomCollection('oscars');
-                        pageTitle = 'Ganadoras del Oscar';
-                        break;
-                    case 'argentina':
-                        results = await getCustomCollection('argentina');
-                        pageTitle = 'Cine Argentino';
-                        break;
-                    case 'short':
-                        results = await getCustomCollection('short');
-                        pageTitle = 'Directo al Grano (< 90 min)';
-                        break;
-                    case 'mind_bending':
-                        results = await getCustomCollection('mind_bending');
-                        pageTitle = 'Ingeniería en el Guion';
-                        break;
-                    case 'hidden_gems':
-                        results = await getCustomCollection('hidden_gems');
-                        pageTitle = 'Joyas Ocultas';
-                        break;
-                    case 'cult':
-                        results = await getCustomCollection('cult');
-                        pageTitle = 'Cine de Culto';
-                        break;
-                    case 'true_story':
-                        results = await getCustomCollection('true_story');
-                        pageTitle = 'Basado en Hechos Reales';
-                        break;
-                    case 'visuals':
-                        results = await getCustomCollection('visuals');
-                        pageTitle = 'Visualmente Impactantes';
-                        break;
-                    case 'sagas':
-                        results = await getCustomCollection('sagas');
-                        pageTitle = 'Sagas Legendarias';
-                        break;
-                    case 'conversation':
-                        results = await getCustomCollection('conversation');
-                        pageTitle = 'Para un Mate';
-                        break;
-                    case 'action_pure': // Custom ID for generic genre
-                        results = await getMoviesByGenre(28);
-                        pageTitle = "Acción Pura";
-                        break;
-                    case 'horror_rec':
-                        results = await getMoviesByGenre(27);
-                        pageTitle = "Terror Recomendado";
-                        break;
-                    default:
-                        // Fallback or Generic Genre lookup could be added here
-                        results = [];
-                        pageTitle = 'Categoría';
-                }
-                setMovies(results);
-                setTitle(pageTitle);
-            } catch (error) {
-                console.error("Error loading category", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchData();
+        setMovies([]);
+        setPage(1);
+        setHasMore(true);
+        fetchData(1, true);
         window.scrollTo(0, 0);
     }, [id]);
 
+    const loadMore = () => {
+        const nextPage = page + 1;
+        setPage(nextPage);
+        fetchData(nextPage, false);
+    };
+
+    const shuffle = () => {
+        const randomPage = Math.floor(Math.random() * 50) + 1; // Random page between 1-50
+        setPage(randomPage);
+        setMovies([]);
+        setLoading(true);
+        fetchData(randomPage, true);
+    };
+
     return (
         <div className="min-h-screen pb-20 pt-20 px-4 max-w-7xl mx-auto">
-            <header className="flex items-center gap-4 mb-8">
+            <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="p-2 rounded-full bg-surface hover:bg-white/10 transition-colors"
+                    >
+                        <ArrowLeftIcon className="w-6 h-6 text-white" />
+                    </button>
+                    <h1 className="text-3xl font-bold text-white tracking-tight">{title}</h1>
+                </div>
+
                 <button
-                    onClick={() => navigate(-1)}
-                    className="p-2 rounded-full bg-surface hover:bg-white/10 transition-colors"
+                    onClick={shuffle}
+                    className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg text-sm font-bold transition-all"
                 >
-                    <ArrowLeftIcon className="w-6 h-6 text-white" />
+                    🎲 <span className="hidden md:inline">Sorpréndeme (Refrescar)</span>
                 </button>
-                <h1 className="text-3xl font-bold text-white tracking-tight">{title}</h1>
             </header>
 
-            {loading ? (
+            {loading && movies.length === 0 ? (
                 <div className="flex justify-center py-20">
                     <Loader2 className="w-10 h-10 text-primary animate-spin" />
                 </div>
             ) : (
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                    {movies.map(movie => (
-                        <MovieCard
-                            key={movie.id}
-                            movie={movie}
-                            onClick={onSelectMovie}
-                        />
-                    ))}
-                </div>
+                <>
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6 animate-fade-in">
+                        {movies.map((movie, idx) => (
+                            <MovieCard
+                                key={`${movie.id}-${idx}`} // Idx key fallback for dupes across pages
+                                movie={movie}
+                                onClick={onSelectMovie}
+                                // Variant logic can be inferred from id or default
+                                variant={id} // Pass the category ID as variant to keep style consistent!
+                            />
+                        ))}
+                    </div>
+
+                    {hasMore && (
+                        <div className="max-w-xs mx-auto mt-12">
+                            <button
+                                onClick={loadMore}
+                                className="w-full py-4 bg-surface border border-white/10 hover:bg-white/10 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2"
+                            >
+                                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Cargar Más Películas"}
+                            </button>
+                        </div>
+                    )}
+                </>
             )}
         </div>
     );
