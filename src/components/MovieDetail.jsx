@@ -17,6 +17,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
     const userRating = userMovie?.rating || 0;
 
     // Fetch complete details including cast
+    // Fetch complete details including cast
     useEffect(() => {
         const fetchFullDetails = async () => {
             if (initialMovie.id) {
@@ -25,6 +26,12 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
             }
         };
         fetchFullDetails();
+
+        // Lock body scroll to prevent background bounce
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = '';
+        };
     }, [initialMovie.id]);
 
     const watchedState = isWatched(movie.id);
@@ -40,7 +47,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
     const sheetVariants = {
         hidden: { y: "100%" },
         visible: { y: 0, transition: { type: "spring", damping: 25, stiffness: 300 } },
-        exit: { y: "100%" }
+        exit: { y: "100%", transition: { type: "tween", ease: "easeInOut", duration: 0.3 } }
     };
 
     return (
