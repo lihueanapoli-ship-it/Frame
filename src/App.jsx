@@ -6,9 +6,9 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import DiscoverView from './views/DiscoverView';
 import LibraryView from './views/LibraryView';
 import WelcomeView from './views/WelcomeView';
-import CategoryView from './views/CategoryView'; // New View
+import CategoryView from './views/CategoryView';
+import SearchView from './views/SearchView'; // Import SearchView
 import BottomNav from './components/navigation/BottomNav';
-import SearchBar from './components/SearchBar';
 import MovieDetail from './components/MovieDetail';
 
 // Wrapper component to use Hooks like useNavigate
@@ -67,12 +67,10 @@ const AppContent = () => {
                         path="/"
                         element={<DiscoverView onSelectMovie={setSelectedMovie} />}
                     />
-                    <Route path="/search" element={
-                        <div className="p-4 pt-8">
-                            <h1 className="text-2xl font-bold mb-6">Explorar</h1>
-                            <SearchBar onSelectMovie={setSelectedMovie} />
-                        </div>
-                    } />
+                    <Route
+                        path="/search"
+                        element={<SearchView onSelectMovie={setSelectedMovie} />}
+                    />
                     <Route
                         path="/library"
                         element={<LibraryView onSelectMovie={setSelectedMovie} />}
@@ -86,7 +84,6 @@ const AppContent = () => {
 
             <BottomNav />
 
-            {/* Global Detail Modal */}
             {/* Global Detail Modal */}
             <AnimatePresence>
                 {selectedMovie && (

@@ -20,12 +20,20 @@ const SearchBar = ({ onSelectMovie }) => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    // Debounce search
     useEffect(() => {
-        const timer = setTimeout(async () => {
-            if (query.length >= 2) {
+        const timeoutId = setTimeout(async () => {
+            if (onSearchCallback) {
+                onSearchCallback(query);
+                // Assuming onSearchCallback handles its own loading/results/isOpen state
+                // or that this component doesn't need to manage them when a callback is provided.
+                // If local loading/results/isOpen management is still desired, it needs to be added here.
+                setIsOpen(false); // Close dropdown if external search is used
+                setResults([]); // Clear local results
+            } else if (query.length >= 2) {
                 setIsLoading(true);
                 const data = await searchMovies(query);
-                setResults(data.slice(0, 5)); // Limit to 5 for dropdown
+                setResults(data.slice(0, 5));
                 setIsLoading(false);
                 setIsOpen(true);
             } else {
@@ -34,8 +42,8 @@ const SearchBar = ({ onSelectMovie }) => {
             }
         }, 500);
 
-        return () => clearTimeout(timer);
-    }, [query]);
+        return () => clearTimeout(timeoutId);
+    }, [query, onSearchCallback]); // Added onSearchCallback to dependency array
 
     const handleSelect = (movie) => {
         onSelectMovie(movie);
