@@ -4,11 +4,13 @@ import { XMarkIcon, StarIcon, CalendarIcon, ClockIcon } from '@heroicons/react/2
 import { StarIcon as StarIconSolid, PlusIcon, CheckIcon, TrashIcon } from '@heroicons/react/24/solid';
 import { getBackdropUrl, getPosterUrl, getMovieDetails } from '../api/tmdb';
 import { useMovies } from '../contexts/MovieContext';
+import { useAuth } from '../contexts/AuthContext';
 import { cn } from '../lib/utils';
 
 const MovieDetail = ({ movie: initialMovie, onClose }) => {
     const [movie, setMovie] = useState(initialMovie);
     const { addToWatchlist, addToWatched, removeMovie, isWatched, isInWatchlist, moveFromWatchlistToWatched, watched } = useMovies();
+    const { user, loginWithGoogle } = useAuth();
 
     // Get live rating from context
     const userMovie = watched.find(m => m.id === movie.id);
@@ -149,6 +151,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
+                                        if (!user) { loginWithGoogle(); return; }
                                         addToWatchlist(movie);
                                     }}
                                     className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold transition-all border border-white/5 cursor-pointer active:scale-95"
@@ -158,6 +161,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
+                                        if (!user) { loginWithGoogle(); return; }
                                         addToWatched(movie, 0);
                                     }}
                                     className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-white text-black hover:bg-gray-200 font-bold transition-all cursor-pointer active:scale-95"
@@ -215,6 +219,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                             key={star}
                                             onClick={(e) => {
                                                 e.stopPropagation();
+                                                if (!user) { loginWithGoogle(); return; }
                                                 addToWatched(movie, star);
                                             }}
                                             className={cn(

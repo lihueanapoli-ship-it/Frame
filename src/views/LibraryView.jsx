@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useMovies } from '../contexts/MovieContext';
+import { useAuth } from '../contexts/AuthContext';
 import { useMovieFilter } from '../hooks/useMovieFilter';
 import MovieCard from '../components/MovieCard';
 import BottomSheet from '../components/ui/BottomSheet';
@@ -33,7 +34,28 @@ const LibraryView = ({ onSelectMovie }) => {
 
     // Data
     const { watchlist, watched } = useMovies();
+    const { user, loginWithGoogle } = useAuth();
     const rawMovies = activeTab === 'watchlist' ? watchlist : watched;
+
+    if (!user) {
+        return (
+            <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center">
+                <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mb-6">
+                    <FilmIcon className="w-8 h-8 text-gray-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-white mb-2">Tu Biblioteca Personal</h2>
+                <p className="text-gray-400 mb-8 max-w-sm">
+                    Inicia sesión para guardar tus películas favoritas, calificarlas y sincronizarlas en todos tus dispositivos.
+                </p>
+                <button
+                    onClick={loginWithGoogle}
+                    className="bg-white text-black px-8 py-3 rounded-xl font-bold text-sm hover:scale-105 transition-transform"
+                >
+                    Iniciar Sesión con Google
+                </button>
+            </div>
+        );
+    }
 
     // Smart Filtering Hook
     const { filteredMovies, totalCount } = useMovieFilter(rawMovies, {
