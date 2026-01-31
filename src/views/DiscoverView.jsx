@@ -1,17 +1,30 @@
 import React, { useEffect, useState } from 'react';
-import { getTrendingMovies, getTopRatedMovies, getMoviesByGenre } from '../api/tmdb';
+import { getTrendingMovies, getTopRatedMovies, getMoviesByGenre, getCustomCollection } from '../api/tmdb';
 import HeroCarousel from '../components/domain/HeroCarousel';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ChevronRight } from 'lucide-react';
+import { cn } from '../lib/utils';
+import { Link } from 'react-router-dom';
 
-const MovieSection = ({ title, movies, onSelectMovie }) => {
+const MovieSection = ({ title, movies, onSelectMovie, isSpecial = false, categoryId }) => {
     if (!movies || movies.length === 0) return null;
     return (
-        <section className="mb-8 pl-4">
-            <h3 className="text-lg md:text-xl font-bold text-white mb-4 flex items-center gap-2">
-                <span className="w-1 h-6 bg-primary rounded-full"></span>
-                {title}
-            </h3>
-            <div className="flex gap-4 overflow-x-auto pb-6 snap-x hide-scrollbar pr-4">
+        <section className="mb-10 pl-4">
+            <div className="flex items-center justify-between pr-4 mb-5">
+                <h3 className={cn(
+                    "text-lg md:text-2xl font-bold text-white flex items-center gap-2 tracking-wide",
+                    isSpecial && "text-yellow-500"
+                )}>
+                    <span className={cn("w-1.5 h-7 rounded-full", isSpecial ? "bg-yellow-500" : "bg-primary")}></span>
+                    {title}
+                    {isSpecial && <span className="text-2xl ml-2">🏆</span>}
+                </h3>
+                {categoryId && (
+                    <Link to={`/category/${categoryId}`} className="flex items-center text-xs font-bold text-gray-500 hover:text-white transition-colors uppercase tracking-wider">
+                        Ver todo <ChevronRight className="w-4 h-4" />
+                    </Link>
+                )}
+            </div>
+            <div className="flex gap-5 overflow-x-auto pb-6 snap-x hide-scrollbar pr-4">
                 {movies.map(m => (
                     <div
                         key={m.id}
@@ -19,9 +32,13 @@ const MovieSection = ({ title, movies, onSelectMovie }) => {
                             e.stopPropagation();
                             onSelectMovie(m);
                         }}
-                        className="snap-start shrink-0 w-[140px] md:w-[180px] cursor-pointer group relative z-10"
+                        className="snap-start shrink-0 w-[150px] md:w-[200px] cursor-pointer group relative z-10"
                     >
-                        <div className="aspect-[2/3] bg-surface rounded-xl overflow-hidden mb-2 shadow-lg group-hover:shadow-primary/20 group-hover:scale-105 transition-all duration-300 border border-white/5">
+                        <div className={cn(
+                            "aspect-[2/3] bg-surface rounded-xl overflow-hidden mb-3 shadow-lg transition-all duration-300 border border-white/5",
+                            "group-hover:shadow-primary/20 group-hover:scale-105 group-hover:z-20",
+                            isSpecial && "border-yellow-500/50 shadow-yellow-500/10 group-hover:shadow-yellow-500/30 group-hover:border-yellow-400"
+                        )}>
                             <img
                                 src={`https://image.tmdb.org/t/p/w342${m.poster_path}`}
                                 className="w-full h-full object-cover"
@@ -37,9 +54,25 @@ const MovieSection = ({ title, movies, onSelectMovie }) => {
                                 </span>
                             </div>
                         </div>
-                        <p className="text-sm font-medium text-gray-300 truncate group-hover:text-white transition-colors">{m.title}</p>
+                        <p className={cn(
+                            "text-sm font-semibold truncate transition-colors",
+                            isSpecial ? "text-yellow-100 group-hover:text-yellow-400" : "text-gray-300 group-hover:text-white"
+                        )}>{m.title}</p>
                     </div>
                 ))}
+
+                {/* 'See More' Card at the end */}
+                {categoryId && (
+                    <Link
+                        to={`/category/${categoryId}`}
+                        className="snap-start shrink-0 w-[150px] md:w-[200px] flex flex-col items-center justify-center gap-4 group cursor-pointer"
+                    >
+                        <div className="w-16 h-16 rounded-full bg-surface border border-white/10 flex items-center justify-center group-hover:scale-110 group-hover:bg-white/10 transition-all duration-300">
+                            <ChevronRight className="w-8 h-8 text-gray-400 group-hover:text-white" />
+                        </div>
+                        <span className="text-sm font-semibold text-gray-400 group-hover:text-white transition-colors">Ver Más</span>
+                    </Link>
+                )}
             </div>
         </section>
     );
@@ -51,6 +84,16 @@ const DiscoverView = ({ onSelectMovie }) => {
         topRated: [],
         action: [],
         horror: [],
+        oscars: [],
+        argentina: [],
+        short: [],
+        mindBending: [],
+        hiddenGems: [],
+        cult: [],
+        trueStory: [],
+        visuals: [],
+        sagas: [],
+        conversation: [],
         featured: []
     });
     const [loading, setLoading] = useState(true);
@@ -59,22 +102,58 @@ const DiscoverView = ({ onSelectMovie }) => {
         const fetchAll = async () => {
             try {
                 // Parallel fetching for speed
-                const [trending, topRated, action, horror] = await Promise.all([
+                const [
+                    trending,
+                    topRated,
+                    action,
+                    horror,
+                    // Custom Collections
+                    oscars,
+                    argentina,
+                    short,
+                    mindBending,
+                    hiddenGems,
+                    cult,
+                    trueStory,
+                    visuals,
+                    sagas,
+                    conversation
+                ] = await Promise.all([
                     getTrendingMovies(),
                     getTopRatedMovies(),
                     getMoviesByGenre(28), // Action
-                    getMoviesByGenre(27)  // Horror
+                    getMoviesByGenre(27), // Horror
+                    getCustomCollection('oscars'),
+                    getCustomCollection('argentina'),
+                    getCustomCollection('short'),
+                    getCustomCollection('mind_bending'),
+                    getCustomCollection('hidden_gems'),
+                    getCustomCollection('cult'),
+                    getCustomCollection('true_story'),
+                    getCustomCollection('visuals'),
+                    getCustomCollection('sagas'),
+                    getCustomCollection('conversation')
                 ]);
 
-                // Mix trending + topRated for the Featured Carousel
-                const combined = [...trending, ...topRated].sort(() => 0.5 - Math.random());
+                // Mix for Hero
+                const combined = [...trending, ...oscars, ...argentina].sort(() => 0.5 - Math.random());
 
                 setData({
                     trending,
                     topRated,
                     action,
                     horror,
-                    featured: combined.slice(0, 8) // Top 8 mixed movies for hero
+                    oscars,
+                    argentina,
+                    short,
+                    mindBending,
+                    hiddenGems,
+                    cult,
+                    trueStory,
+                    visuals,
+                    sagas,
+                    conversation,
+                    featured: combined.slice(0, 8)
                 });
             } catch (err) {
                 console.error("Failed to load dashboard", err);
@@ -99,10 +178,20 @@ const DiscoverView = ({ onSelectMovie }) => {
             <HeroCarousel movies={data.featured} onRegisterAction={onSelectMovie} />
 
             <div className="mt-8 space-y-2">
-                <MovieSection title="Tendencias Ahora" movies={data.trending} onSelectMovie={onSelectMovie} />
-                <MovieSection title="Aclamadas por la Crítica (Top Rated)" movies={data.topRated} onSelectMovie={onSelectMovie} />
-                <MovieSection title="Acción Pura" movies={data.action} onSelectMovie={onSelectMovie} />
-                <MovieSection title="Terror Recomendado" movies={data.horror} onSelectMovie={onSelectMovie} />
+                <MovieSection title="Tendencias Ahora" movies={data.trending} onSelectMovie={onSelectMovie} categoryId="trending" />
+                <MovieSection title="Carrusel de Oro: Best Picture Winners" movies={data.oscars} onSelectMovie={onSelectMovie} isSpecial={true} categoryId="oscars" />
+                <MovieSection title="Joyas del Cine Argentino" movies={data.argentina} onSelectMovie={onSelectMovie} categoryId="argentina" />
+                <MovieSection title="Directo al Grano ( < 90 min )" movies={data.short} onSelectMovie={onSelectMovie} categoryId="short" />
+                <MovieSection title="Ingeniería en el Guion" movies={data.mindBending} onSelectMovie={onSelectMovie} categoryId="mind_bending" />
+                <MovieSection title="Joyas Ocultas" movies={data.hiddenGems} onSelectMovie={onSelectMovie} categoryId="hidden_gems" />
+                <MovieSection title="Cine de Culto" movies={data.cult} onSelectMovie={onSelectMovie} categoryId="cult" />
+                <MovieSection title="Basado en Hechos Reales" movies={data.trueStory} onSelectMovie={onSelectMovie} categoryId="true_story" />
+                <MovieSection title="Visualmente Impactantes" movies={data.visuals} onSelectMovie={onSelectMovie} categoryId="visuals" />
+                <MovieSection title="Sagas que Marcaron Épocas" movies={data.sagas} onSelectMovie={onSelectMovie} categoryId="sagas" />
+                <MovieSection title="Para ver con un Mate" movies={data.conversation} onSelectMovie={onSelectMovie} categoryId="conversation" />
+                <MovieSection title="Acción Pura" movies={data.action} onSelectMovie={onSelectMovie} categoryId="action" />
+                <MovieSection title="Terror Recomendado" movies={data.horror} onSelectMovie={onSelectMovie} categoryId="horror" />
+                <MovieSection title="Aclamadas por la Crítica" movies={data.topRated} onSelectMovie={onSelectMovie} categoryId="top_rated" />
             </div>
         </div>
     );

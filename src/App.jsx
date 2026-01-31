@@ -5,7 +5,8 @@ import { MovieProvider } from './contexts/MovieContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import DiscoverView from './views/DiscoverView';
 import LibraryView from './views/LibraryView';
-import WelcomeView from './views/WelcomeView'; // Import Welcome View
+import WelcomeView from './views/WelcomeView';
+import CategoryView from './views/CategoryView'; // New View
 import BottomNav from './components/navigation/BottomNav';
 import SearchBar from './components/SearchBar';
 import MovieDetail from './components/MovieDetail';
@@ -75,6 +76,10 @@ const AppContent = () => {
                     <Route
                         path="/library"
                         element={<LibraryView onSelectMovie={setSelectedMovie} />}
+                    />
+                    <Route
+                        path="/category/:id"
+                        element={<CategoryView onSelectMovie={setSelectedMovie} />}
                     />
                 </Routes>
             </main>
