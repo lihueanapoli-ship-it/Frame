@@ -38,7 +38,7 @@ const LibraryView = ({ onSelectMovie }) => {
     // Smart Filtering Hook
     const { filteredMovies, totalCount } = useMovieFilter(rawMovies, {
         search: localSearch,
-        status: activeTab, // Actually our raw input is already split, but good practice
+        status: 'all', // We pass 'all' since rawMovies is already filtered by tab
         sort: sortOption,
         genres: selectedGenres
     });
@@ -127,16 +127,31 @@ const LibraryView = ({ onSelectMovie }) => {
                         <p className="text-gray-400">No se encontraron películas</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <motion.div
+                        variants={{
+                            hidden: { opacity: 0 },
+                            show: { opacity: 1, transition: { staggerChildren: 0.1 } }
+                        }}
+                        initial="hidden"
+                        animate="show"
+                        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+                    >
                         {filteredMovies.map(movie => (
-                            <MovieCard
+                            <motion.div
                                 key={movie.id}
-                                movie={movie}
-                                onClick={onSelectMovie}
-                                rating={movie.rating}
-                            />
+                                variants={{
+                                    hidden: { opacity: 0, scale: 0.9 },
+                                    show: { opacity: 1, scale: 1 }
+                                }}
+                            >
+                                <MovieCard
+                                    movie={movie}
+                                    onClick={onSelectMovie}
+                                    rating={movie.rating}
+                                />
+                            </motion.div>
                         ))}
-                    </div>
+                    </motion.div>
                 )}
             </div>
 

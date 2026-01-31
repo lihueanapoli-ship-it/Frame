@@ -8,14 +8,8 @@ export const MOVIE_STATUS = {
 
 /**
  * useMovieFilter Hook
- * Filters and sorts a collection of movies based on user criteria.
- * 
- * @param {Array} movies - Array of movie objects from local state/firebase
- * @param {Object} filters - Filter criteria
- * @param {string} filters.search - Text search query (local)
- * @param {string} filters.sort - Sort key: 'date_added', 'rating', 'year'
- * @param {string} filters.status - 'watchlist' | 'watched' | 'all'
- * @param {Array} filters.genres - Array of genre IDs to include
+ * Filters and sorts movies.
+ * Updated to support correct data properties (addedAt, rating, release_date).
  */
 export const useMovieFilter = (movies, { search = '', sort = 'date_added', status = 'all', genres = [] }) => {
 
@@ -24,15 +18,16 @@ export const useMovieFilter = (movies, { search = '', sort = 'date_added', statu
 
         return movies.filter(movie => {
             // 1. Status Filter
-            if (status !== 'all' && movie.status !== status) return false;
+            // If movie has a status property, respect it. If not (legacy/context data), ignore status filter if 'all'.
+            // Since LibraryView passes 'all' now, this is safe.
+            if (status !== 'all' && movie.status && movie.status !== status) return false;
 
-            // 2. Genre Filter (AND logic - must have at least one of the selected genres? Or all? Usually one is enough for discovery)
-            // Let's go with: if genres selected, movie must have at least one matching genre.
+            // 2. Genre Filter - Fixed to check g.id
             if (genres.length > 0) {
-                if (!movie.genres || !movie.genres.some(g => genres.includes(g))) return false;
+                if (!movie.genres || !movie.genres.some(g => genres.includes(g.id))) return false;
             }
 
-            // 3. Search Filter (Title)
+            // 3. Search Filter
             if (search.trim()) {
                 const query = search.toLowerCase();
                 return movie.title.toLowerCase().includes(query);
@@ -43,23 +38,20 @@ export const useMovieFilter = (movies, { search = '', sort = 'date_added', statu
             // 4. Sorting Logic
             switch (sort) {
                 case 'rating':
-                    // Sort by user rating first, then global vote_average
-                    const ratingA = a.my_rating || 0;
-                    const ratingB = b.my_rating || 0;
-                    return ratingB - ratingA; // Descending
+                    // Sort by user rating
+                    return (b.rating || 0) - (a.rating || 0);
 
                 case 'year':
                     const dateA = new Date(a.release_date || 0);
                     const dateB = new Date(b.release_date || 0);
-                    return dateB - dateA; // Newest first
+                    return dateB - dateA;
 
                 case 'date_added':
                 default:
-                    // Fallback to added_at timestamp
-                    // Assuming added_at is a Firestore Timestamp or ISO string
-                    const addedA = a.added_at instanceof Date ? a.added_at : new Date(a.added_at || 0);
-                    const addedB = b.added_at instanceof Date ? b.added_at : new Date(b.added_at || 0);
-                    return addedB - addedA; // Newest added first
+                    // Support addedAt (watchlist) or watchedAt (watched)
+                    const timeA = new Date(a.addedAt || a.watchedAt || 0);
+                    const timeB = new Date(b.addedAt || b.watchedAt || 0);
+                    return timeB - timeA;
             }
         });
     }, [movies, search, sort, status, genres]);
