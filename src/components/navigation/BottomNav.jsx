@@ -1,14 +1,15 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { HomeIcon, MagnifyingGlassIcon, RectangleStackIcon } from '@heroicons/react/24/outline';
-import { HomeIcon as HomeIconSolid, MagnifyingGlassIcon as SearchIconSolid, RectangleStackIcon as LibraryIconSolid } from '@heroicons/react/24/solid';
+import { HomeIcon, MagnifyingGlassIcon, RectangleStackIcon, ChartBarIcon } from '@heroicons/react/24/outline';
+import { HomeIcon as HomeIconSolid, MagnifyingGlassIcon as SearchIconSolid, RectangleStackIcon as LibraryIconSolid, ChartBarIcon as ChartBarIconSolid } from '@heroicons/react/24/solid';
 import { cn } from '../../lib/utils'; // Assuming I created this utility
 
 const BottomNav = () => {
     const navItems = [
         { name: 'Inicio', path: '/', icon: HomeIcon, activeIcon: HomeIconSolid },
         { name: 'Explorar', path: '/search', icon: MagnifyingGlassIcon, activeIcon: SearchIconSolid },
-        { name: 'Biblioteca', path: '/library', icon: RectangleStackIcon, activeIcon: LibraryIconSolid },
+        { name: 'ADN', path: '/dashboard', icon: ChartBarIcon, activeIcon: ChartBarIconSolid },
+        { name: 'Lib', path: '/library', icon: RectangleStackIcon, activeIcon: LibraryIconSolid },
     ];
 
     return (

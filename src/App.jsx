@@ -11,6 +11,7 @@ import SearchView from './views/SearchView'; // Import SearchView
 import BottomNav from './components/navigation/BottomNav';
 import MovieDetail from './components/MovieDetail';
 import DynamicLogo from './components/ui/DynamicLogo';
+import StatsView from './views/StatsView';
 
 // Wrapper component to use Hooks like useNavigate
 const AppContent = () => {
@@ -81,9 +82,18 @@ const AppContent = () => {
                         path="/library"
                         element={<LibraryView onSelectMovie={setSelectedMovie} />}
                     />
+                    import StatsView from './views/StatsView';
+
+
+                    {/* ... */}
+
                     <Route
                         path="/category/:id"
                         element={<CategoryView onSelectMovie={setSelectedMovie} />}
+                    />
+                    <Route
+                        path="/dashboard"
+                        element={<StatsView />}
                     />
                 </Routes>
             </main>
