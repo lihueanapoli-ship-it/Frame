@@ -3,7 +3,7 @@ import { Search, X, Loader2 } from 'lucide-react';
 import { searchMovies, getPosterUrl } from '../api/tmdb';
 import { useMovies } from '../contexts/MovieContext';
 
-const SearchBar = ({ onSelectMovie }) => {
+const SearchBar = ({ onSelectMovie, onSearchCallback }) => {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
