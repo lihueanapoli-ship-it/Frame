@@ -7,18 +7,21 @@ export default {
     theme: {
         extend: {
             colors: {
-                background: '#09090b', // Zinc 950 - Deepest Dark
-                surface: '#18181b',    // Zinc 900 - Card Surface
-                'surface-elevated': '#27272a', // Zinc 800
-                primary: '#6366f1',    // Indigo 500 - Primary Action
-                'primary-hover': '#4f46e5',
-                secondary: '#a1a1aa',  // Zinc 400 - Secondary Text
-                action: '#10b981',     // Emerald 500 - Watched/Positive
-                danger: '#ef4444',     // Red 500 - Remove/Danger
-                glass: 'rgba(24, 24, 27, 0.7)', // Transparent Zinc for glassmorphism
+                background: '#050505', // Onyx Black
+                surface: '#121212',    // Slightly Lighter Onyx
+                'surface-elevated': '#1F1F1F',
+                primary: '#00F0FF',    // Anamorphic Blue
+                'primary-hover': '#00C2CF',
+                secondary: '#A1A1AA',
+                text: '#E0E0E0',       // Nitrate White
+                action: '#10b981',
+                danger: '#ef4444',
+                glass: 'rgba(5, 5, 5, 0.7)',
             },
             fontFamily: {
                 sans: ['Inter', 'system-ui', 'sans-serif'],
+                display: ['"Bebas Neue"', 'sans-serif'],
+                mono: ['"JetBrains Mono"', 'monospace'],
             },
             backdropBlur: {
                 xs: '2px',

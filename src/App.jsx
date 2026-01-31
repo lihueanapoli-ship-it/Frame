@@ -10,6 +10,7 @@ import CategoryView from './views/CategoryView';
 import SearchView from './views/SearchView'; // Import SearchView
 import BottomNav from './components/navigation/BottomNav';
 import MovieDetail from './components/MovieDetail';
+import DynamicLogo from './components/ui/DynamicLogo';
 
 // Wrapper component to use Hooks like useNavigate
 const AppContent = () => {
@@ -49,13 +50,18 @@ const AppContent = () => {
 
     return (
         <div className="min-h-screen bg-background text-white font-sans selection:bg-primary selection:text-white">
+            {/* ... */}
+
             <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-background/50 border-b border-white/5 transition-all duration-300">
                 <div className="flex h-16 items-center w-full px-4 max-w-7xl mx-auto justify-between">
                     <a href="/" onClick={(e) => {
                         e.preventDefault();
-                        window.location.href = '/'; // Hard reload or just navigate
-                    }} className="font-bold text-lg tracking-tight hover:text-primary transition-colors cursor-pointer">
-                        Frame.
+                        window.location.href = '/';
+                    }} className="flex items-center gap-3 group">
+                        <DynamicLogo />
+                        <span className="font-display font-bold text-2xl tracking-wide text-white group-hover:text-primary transition-colors">
+                            FRAME
+                        </span>
                     </a>
                     <UserMenu />
                 </div>
