@@ -59,7 +59,13 @@ const CategoryView = ({ onSelectMovie }) => {
             if (currentId !== id) return;
 
             if (results.length === 0) {
-                setHasMore(false);
+                if (reset && pageNum > 1) {
+                    // Fallback: If random page is empty, try page 1
+                    console.log("Page empty, falling back to 1");
+                    fetchData(1, true, currentId);
+                } else {
+                    setHasMore(false);
+                }
             } else {
                 setMovies(prev => {
                     if (reset) return results;
@@ -87,15 +93,11 @@ const CategoryView = ({ onSelectMovie }) => {
         window.scrollTo(0, 0);
     }, [id, fetchData]);
 
-    const loadMore = () => {
-        const nextPage = page + 1;
-        setPage(nextPage);
-        fetchData(nextPage, false, id);
-    };
+
 
     const shuffle = async () => {
         // Adaptive max pages based on category
-        let maxPage = 20; // 50 is too risky for smaller collections
+        let maxPage = 20;
         if (id === 'oscars' || id === 'argentina' || id === 'short') {
             maxPage = 5;
         }
@@ -103,8 +105,8 @@ const CategoryView = ({ onSelectMovie }) => {
         const randomPage = Math.floor(Math.random() * maxPage) + 1;
         setPage(randomPage);
         setLoading(true);
-        setMovies([]);
-        window.scrollTo(0, 0); // Important for UX
+        // Removed setMovies([]) to prevent flashing empty screen
+        window.scrollTo(0, 0);
 
         await fetchData(randomPage, true, id);
     };
@@ -124,9 +126,10 @@ const CategoryView = ({ onSelectMovie }) => {
 
                 <button
                     onClick={shuffle}
-                    className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg text-sm font-bold transition-all"
+                    disabled={loading}
+                    className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg text-sm font-bold transition-all disabled:opacity-50"
                 >
-                    🎲 <span className="hidden md:inline">Sorpréndeme (Refrescar)</span>
+                    🎲 <span className="hidden md:inline">{loading ? "Cargando..." : "Refrescar"}</span>
                 </button>
             </header>
 
