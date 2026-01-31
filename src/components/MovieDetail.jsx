@@ -209,8 +209,8 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                         <TrashIcon className="w-3 h-3" /> Eliminar
                                     </button>
                                 </div>
-                                <div className="flex justify-between gap-1">
-                                    {[1, 2, 3, 4, 5].map(star => (
+                                <div className="flex justify-between gap-0.5 sm:gap-1">
+                                    {Array.from({ length: 10 }, (_, i) => i + 1).map(star => (
                                         <button
                                             key={star}
                                             onClick={(e) => {
@@ -222,13 +222,13 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                                 (userRating >= star) ? "text-yellow-500" : "text-gray-600"
                                             )}
                                         >
-                                            {userRating >= star ? <StarIconSolid className="w-8 h-8" /> : <StarIcon className="w-8 h-8" />}
+                                            {userRating >= star ? <StarIconSolid className="w-5 h-5 sm:w-6 sm:h-6" /> : <StarIcon className="w-5 h-5 sm:w-6 sm:h-6" />}
                                         </button>
                                     ))}
                                 </div>
                                 <div className="text-center mt-2.5 text-2xl font-bold text-white">
                                     <div className="text-center mt-2.5 text-2xl font-bold text-white">
-                                        {userRating > 0 && <span>{userRating}/5</span>}
+                                        {userRating > 0 && <span>{userRating}/10</span>}
                                     </div>
                                 </div>
                             </div>
