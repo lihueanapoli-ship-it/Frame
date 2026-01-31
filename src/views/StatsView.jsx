@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
 import { ClockIcon, StarIcon, TrophyIcon, FireIcon } from '@heroicons/react/24/solid';
 import DynamicLogo from '../components/ui/DynamicLogo';
+import { cn } from '../lib/utils';
 
 // Helper: Convert mins to days/hours/min
 const formatRuntime = (mins) => {
@@ -91,6 +92,53 @@ const StatsView = () => {
             A: counts[key],
             fullMark: watched.length // Normalize?
         })).slice(0, 6); // Top 6 genres
+    }, [watched]);
+
+    // 4. Rating Distribution (Histogram)
+    const ratingDistribution = useMemo(() => {
+        const dist = Array.from({ length: 11 }, (_, i) => ({ rating: i, count: 0 })); // 0-10
+        watched.forEach(m => {
+            const r = m.rating || 0;
+            if (dist[r]) dist[r].count++;
+        });
+        return dist.filter(d => d.rating > 0); // Don't show unrated (0)
+    }, [watched]);
+
+    // 5. Heatmap Data (Last 52 weeks)
+    const heatmapData = useMemo(() => {
+        const weeks = [];
+        const today = new Date();
+        // Go back 52 weeks * 7 days
+        // We want 52 columns (weeks), 7 rows (days)
+        const startDate = new Date(today);
+        startDate.setDate(today.getDate() - (52 * 7) + 1); // Approx start
+
+        // Helper to formatting YYYY-MM-DD
+        const formatDate = (d) => d.toISOString().split('T')[0];
+
+        // Map watched dates
+        const watchedMap = {};
+        watched.forEach(m => {
+            if (m.watchedAt) {
+                const d = m.watchedAt.split('T')[0];
+                watchedMap[d] = (watchedMap[d] || 0) + 1;
+            }
+        });
+
+        let current = new Date(startDate);
+        for (let w = 0; w < 52; w++) {
+            const week = [];
+            for (let d = 0; d < 7; d++) {
+                const dateStr = formatDate(current);
+                week.push({
+                    date: dateStr,
+                    count: watchedMap[dateStr] || 0
+                });
+                current.setDate(current.getDate() + 1);
+            }
+            weeks.push(week);
+        }
+        return weeks;
     }, [watched]);
 
     if (!user) {
@@ -200,11 +248,62 @@ const StatsView = () => {
                     </div>
                 </div>
 
-                {/* 5. Placeholder for Histogram / Activity (Simple Version) */}
-                <div className="col-span-1 md:col-span-2 bg-surface border border-white/5 p-6 flex flex-col justify-center items-center text-center">
-                    <FireIcon className="w-10 h-10 text-gray-700 mb-2" />
-                    <p className="font-mono text-xs text-gray-500">MÓDULO "PULSO CINÉFILO" EN CONSTRUCCIÓN</p>
-                    <p className="font-display text-xl text-gray-400 mt-2">Próximamente: Heatmap de Actividad</p>
+                {/* 5. Rating Histogram - Spans 2 cols */}
+                <div className="col-span-1 md:col-span-2 bg-surface border border-white/5 p-6 flex flex-col min-h-[300px]">
+                    <h3 className="font-mono text-xs text-gray-500 uppercase tracking-widest mb-4">CURVA DE EXIGENCIA</h3>
+                    <div className="flex-1 w-full h-full min-h-[250px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={ratingDistribution}>
+                                <XAxis dataKey="rating" stroke="#333" tick={{ fill: '#6B7280', fontSize: 10, fontFamily: 'monospace' }} />
+                                <Tooltip
+                                    cursor={{ fill: '#18181b' }}
+                                    contentStyle={{ backgroundColor: '#121212', borderColor: '#333', color: '#fff' }}
+                                    itemStyle={{ color: '#00F0FF', fontFamily: 'monospace' }}
+                                />
+                                <Bar dataKey="count" fill="#333" radius={[2, 2, 0, 0]} activeBar={{ fill: '#00F0FF' }} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* 6. Activity Heatmap - Spans Full Width (4 cols) on large screens */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-4 bg-surface border border-white/5 p-6 overflow-x-auto">
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="font-mono text-xs text-gray-500 uppercase tracking-widest">PULSO CINÉFILO (ÚlTIMOS 365 DÍAS)</h3>
+                        <div className="flex items-center gap-2 text-[10px] text-gray-500 font-mono">
+                            <span>MENOS</span>
+                            <div className="flex gap-1">
+                                <div className="w-2 h-2 bg-[#1f1f1f] rounded-sm" />
+                                <div className="w-2 h-2 bg-[#0e4429] rounded-sm" />
+                                <div className="w-2 h-2 bg-[#006d32] rounded-sm" />
+                                <div className="w-2 h-2 bg-[#26a641] rounded-sm" />
+                                <div className="w-2 h-2 bg-[#39d353] rounded-sm" />
+                            </div>
+                            <span>MÁS</span>
+                        </div>
+                    </div>
+
+                    {/* Github Style Grid */}
+                    <div className="flex gap-1 min-w-[800px]">
+                        {heatmapData.map((week, wIndex) => (
+                            <div key={wIndex} className="flex flex-col gap-1">
+                                {week.map((day, dIndex) => (
+                                    <div
+                                        key={`${wIndex}-${dIndex}`}
+                                        className={cn(
+                                            "w-3 h-3 rounded-sm transition-all hover:ring-1 hover:ring-white/50",
+                                            day.count === 0 ? "bg-[#1f1f1f]" :
+                                                day.count === 1 ? "bg-[#00F0FF]/20" :
+                                                    day.count === 2 ? "bg-[#00F0FF]/40" :
+                                                        day.count === 3 ? "bg-[#00F0FF]/60" :
+                                                            "bg-[#00F0FF]"
+                                        )}
+                                        title={`${day.date}: ${day.count} películas`}
+                                    />
+                                ))}
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
             </div>

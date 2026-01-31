@@ -206,42 +206,48 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                         )}
 
                         {watchedState && (
-                            <div>
-                                <div className="flex items-center justify-between mb-4">
-                                    <span className="text-sm text-gray-400 font-medium">Tu calificación</span>
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm font-mono text-gray-400">CALIBRACIÓN DE CRITERIO (1-10)</span>
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             removeMovie(movie.id);
                                             onClose();
                                         }}
-                                        className="text-xs text-red-500 flex items-center gap-1"
+                                        className="text-xs text-red-500 hover:text-red-400 font-mono tracking-wide"
                                     >
-                                        <TrashIcon className="w-3 h-3" /> Eliminar
+                                        [ELIMINAR_REGISTRO]
                                     </button>
                                 </div>
-                                <div className="flex justify-between gap-0.5 sm:gap-1">
-                                    {Array.from({ length: 10 }, (_, i) => i + 1).map(star => (
+
+                                <div className="grid grid-cols-10 gap-1 sm:gap-2">
+                                    {Array.from({ length: 10 }, (_, i) => i + 1).map(num => (
                                         <button
-                                            key={star}
+                                            key={num}
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 if (!user) { loginWithGoogle(); return; }
-                                                addToWatched(movie, star);
+                                                addToWatched(movie, num);
                                             }}
                                             className={cn(
-                                                "flex-1 py-2 flex justify-center items-center transition-transform hover:scale-110 cursor-pointer rounded-lg bg-surface hover:bg-white/5",
-                                                (userRating >= star) ? "text-yellow-500" : "text-gray-600"
+                                                "aspect-square flex items-center justify-center rounded-sm font-mono text-xs sm:text-sm font-bold transition-all",
+                                                userRating === num
+                                                    ? "bg-primary text-black shadow-[0_0_15px_rgba(0,240,255,0.5)] scale-110"
+                                                    : "bg-surface-elevated text-gray-500 hover:bg-white/10 hover:text-white"
                                             )}
                                         >
-                                            {userRating >= star ? <StarIconSolid className="w-5 h-5 sm:w-6 sm:h-6" /> : <StarIcon className="w-5 h-5 sm:w-6 sm:h-6" />}
+                                            {num}
                                         </button>
                                     ))}
                                 </div>
-                                <div className="text-center mt-2.5 text-2xl font-bold text-white">
-                                    <div className="text-center mt-2.5 text-2xl font-bold text-white">
-                                        {userRating > 0 && <span>{userRating}/10</span>}
-                                    </div>
+
+                                <div className="h-6 flex items-center justify-center">
+                                    {userRating > 0 && (
+                                        <span className="font-mono text-xs text-primary animate-pulse">
+                                            INTENSIDAD REGISTRADA: {userRating}/10
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         )}
