@@ -3,7 +3,7 @@ import { getTrendingMovies } from '../api/tmdb';
 import HeroCarousel from '../components/domain/HeroCarousel';
 import { Loader2 } from 'lucide-react'; // Fallback icon
 
-const DiscoverView = () => {
+const DiscoverView = ({ onSelectMovie }) => {
     const [trending, setTrending] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -31,7 +31,7 @@ const DiscoverView = () => {
 
     return (
         <div className="pb-24">
-            <HeroCarousel movies={trending.slice(0, 5)} onRegisterAction={() => { }} />
+            <HeroCarousel movies={trending.slice(0, 5)} onRegisterAction={onSelectMovie} />
 
             <div className="px-4 mt-8 space-y-8">
                 <section>
@@ -41,7 +41,11 @@ const DiscoverView = () => {
                     {/* Horizontal list placeholder for now */}
                     <div className="flex gap-4 overflow-x-auto pb-4 snap-x hide-scrollbar">
                         {trending.map(m => (
-                            <div key={m.id} className="snap-start shrink-0 w-[140px] md:w-[180px]">
+                            <div
+                                key={m.id}
+                                onClick={() => onSelectMovie(m)}
+                                className="snap-start shrink-0 w-[140px] md:w-[180px] cursor-pointer hover:opacity-80 transition-all active:scale-95"
+                            >
                                 <div className="aspect-[2/3] bg-surface rounded-xl overflow-hidden mb-2">
                                     <img
                                         src={`https://image.tmdb.org/t/p/w342${m.poster_path}`}

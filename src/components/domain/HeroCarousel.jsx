@@ -65,7 +65,10 @@ const HeroCarousel = ({ movies, onRegisterAction }) => {
                         >
                             Ver Info
                         </button>
-                        <button className="flex items-center gap-2 px-6 py-3 bg-surface/40 backdrop-blur-md border border-white/10 text-white rounded-full font-medium text-sm active:scale-95 transition-transform hover:bg-white/10">
+                        <button
+                            onClick={() => onRegisterAction(movie)}
+                            className="flex items-center gap-2 px-6 py-3 bg-surface/40 backdrop-blur-md border border-white/10 text-white rounded-full font-medium text-sm active:scale-95 transition-transform hover:bg-white/10"
+                        >
                             <PlusIcon className="w-5 h-5" />
                             Mi lista
                         </button>
