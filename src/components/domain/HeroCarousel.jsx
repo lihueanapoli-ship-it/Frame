@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getBackdropUrl, getPosterUrl } from '../../api/tmdb';
+import { getBackdropUrl, getPosterUrl, getGenreNames } from '../../api/tmdb';
 import { PlusIcon } from '@heroicons/react/24/outline';
 
 const HeroCarousel = ({ movies, onRegisterAction }) => {
@@ -52,7 +52,7 @@ const HeroCarousel = ({ movies, onRegisterAction }) => {
                     transition={{ delay: 0.2, duration: 0.5 }}
                 >
                     <span className="inline-block px-3 py-1 mb-3 text-xs font-bold tracking-wider text-primary uppercase bg-primary/10 rounded-full border border-primary/20 backdrop-blur-md">
-                        Tendencia Global
+                        {getGenreNames(movie.genre_ids).slice(0, 3).join(', ') || 'Tendencia Global'}
                     </span>
                     <h2 className="text-3xl md:text-5xl font-bold text-white mb-2 leading-tight max-w-xl">
                         {movie.title}
