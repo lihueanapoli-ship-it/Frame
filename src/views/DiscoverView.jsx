@@ -1,24 +1,88 @@
 import React, { useEffect, useState } from 'react';
-import { getTrendingMovies } from '../api/tmdb';
+import { getTrendingMovies, getTopRatedMovies, getMoviesByGenre } from '../api/tmdb';
 import HeroCarousel from '../components/domain/HeroCarousel';
-import { Loader2 } from 'lucide-react'; // Fallback icon
+import { Loader2 } from 'lucide-react';
+
+const MovieSection = ({ title, movies, onSelectMovie }) => {
+    if (!movies || movies.length === 0) return null;
+    return (
+        <section className="mb-8 pl-4">
+            <h3 className="text-lg md:text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <span className="w-1 h-6 bg-primary rounded-full"></span>
+                {title}
+            </h3>
+            <div className="flex gap-4 overflow-x-auto pb-6 snap-x hide-scrollbar pr-4">
+                {movies.map(m => (
+                    <div
+                        key={m.id}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectMovie(m);
+                        }}
+                        className="snap-start shrink-0 w-[140px] md:w-[180px] cursor-pointer group relative z-10"
+                    >
+                        <div className="aspect-[2/3] bg-surface rounded-xl overflow-hidden mb-2 shadow-lg group-hover:shadow-primary/20 group-hover:scale-105 transition-all duration-300 border border-white/5">
+                            <img
+                                src={`https://image.tmdb.org/t/p/w342${m.poster_path}`}
+                                className="w-full h-full object-cover"
+                                alt=""
+                                loading="lazy"
+                            />
+                            {/* Hover overlay */}
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <span className="bg-white/20 backdrop-blur-md p-2 rounded-full">
+                                    <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </span>
+                            </div>
+                        </div>
+                        <p className="text-sm font-medium text-gray-300 truncate group-hover:text-white transition-colors">{m.title}</p>
+                    </div>
+                ))}
+            </div>
+        </section>
+    );
+};
 
 const DiscoverView = ({ onSelectMovie }) => {
-    const [trending, setTrending] = useState([]);
+    const [data, setData] = useState({
+        trending: [],
+        topRated: [],
+        action: [],
+        horror: [],
+        featured: []
+    });
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchTrending = async () => {
+        const fetchAll = async () => {
             try {
-                const movies = await getTrendingMovies();
-                setTrending(movies);
+                // Parallel fetching for speed
+                const [trending, topRated, action, horror] = await Promise.all([
+                    getTrendingMovies(),
+                    getTopRatedMovies(),
+                    getMoviesByGenre(28), // Action
+                    getMoviesByGenre(27)  // Horror
+                ]);
+
+                // Mix trending + topRated for the Featured Carousel
+                const combined = [...trending, ...topRated].sort(() => 0.5 - Math.random());
+
+                setData({
+                    trending,
+                    topRated,
+                    action,
+                    horror,
+                    featured: combined.slice(0, 8) // Top 8 mixed movies for hero
+                });
             } catch (err) {
-                console.error("Failed to load trending", err);
+                console.error("Failed to load dashboard", err);
             } finally {
                 setLoading(false);
             }
         };
-        fetchTrending();
+        fetchAll();
     }, []);
 
     if (loading) {
@@ -31,37 +95,14 @@ const DiscoverView = ({ onSelectMovie }) => {
 
     return (
         <div className="pb-24">
-            <HeroCarousel movies={trending.slice(0, 5)} onRegisterAction={onSelectMovie} />
+            {/* Main Featured Carousel (Randomized Mix) */}
+            <HeroCarousel movies={data.featured} onRegisterAction={onSelectMovie} />
 
-            <div className="px-4 mt-8 space-y-8">
-                <section>
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-xl font-semibold text-white">Tendencias Ahora</h3>
-                    </div>
-                    {/* Horizontal list placeholder for now */}
-                    <div className="flex gap-4 overflow-x-auto pb-4 snap-x hide-scrollbar">
-                        {trending.map(m => (
-                            <div
-                                key={m.id}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onSelectMovie(m);
-                                }}
-                                className="snap-start shrink-0 w-[140px] md:w-[180px] cursor-pointer hover:opacity-80 transition-all active:scale-95 relative z-10"
-                            >
-                                <div className="aspect-[2/3] bg-surface rounded-xl overflow-hidden mb-2">
-                                    <img
-                                        src={`https://image.tmdb.org/t/p/w342${m.poster_path}`}
-                                        className="w-full h-full object-cover"
-                                        alt=""
-                                        loading="lazy"
-                                    />
-                                </div>
-                                <p className="text-sm font-medium text-white truncate">{m.title}</p>
-                            </div>
-                        ))}
-                    </div>
-                </section>
+            <div className="mt-8 space-y-2">
+                <MovieSection title="Tendencias Ahora" movies={data.trending} onSelectMovie={onSelectMovie} />
+                <MovieSection title="Aclamadas por la Crítica (Top Rated)" movies={data.topRated} onSelectMovie={onSelectMovie} />
+                <MovieSection title="Acción Pura" movies={data.action} onSelectMovie={onSelectMovie} />
+                <MovieSection title="Terror Recomendado" movies={data.horror} onSelectMovie={onSelectMovie} />
             </div>
         </div>
     );

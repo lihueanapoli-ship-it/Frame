@@ -50,7 +50,12 @@ const AppContent = () => {
         <div className="min-h-screen bg-background text-white font-sans selection:bg-primary selection:text-white">
             <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-background/50 border-b border-white/5 transition-all duration-300">
                 <div className="flex h-16 items-center w-full px-4 max-w-7xl mx-auto justify-between">
-                    <div className="font-bold text-lg tracking-tight">Frame.</div>
+                    <a href="/" onClick={(e) => {
+                        e.preventDefault();
+                        window.location.href = '/'; // Hard reload or just navigate
+                    }} className="font-bold text-lg tracking-tight hover:text-primary transition-colors cursor-pointer">
+                        Frame.
+                    </a>
                     <UserMenu />
                 </div>
             </header>

@@ -36,6 +36,33 @@ export const getMovieDetails = async (id) => {
     }
 };
 
+// ... existing imports
+
+export const getTopRatedMovies = async () => {
+    try {
+        const response = await tmdbClient.get('/movie/top_rated');
+        return response.data.results;
+    } catch (error) {
+        console.error("Error getting top rated movies:", error);
+        return [];
+    }
+};
+
+export const getMoviesByGenre = async (genreId) => {
+    try {
+        const response = await tmdbClient.get('/discover/movie', {
+            params: {
+                with_genres: genreId,
+                sort_by: 'popularity.desc'
+            }
+        });
+        return response.data.results;
+    } catch (error) {
+        console.error(`Error getting movies for genre ${genreId}:`, error);
+        return [];
+    }
+};
+
 export const getTrendingMovies = async () => {
     try {
         const response = await tmdbClient.get('/trending/movie/week');
