@@ -20,8 +20,11 @@ const MovieSection = ({ title, movies, onSelectMovie, isSpecial = false, categor
                     {title}
                 </h3>
                 {categoryId && (
-                    <Link to={`/category/${categoryId}`} className="flex items-center text-xs font-bold text-gray-500 hover:text-white transition-colors uppercase tracking-wider">
-                        Ver todo <ChevronRight className="w-4 h-4" />
+                    <Link
+                        to={`/category/${categoryId}`}
+                        className="shrink-0 flex items-center gap-1 text-xs font-bold text-primary/90 hover:text-primary transition-colors uppercase tracking-widest py-1 pl-3 active:scale-95"
+                    >
+                        Ver Todo <ChevronRight className="w-4 h-4" />
                     </Link>
                 )}
             </div>
