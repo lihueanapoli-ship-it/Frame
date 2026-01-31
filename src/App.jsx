@@ -18,7 +18,7 @@ const AppContent = () => {
             <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-background/50 border-b border-white/5 transition-all duration-300">
                 <div className="flex h-16 items-center w-full px-4 max-w-7xl mx-auto justify-between">
                     <div className="font-bold text-lg tracking-tight">Frame.</div>
-                    <div className="w-8 h-8 rounded-full bg-surface-elevated border border-white/10" />
+                    <img src="/logo.png" alt="Profile" className="w-8 h-8 rounded-full border border-white/10" />
                 </div>
             </header>
 
