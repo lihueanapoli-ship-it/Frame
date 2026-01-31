@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { getTrendingMovies, getMoviesByGenre, searchMovies } from '../api/tmdb';
 import SearchBar from '../components/SearchBar';
 import MovieCard from '../components/MovieCard';
@@ -34,12 +34,34 @@ const SearchView = ({ onSelectMovie }) => {
         loadInitial();
     }, []);
 
-    const handleSearch = async (query) => {
-        setSelectedGenre(null); // Clear genre if typing
+    const handleSearch = useCallback(async (query) => {
         if (!query) {
-            setResults([]);
+            // Logic Update: If the SearchBar clears (sends empty string),
+            // we only want to clear results IF we are NOT currently viewing a Category.
+            // However, selectedGenre is state.
+            // The issue is: SearchBar sends onCallback('') on mount/update.
+            // We'll ignore empty text updates if we have a genre selected.
+            setResults((prev) => {
+                // If we have results and a genre is selected, keep them!
+                // Wait, we can't access state easily here without adding deps.
+                // Let's rely on setState functional update or just check the ref logic.
+                return prev;
+            });
+            // Actually, cleaner way:
+            // If query is empty, just DO NOTHING.
+            // Let the 'X' button in search bar or user action handle clearing explicitly if needed?
+            // No, usually empty bar means show defaults.
+            // Let's modify: Only set results to [] if NO GENRE is active.
+
+            setSelectedGenre(prevGenre => {
+                if (!prevGenre) setResults([]); // If no genre, clear results (back to trending)
+                return prevGenre;
+            });
+
             return;
         }
+
+        setSelectedGenre(null); // If query exists (user typing), THEN clear genre
         setLoading(true);
         try {
             const data = await searchMovies(query);
@@ -49,7 +71,7 @@ const SearchView = ({ onSelectMovie }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     const handleGenreClick = async (genreId) => {
         setSelectedGenre(genreId);

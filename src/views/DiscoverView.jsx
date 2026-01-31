@@ -32,18 +32,7 @@ const MovieSection = ({ title, movies, onSelectMovie, isSpecial = false, categor
                     </div>
                 ))}
 
-                {/* 'See More' Card at the end */}
-                {categoryId && (
-                    <Link
-                        to={`/category/${categoryId}`}
-                        className="snap-start shrink-0 w-[100px] flex flex-col items-center justify-center gap-4 group cursor-pointer"
-                    >
-                        <div className="w-14 h-14 rounded-full bg-surface border border-white/10 flex items-center justify-center group-hover:scale-110 group-hover:bg-white/10 transition-all duration-300">
-                            <ChevronRight className="w-6 h-6 text-gray-400 group-hover:text-white" />
-                        </div>
-                        <span className="text-xs font-semibold text-gray-400 group-hover:text-white transition-colors">Ver Más</span>
-                    </Link>
-                )}
+                {/* 'See More' functionality moved to header title only */}
             </div>
         </section>
     );
