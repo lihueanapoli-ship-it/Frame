@@ -14,19 +14,19 @@ const CategoryView = ({ onSelectMovie }) => {
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
 
-    const fetchData = async (pageNum, reset = false) => {
+    const fetchData = useCallback(async (pageNum, reset = false, currentId = id) => {
         if (pageNum === 1) setLoading(true);
         let results = [];
         let pageTitle = '';
 
         try {
-            switch (id) {
+            switch (currentId) {
                 case 'trending':
                     results = await getTrendingMovies(pageNum);
                     pageTitle = 'Tendencias Ahora';
                     break;
                 case 'topRated':
-                    results = await getTopRatedMovies(pageNum); // Need to update API too for this if I used it, but trending covers it usually
+                    results = await getTopRatedMovies(pageNum);
                     pageTitle = 'Aclamadas por la Crítica';
                     break;
                 case 'action_pure':
@@ -38,10 +38,8 @@ const CategoryView = ({ onSelectMovie }) => {
                     pageTitle = "Terror Recomendado";
                     break;
                 default:
-                    // For custom collections that we upgraded to accept page
-                    results = await getCustomCollection(id, pageNum);
+                    results = await getCustomCollection(currentId, pageNum);
 
-                    // Titles map fallback
                     const titles = {
                         'oscars': 'Ganadoras del Oscar',
                         'argentina': 'Cine Argentino',
@@ -54,42 +52,61 @@ const CategoryView = ({ onSelectMovie }) => {
                         'sagas': 'Sagas Legendarias',
                         'conversation': 'Para un Mate'
                     };
-                    pageTitle = titles[id] || 'Colección';
+                    pageTitle = titles[currentId] || 'Colección';
             }
+
+            // Validar que seguimos en la misma categoría (Race condition protection simple)
+            if (currentId !== id) return;
 
             if (results.length === 0) {
                 setHasMore(false);
             } else {
-                setMovies(prev => reset ? results : [...prev, ...results]);
+                setMovies(prev => {
+                    if (reset) return results;
+                    // Deduplicación estricta
+                    const existingIds = new Set(prev.map(m => m.id));
+                    const uniqueNew = results.filter(m => !existingIds.has(m.id));
+                    return [...prev, ...uniqueNew];
+                });
                 setTitle(pageTitle);
             }
         } catch (error) {
             console.error("Error loading category", error);
         } finally {
-            setLoading(false);
+            if (currentId === id) setLoading(false);
         }
-    };
+    }, [id]);
 
     useEffect(() => {
         setMovies([]);
         setPage(1);
         setHasMore(true);
-        fetchData(1, true);
+        // Reseteamos loading a true inmediatamente al cambiar id
+        setLoading(true);
+        fetchData(1, true, id);
         window.scrollTo(0, 0);
-    }, [id]);
+    }, [id, fetchData]);
 
     const loadMore = () => {
         const nextPage = page + 1;
         setPage(nextPage);
-        fetchData(nextPage, false);
+        fetchData(nextPage, false, id);
     };
 
-    const shuffle = () => {
-        const randomPage = Math.floor(Math.random() * 50) + 1; // Random page between 1-50
+    const shuffle = async () => {
+        // Adaptive max pages based on category
+        let maxPage = 20; // 50 is too risky for smaller collections
+        if (id === 'oscars' || id === 'argentina' || id === 'short') {
+            maxPage = 5;
+        }
+
+        const randomPage = Math.floor(Math.random() * maxPage) + 1;
         setPage(randomPage);
-        setMovies([]);
         setLoading(true);
-        fetchData(randomPage, true);
+        setMovies([]);
+        window.scrollTo(0, 0); // Important for UX
+
+        await fetchData(randomPage, true, id);
     };
 
     return (
@@ -120,13 +137,12 @@ const CategoryView = ({ onSelectMovie }) => {
             ) : (
                 <>
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6 animate-fade-in">
-                        {movies.map((movie, idx) => (
+                        {movies.map((movie) => (
                             <MovieCard
-                                key={`${movie.id}-${idx}`} // Idx key fallback for dupes across pages
+                                key={movie.id}
                                 movie={movie}
                                 onClick={onSelectMovie}
-                                // Variant logic can be inferred from id or default
-                                variant={id} // Pass the category ID as variant to keep style consistent!
+                                variant={id}
                             />
                         ))}
                     </div>

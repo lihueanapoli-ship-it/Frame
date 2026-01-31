@@ -22,6 +22,8 @@ const SearchView = ({ onSelectMovie }) => {
     const [loading, setLoading] = useState(false);
     const [initialMovies, setInitialMovies] = useState([]);
     const [selectedGenre, setSelectedGenre] = useState(null);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
 
     // Initial Load: Show some trending searches/movies
     useEffect(() => {
@@ -36,32 +38,18 @@ const SearchView = ({ onSelectMovie }) => {
 
     const handleSearch = useCallback(async (query) => {
         if (!query) {
-            // Logic Update: If the SearchBar clears (sends empty string),
-            // we only want to clear results IF we are NOT currently viewing a Category.
-            // However, selectedGenre is state.
-            // The issue is: SearchBar sends onCallback('') on mount/update.
-            // We'll ignore empty text updates if we have a genre selected.
-            setResults((prev) => {
-                // If we have results and a genre is selected, keep them!
-                // Wait, we can't access state easily here without adding deps.
-                // Let's rely on setState functional update or just check the ref logic.
-                return prev;
-            });
-            // Actually, cleaner way:
-            // If query is empty, just DO NOTHING.
-            // Let the 'X' button in search bar or user action handle clearing explicitly if needed?
-            // No, usually empty bar means show defaults.
-            // Let's modify: Only set results to [] if NO GENRE is active.
-
             setSelectedGenre(prevGenre => {
-                if (!prevGenre) setResults([]); // If no genre, clear results (back to trending)
+                if (!prevGenre) setResults([]);
                 return prevGenre;
             });
-
             return;
         }
 
-        setSelectedGenre(null); // If query exists (user typing), THEN clear genre
+        setSelectedGenre(null);
+        setPage(1); // Reset page
+        setHasMore(false); // Search endpoint usually gives best matches first, simple pagination often not needed or handled differently. Let's keep it simple for now or implement generic search pagination if requested.
+        // Actually, searchMovies API *does* support page, let's enable valid pagination for search too if possible later, but user asked specifically for 'category' load more.
+
         setLoading(true);
         try {
             const data = await searchMovies(query);
@@ -75,10 +63,31 @@ const SearchView = ({ onSelectMovie }) => {
 
     const handleGenreClick = async (genreId) => {
         setSelectedGenre(genreId);
+        setPage(1);
+        setHasMore(true);
         setLoading(true);
         try {
-            const data = await getMoviesByGenre(genreId);
+            const data = await getMoviesByGenre(genreId, 1);
             setResults(data);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const loadMore = async () => {
+        if (!selectedGenre) return;
+        const nextPage = page + 1;
+        setPage(nextPage);
+        setLoading(true);
+        try {
+            const data = await getMoviesByGenre(selectedGenre, nextPage);
+            if (data.length === 0) {
+                setHasMore(false);
+            } else {
+                setResults(prev => [...prev, ...data]);
+            }
         } catch (e) {
             console.error(e);
         } finally {
@@ -129,15 +138,15 @@ const SearchView = ({ onSelectMovie }) => {
                 )}
             </div>
 
-            {loading ? (
+            {loading && results.length === 0 ? (
                 <div className="flex justify-center py-20">
                     <Loader2 className="w-8 h-8 text-primary animate-spin" />
                 </div>
             ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                    {moviesToShow.map(movie => (
+                    {moviesToShow.map((movie, idx) => (
                         <MovieCard
-                            key={movie.id}
+                            key={`${movie.id}-${idx}`}
                             movie={movie}
                             onClick={onSelectMovie}
                         />
@@ -145,6 +154,19 @@ const SearchView = ({ onSelectMovie }) => {
                     {moviesToShow.length === 0 && !loading && (
                         <div className="col-span-full text-center py-20 text-gray-500">
                             No se encontraron resultados
+                        </div>
+                    )}
+
+                    {/* Load More Button - Only for Categories for now */}
+                    {selectedGenre && hasMore && results.length > 0 && (
+                        <div className="col-span-full flex justify-center mt-8">
+                            <button
+                                onClick={loadMore}
+                                disabled={loading}
+                                className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-full transition-all flex items-center gap-2 disabled:opacity-50"
+                            >
+                                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Más películas"}
+                            </button>
                         </div>
                     )}
                 </div>

@@ -106,12 +106,9 @@ export const getCustomCollection = async (type, page = 1) => {
                 params = { ...params, with_genres: '878,14', 'vote_average.gte': 7.5, sort_by: 'popularity.desc' };
                 break;
             case 'sagas':
-                // Collections. We can't fetch collections easily in discover. 
-                // We will fetch simple popular franchise movies via keyword 'sequel' or similar?
-                // Better: Just fetch popular movies, many are sagas.
-                params = { ...params, with_keywords: '11322', sort_by: 'revenue.desc' }; // Franchise keyword? No reliable one.
-                // Fallback to high revenue
-                params = { ...params, sort_by: 'revenue.desc' };
+                // Collections are hard to filter by in discover. 
+                // We'll use high revenue and Adventure/Action genres to approximate "Blockbuster Sagas"
+                params = { ...params, with_genres: '12,28', sort_by: 'revenue.desc', 'vote_count.gte': 1000 };
                 break;
             case 'conversation':
                 // Drama + Romance, no Action
