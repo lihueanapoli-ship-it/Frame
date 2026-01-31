@@ -19,7 +19,10 @@ const HeroCarousel = ({ movies, onRegisterAction }) => {
     const movie = movies[currentIndex];
 
     return (
-        <div className="relative w-full aspect-[4/5] md:aspect-[21/9] overflow-hidden rounded-b-3xl md:rounded-3xl shadow-2xl bg-surface">
+        <div
+            onClick={() => onRegisterAction(movie)}
+            className="relative w-full aspect-[4/5] md:aspect-[21/9] overflow-hidden rounded-b-3xl md:rounded-3xl shadow-2xl bg-surface cursor-pointer group"
+        >
             <AnimatePresence mode='wait'>
                 <motion.div
                     key={movie.id}
@@ -48,8 +51,8 @@ const HeroCarousel = ({ movies, onRegisterAction }) => {
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.2, duration: 0.5 }}
                 >
-                    <span className="inline-block px-2 py-1 mb-3 text-xs font-bold tracking-wider text-primary uppercase bg-primary/10 rounded-full border border-primary/20 backdrop-blur-md">
-                        Trending #1
+                    <span className="inline-block px-3 py-1 mb-3 text-xs font-bold tracking-wider text-primary uppercase bg-primary/10 rounded-full border border-primary/20 backdrop-blur-md">
+                        Tendencia Global
                     </span>
                     <h2 className="text-3xl md:text-5xl font-bold text-white mb-2 leading-tight max-w-xl">
                         {movie.title}
@@ -58,29 +61,7 @@ const HeroCarousel = ({ movies, onRegisterAction }) => {
                         {movie.overview}
                     </p>
 
-                    <div className="flex gap-3 relative z-50">
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                console.log('Hero Button 1 Clicked', movie.title);
-                                onRegisterAction(movie);
-                            }}
-                            className="flex items-center gap-2 px-6 py-3 bg-white text-black rounded-full font-bold text-sm tracking-wide active:scale-95 transition-transform cursor-pointer"
-                        >
-                            Ver Info
-                        </button>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                console.log('Hero Button 2 Clicked', movie.title);
-                                onRegisterAction(movie);
-                            }}
-                            className="flex items-center gap-2 px-6 py-3 bg-surface/40 backdrop-blur-md border border-white/10 text-white rounded-full font-medium text-sm active:scale-95 transition-transform hover:bg-white/10 cursor-pointer"
-                        >
-                            <PlusIcon className="w-5 h-5" />
-                            Mi lista
-                        </button>
-                    </div>
+
                 </motion.div>
             </div>
         </div>
