@@ -37,6 +37,14 @@ const LibraryView = ({ onSelectMovie }) => {
     const { user, loginWithGoogle } = useAuth();
     const rawMovies = activeTab === 'watchlist' ? watchlist : watched;
 
+    // Smart Filtering Hook (Always run hooks before return)
+    const { filteredMovies, totalCount } = useMovieFilter(rawMovies, {
+        search: localSearch,
+        status: 'all',
+        sort: sortOption,
+        genres: selectedGenres
+    });
+
     if (!user) {
         return (
             <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center">
@@ -56,14 +64,6 @@ const LibraryView = ({ onSelectMovie }) => {
             </div>
         );
     }
-
-    // Smart Filtering Hook
-    const { filteredMovies, totalCount } = useMovieFilter(rawMovies, {
-        search: localSearch,
-        status: 'all', // We pass 'all' since rawMovies is already filtered by tab
-        sort: sortOption,
-        genres: selectedGenres
-    });
 
     const toggleGenre = (id) => {
         setSelectedGenres(prev =>
