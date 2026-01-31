@@ -9,6 +9,7 @@ import { cn } from '../lib/utils';
 
 const MovieDetail = ({ movie: initialMovie, onClose }) => {
     const [movie, setMovie] = useState(initialMovie);
+    const [hoverRating, setHoverRating] = useState(0);
     const { addToWatchlist, addToWatched, removeMovie, isWatched, isInWatchlist, moveFromWatchlistToWatched, watched } = useMovies();
     const { user, loginWithGoogle } = useAuth();
 
@@ -208,44 +209,79 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                         {watchedState && (
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm font-mono text-gray-400">CALIBRACIÓN DE CRITERIO (1-10)</span>
+                                    <span className="text-sm font-mono text-gray-400 uppercase tracking-widest">Tu Calificación</span>
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             removeMovie(movie.id);
                                             onClose();
                                         }}
-                                        className="text-xs text-red-500 hover:text-red-400 font-mono tracking-wide"
+                                        className="text-xs text-red-500 hover:text-red-400 font-mono tracking-wide opacity-70 hover:opacity-100 transition-opacity"
                                     >
-                                        [ELIMINAR_REGISTRO]
+                                        ELIMINAR
                                     </button>
                                 </div>
 
-                                <div className="grid grid-cols-10 gap-1 sm:gap-2">
-                                    {Array.from({ length: 10 }, (_, i) => i + 1).map(num => (
-                                        <button
-                                            key={num}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (!user) { loginWithGoogle(); return; }
-                                                addToWatched(movie, num);
-                                            }}
-                                            className={cn(
-                                                "aspect-square flex items-center justify-center rounded-sm font-mono text-xs sm:text-sm font-bold transition-all",
-                                                userRating === num
-                                                    ? "bg-primary text-black shadow-[0_0_15px_rgba(0,240,255,0.5)] scale-110"
-                                                    : "bg-surface-elevated text-gray-500 hover:bg-white/10 hover:text-white"
-                                            )}
-                                        >
-                                            {num}
-                                        </button>
-                                    ))}
+                                {/* Star Rating Row */}
+                                <div
+                                    className="flex justify-between items-center px-1"
+                                    onMouseLeave={() => setHoverRating(0)}
+                                >
+                                    {Array.from({ length: 10 }, (_, i) => i + 1).map(star => {
+                                        const isActive = (hoverRating || userRating) >= star;
+                                        return (
+                                            <button
+                                                key={star}
+                                                onMouseEnter={() => setHoverRating(star)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (!user) { loginWithGoogle(); return; }
+                                                    addToWatched(movie, star);
+                                                }}
+                                                className="group p-1 sm:p-1.5 transition-transform hover:scale-125 focus:outline-none"
+                                            >
+                                                {isActive ? (
+                                                    <StarIconSolid className={cn(
+                                                        "w-6 h-6 sm:w-8 sm:h-8 transition-colors duration-200",
+                                                        star <= 4 ? "text-red-500" :
+                                                            star <= 7 ? "text-yellow-500" :
+                                                                "text-primary drop-shadow-[0_0_8px_rgba(0,240,255,0.6)]"
+                                                    )} />
+                                                ) : (
+                                                    <StarIcon className="w-6 h-6 sm:w-8 sm:h-8 text-gray-700 group-hover:text-gray-500 transition-colors" />
+                                                )}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
 
-                                <div className="h-6 flex items-center justify-center">
-                                    {userRating > 0 && (
-                                        <span className="font-mono text-xs text-primary animate-pulse">
-                                            INTENSIDAD REGISTRADA: {userRating}/10
+                                {/* Friendly Label / Feedback */}
+                                <div className="h-8 flex flex-col items-center justify-center">
+                                    {(hoverRating || userRating) > 0 ? (
+                                        <motion.div
+                                            key={hoverRating || userRating}
+                                            initial={{ opacity: 0, y: 5 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="text-center"
+                                        >
+                                            <span className={cn(
+                                                "font-display text-lg font-bold tracking-wide",
+                                                (hoverRating || userRating) <= 4 ? "text-red-400" :
+                                                    (hoverRating || userRating) <= 7 ? "text-yellow-400" :
+                                                        "text-primary"
+                                            )}>
+                                                {(hoverRating || userRating)}/10 • {
+                                                    (hoverRating || userRating) <= 2 ? "Mala" :
+                                                        (hoverRating || userRating) <= 4 ? "Regular" :
+                                                            (hoverRating || userRating) <= 6 ? "Pasable" :
+                                                                (hoverRating || userRating) <= 8 ? "Muy Buena" :
+                                                                    "¡Obra Maestra!"
+                                                }
+                                            </span>
+                                        </motion.div>
+                                    ) : (
+                                        <span className="text-xs text-gray-600 font-mono">
+                                            Toca las estrellas para calificar
                                         </span>
                                     )}
                                 </div>
