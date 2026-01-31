@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import useLocalStorage from '../hooks/useLocalStorage';
 import { useAuth } from './AuthContext';
 import { db } from '../api/firebase';
-import { doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, onSnapshot } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, onSnapshot } from 'firebase/firestore';
 
 const MovieContext = createContext();
 
@@ -18,7 +18,8 @@ export const MovieProvider = ({ children }) => {
     const [cloudWatched, setCloudWatched] = useState([]);
 
     const { user } = useAuth();
-    const isCloud = !!user;
+    // Only use cloud if user is logged in AND db is configured
+    const isCloud = !!user && !!db;
 
     // Derived State (Source of Truth)
     const watchlist = isCloud ? cloudWatchlist : localWatchlist;
@@ -26,7 +27,7 @@ export const MovieProvider = ({ children }) => {
 
     // Sync Cloud Data
     useEffect(() => {
-        if (!user) {
+        if (!user || !db) {
             setCloudWatchlist([]);
             setCloudWatched([]);
             return;
@@ -51,11 +52,11 @@ export const MovieProvider = ({ children }) => {
         });
 
         return () => unsubscribe();
-    }, [user]); // Run when user logs in/out
+    }, [user]);
 
     // Helpers to update Cloud
     const updateCloud = async (newWatchlist, newWatched) => {
-        if (!user) return;
+        if (!user || !db) return;
         const userRef = doc(db, 'users', user.uid);
         try {
             await updateDoc(userRef, {

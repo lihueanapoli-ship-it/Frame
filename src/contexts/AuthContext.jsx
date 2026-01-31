@@ -11,6 +11,13 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // Safe check if auth exists
+        if (!auth) {
+            console.log("Auth no disponible (Modo Local)");
+            setLoading(false);
+            return;
+        }
+
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
             setUser(currentUser);
             setLoading(false);
@@ -19,6 +26,11 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const loginWithGoogle = async () => {
+        if (!auth) {
+            alert("No se puede iniciar sesión: Falta configuración de Firebase en .env");
+            return;
+        }
+
         const provider = new GoogleAuthProvider();
         try {
             await signInWithPopup(auth, provider);
@@ -28,7 +40,9 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const logout = () => signOut(auth);
+    const logout = () => {
+        if (auth) signOut(auth);
+    };
 
     return (
         <AuthContext.Provider value={{ user, loginWithGoogle, logout, loading }}>
