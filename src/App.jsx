@@ -4,7 +4,8 @@ import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { MovieProvider } from './contexts/MovieContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import DiscoverView from './views/DiscoverView';
-import LibraryView from './views/LibraryView'; // Updated import
+import LibraryView from './views/LibraryView';
+import WelcomeView from './views/WelcomeView'; // Import Welcome View
 import BottomNav from './components/navigation/BottomNav';
 import SearchBar from './components/SearchBar';
 import MovieDetail from './components/MovieDetail';
@@ -14,31 +15,32 @@ const AppContent = () => {
     // Global movie selection state for the Detail Modal
     const [selectedMovie, setSelectedMovie] = useState(null);
 
-    // Provide a User Menu component locally here (or extract it)
+    // Auth Hooks
+    const { user, loading, logout } = useAuth();
+
+    // 1. Loading Guard
+    if (loading) {
+        return <div className="min-h-screen bg-black" />; // Or a spinner
+    }
+
+    // 2. Login Wall Guard
+    if (!user) {
+        return <WelcomeView />;
+    }
+
+    // 3. Authenticated App UI
     const UserMenu = () => {
-        const { user, loginWithGoogle, logout } = useAuth();
-
-        if (!user) {
-            return (
-                <button
-                    onClick={loginWithGoogle}
-                    className="text-xs font-semibold bg-white text-black px-3 py-1.5 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                    Iniciar Sesión
-                </button>
-            );
-        }
-
+        // Since we are guarded, user exists here
         return (
             <div className="flex items-center gap-3">
                 <button onClick={logout} className="text-xs text-gray-400 hover:text-white transition-colors">
                     Salir
                 </button>
                 <img
-                    src={user.photoURL || "/logo.png"}
-                    alt={user.displayName}
+                    src={user?.photoURL || "/logo.png"}
+                    alt={user?.displayName}
                     className="w-8 h-8 rounded-full border border-white/10"
-                    title={user.displayName}
+                    title={user?.displayName}
                 />
             </div>
         );
