@@ -93,10 +93,9 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                 </div>
 
                 {/* Content */}
-                <div className="p-6 sm:p-8 grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-8">
-
+                <div className="flex flex-col pb-safe">
                     {/* Main Info */}
-                    <div className="space-y-6">
+                    <div className="p-6 sm:p-8 space-y-6">
                         <div>
                             <h3 className="text-lg font-bold text-white mb-2">Sinopsis</h3>
                             <p className="text-gray-400 leading-relaxed text-base sm:text-lg">
@@ -138,99 +137,96 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                         )}
                     </div>
 
-                    {/* Actions Sidebar */}
-                    <div className="space-y-4">
-                        <div className="bg-surface-elevated p-5 rounded-2xl border border-white/5 space-y-3 sticky top-4 relative z-50">
-                            <h3 className="text-white font-semibold mb-1">Tu Estado</h3>
+                    {/* Actions Sticky Footer */}
+                    <div className="sticky bottom-0 left-0 right-0 p-4 bg-surface-elevated border-t border-white/5 pb-[env(safe-area-inset-bottom)] z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+                        {/* Logic for buttons */}
+                        {!watchedState && !watchlistState && (
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        addToWatchlist(movie);
+                                    }}
+                                    className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold transition-all border border-white/5 cursor-pointer active:scale-95"
+                                >
+                                    <PlusIcon className="w-5 h-5" /> Por Ver
+                                </button>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        addToWatched(movie, 0);
+                                    }}
+                                    className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-white text-black hover:bg-gray-200 font-bold transition-all cursor-pointer active:scale-95"
+                                >
+                                    <CheckIcon className="w-5 h-5" /> Ya la vi
+                                </button>
+                            </div>
+                        )}
 
-                            {/* Logic for buttons */}
-                            {!watchedState && !watchlistState && (
-                                <>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            addToWatchlist(movie);
-                                        }}
-                                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold transition-all border border-white/5 cursor-pointer active:scale-95"
-                                    >
-                                        <PlusIcon className="w-5 h-5" /> Por Ver
-                                    </button>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            addToWatched(movie, 0);
-                                        }}
-                                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-white text-black hover:bg-gray-200 font-bold transition-all cursor-pointer active:scale-95"
-                                    >
-                                        <CheckIcon className="w-5 h-5" /> Ya la vi
-                                    </button>
-                                </>
-                            )}
-
-                            {watchlistState && (
-                                <>
-                                    <div className="p-3 bg-primary/20 border border-primary/50 rounded-lg text-primary text-center text-sm font-medium mb-2">
-                                        En tu lista "Por Ver"
-                                    </div>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            moveFromWatchlistToWatched(movie.id);
-                                        }}
-                                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-white hover:bg-primary-hover font-bold transition-all shadow-lg shadow-primary/20 cursor-pointer active:scale-95"
-                                    >
-                                        <CheckIcon className="w-5 h-5" /> Marcar como Vista
-                                    </button>
+                        {watchlistState && (
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between px-1">
+                                    <span className="text-sm text-primary font-medium">En tu lista "Por Ver"</span>
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             removeMovie(movie.id);
                                             onClose();
                                         }}
-                                        className="w-full py-2 text-sm text-red-400 hover:text-red-300 transition-colors cursor-pointer"
+                                        className="text-xs text-red-400 hover:text-white"
                                     >
-                                        Eliminar de lista
-                                    </button>
-                                </>
-                            )}
-
-                            {watchedState && (
-                                <div>
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="text-sm text-gray-400">Tu calificación</span>
-                                        <span className="text-lg font-bold text-yellow-500">{movie.rating || 0}</span>
-                                    </div>
-                                    <div className="flex justify-between mb-4">
-                                        {[1, 2, 3, 4, 5].map(star => (
-                                            <button
-                                                key={star}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    addToWatched(movie, star);
-                                                }}
-                                                className={cn(
-                                                    "p-1 transition-transform hover:scale-110 cursor-pointer",
-                                                    (movie.rating >= star) ? "text-yellow-500" : "text-gray-700"
-                                                )}
-                                            >
-                                                {movie.rating >= star ? <StarIconSolid className="w-6 h-6" /> : <StarIcon className="w-6 h-6" />}
-                                            </button>
-                                        ))}
-                                    </div>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            removeMovie(movie.id);
-                                            onClose();
-                                        }}
-                                        className="w-full flex items-center justify-center gap-2 text-red-500 text-sm py-2 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
-                                    >
-                                        <TrashIcon className="w-4 h-4" /> Eliminar registro
+                                        Eliminar
                                     </button>
                                 </div>
-                            )}
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        moveFromWatchlistToWatched(movie.id);
+                                    }}
+                                    className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-primary text-white hover:bg-primary-hover font-bold transition-all shadow-lg shadow-primary/20 cursor-pointer active:scale-95"
+                                >
+                                    <CheckIcon className="w-5 h-5" /> Marcar como Vista
+                                </button>
+                            </div>
+                        )}
 
-                        </div>
+                        {watchedState && (
+                            <div>
+                                <div className="flex items-center justify-between mb-4">
+                                    <span className="text-sm text-gray-400 font-medium">Tu calificación</span>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            removeMovie(movie.id);
+                                            onClose();
+                                        }}
+                                        className="text-xs text-red-500 flex items-center gap-1"
+                                    >
+                                        <TrashIcon className="w-3 h-3" /> Eliminar
+                                    </button>
+                                </div>
+                                <div className="flex justify-between gap-1">
+                                    {[1, 2, 3, 4, 5].map(star => (
+                                        <button
+                                            key={star}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                addToWatched(movie, star);
+                                            }}
+                                            className={cn(
+                                                "flex-1 py-2 flex justify-center items-center transition-transform hover:scale-110 cursor-pointer rounded-lg bg-surface hover:bg-white/5",
+                                                (movie.rating >= star) ? "text-yellow-500" : "text-gray-600"
+                                            )}
+                                        >
+                                            {movie.rating >= star ? <StarIconSolid className="w-8 h-8" /> : <StarIcon className="w-8 h-8" />}
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="text-center mt-2.5 text-2xl font-bold text-white">
+                                    {movie.rating > 0 && <span>{movie.rating}/5</span>}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </motion.div>
