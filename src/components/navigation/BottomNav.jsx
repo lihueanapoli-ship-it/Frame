@@ -19,6 +19,7 @@ const BottomNav = () => {
                     <NavLink
                         key={item.path}
                         to={item.path}
+                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                         className={({ isActive }) => cn(
                             "flex flex-col items-center justify-center w-full h-full space-y-1 touch-manipulation transition-colors duration-200",
                             isActive ? "text-primary" : "text-secondary hover:text-white"

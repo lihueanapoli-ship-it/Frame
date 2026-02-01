@@ -7,9 +7,13 @@ const tmdbClient = axios.create({
     baseURL: BASE_URL,
     params: {
         api_key: API_KEY,
-        language: 'es-MX', // Spanish by default as per request language (User spoke Spanish)
+        language: 'es-MX', // Default
     },
 });
+
+export const setApiLanguage = (lang) => {
+    tmdbClient.defaults.params.language = lang;
+};
 
 const GENRES = {
     28: 'Acción',

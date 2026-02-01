@@ -16,13 +16,20 @@ import StatsView from './views/StatsView';
 import SpotlightCursor from './components/ui/SpotlightCursor';
 import PageTransitionOverlay from './components/ui/PageTransitionOverlay';
 
+import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
+
+// ... (previous imports)
+
 // Wrapper component to use Hooks like useNavigate
 const AppContent = () => {
     // Global movie selection state for the Detail Modal
     const [selectedMovie, setSelectedMovie] = useState(null);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [logoKey, setLogoKey] = useState(0); // Key to restart animation
 
     // Auth Hooks
     const { user, loading, logout } = useAuth();
+    const { language, toggleLanguage } = useLanguage();
 
     // 1. Loading Guard
     if (loading) {
@@ -36,42 +43,99 @@ const AppContent = () => {
 
     // 3. Authenticated App UI
     const UserMenu = () => {
-        // Since we are guarded, user exists here
         return (
-            <div className="flex items-center gap-3">
-                <button onClick={logout} className="text-xs text-gray-400 hover:text-white transition-colors">
-                    Salir
+            <div className="relative">
+                <button
+                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    className="relative group focus:outline-none"
+                >
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-purple-600 rounded-full opacity-75 group-hover:opacity-100 blur transition duration-200" />
+                    <img
+                        src={user?.photoURL || "/logo.png"}
+                        alt={user?.displayName}
+                        className="relative w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-black object-cover"
+                        title={user?.displayName}
+                    />
                 </button>
-                <img
-                    src={user?.photoURL || "/logo.png"}
-                    alt={user?.displayName}
-                    className="w-8 h-8 rounded-full border border-white/10"
-                    title={user?.displayName}
-                />
+
+                <AnimatePresence>
+                    {isMenuOpen && (
+                        <>
+                            {/* Backdrop to close */}
+                            <div className="fixed inset-0 z-40" onClick={() => setIsMenuOpen(false)} />
+
+                            {/* Dropdown */}
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                                className="absolute right-0 mt-2 w-56 rounded-xl bg-surface border border-white/10 shadow-2xl z-50 overflow-hidden"
+                            >
+                                <div className="px-4 py-3 border-b border-white/5 bg-white/5">
+                                    <p className="text-sm text-white font-semibold truncate">{user.displayName}</p>
+                                    <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                                </div>
+                                <div className="p-1">
+                                    <button
+                                        onClick={() => {
+                                            toggleLanguage();
+                                            // Optional: close menu or keep open to see change? Close is better UX.
+                                            // But wait, changing language might require reload or re-fetch. 
+                                            // Our Context handles API param, but View components need to re-fetch?
+                                            // A simple page reload might be safest for now to refresh all data:
+                                            setTimeout(() => window.location.reload(), 300);
+                                        }}
+                                        className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-white/10 rounded-lg transition-colors"
+                                    >
+                                        🌐 {language === 'es-MX' ? 'Cambiar a Inglés' : 'Change to Spanish'}
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            logout();
+                                            setIsMenuOpen(false);
+                                        }}
+                                        className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                                    >
+                                        🚪 {language === 'es-MX' ? 'Cerrar Sesión' : 'Sign Out'}
+                                    </button>
+                                </div>
+                            </motion.div>
+                        </>
+                    )}
+                </AnimatePresence>
             </div>
         );
     };
-
-    // Loading State (Optional: Add a spinner if needed, but for now we just wait)
-    // If we want a strict gate:
-    if (!user) {
-        return <WelcomeView />;
-    }
 
     return (
         <div className="min-h-screen bg-background text-white font-sans selection:bg-primary selection:text-white">
             <SpotlightCursor />
             <PageTransitionOverlay />
             <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-background/50 border-b border-white/5 transition-all duration-300">
-                <div className="flex h-16 items-center w-full px-4 max-w-7xl mx-auto justify-between">
+                <div className="flex h-20 items-center w-full px-4 max-w-7xl mx-auto justify-between">
                     <a href="/" onClick={(e) => {
                         e.preventDefault();
                         window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }} className="font-bold text-lg tracking-tight hover:text-primary transition-colors cursor-pointer">
-                        <div className="flex items-center gap-2">
-                            <div className="scale-75"><DynamicLogo /></div>
-                            <span className="font-display text-2xl tracking-tight">FRAME</span>
-                        </div>
+                        setLogoKey(prev => prev + 1); // Trigger animation
+                    }} className="font-bold text-lg tracking-tight hover:text-primary transition-colors cursor-pointer group">
+                        <motion.div
+                            key={logoKey}
+                            className="flex items-center gap-3"
+                            initial={{ x: 0 }}
+                            animate={{ x: 0 }} // We use the key change to trigger children animations if any, or we can animate this div
+                            whileTap={{ scale: 0.95 }}
+                        >
+                            <motion.div
+                                className="scale-90"
+                                animate={{ rotate: [0, 360] }}
+                                transition={{ duration: 0.6, ease: "backOut" }}
+                            >
+                                <DynamicLogo />
+                            </motion.div>
+                            <span className="font-display text-3xl tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400 group-hover:from-primary group-hover:to-cyan-400 transition-all duration-300">
+                                FRAME
+                            </span>
+                        </motion.div>
                     </a>
                     <UserMenu />
                 </div>
@@ -109,11 +173,13 @@ function App() {
     return (
         <BrowserRouter>
             <AuthProvider>
-                <MovieProvider>
-                    <SoundProvider>
-                        <AppContent />
-                    </SoundProvider>
-                </MovieProvider>
+                <LanguageProvider>
+                    <MovieProvider>
+                        <SoundProvider>
+                            <AppContent />
+                        </SoundProvider>
+                    </MovieProvider>
+                </LanguageProvider>
             </AuthProvider>
         </BrowserRouter>
     );
