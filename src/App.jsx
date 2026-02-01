@@ -11,7 +11,6 @@ import SearchView from './views/SearchView'; // Import SearchView
 import BottomNav from './components/navigation/BottomNav';
 import MovieDetail from './components/MovieDetail';
 import DynamicLogo from './components/ui/DynamicLogo';
-import WelcomeView from './views/WelcomeView';
 import StatsView from './views/StatsView';
 
 // Wrapper component to use Hooks like useNavigate
