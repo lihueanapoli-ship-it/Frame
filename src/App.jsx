@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { BrowserRouter, Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import { MovieProvider } from './contexts/MovieContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
