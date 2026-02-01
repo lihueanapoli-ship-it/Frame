@@ -8,17 +8,24 @@ import { Link } from 'react-router-dom';
 // ... imports
 import MovieCard from '../components/MovieCard'; // Import our new powerful card
 
-const MovieSection = ({ title, movies, onSelectMovie, isSpecial = false, categoryId, variant = 'default' }) => {
+const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, variant = 'default' }) => {
     if (!movies || movies.length === 0) return null;
     return (
-        <section className="mb-12 pl-4">
-            <div className="flex items-center justify-between pr-4 mb-5">
-                <h3 className={cn(
-                    "text-lg md:text-2xl font-bold text-white flex items-center gap-2 tracking-wide",
-                    isSpecial && "text-yellow-500"
-                )}>
-                    {title}
-                </h3>
+        <section className="mb-12 pl-4 group/section">
+            <div className="flex items-end justify-between pr-4 mb-5">
+                <div>
+                    <h3 className={cn(
+                        "text-lg md:text-2xl font-bold text-white flex items-center gap-2 tracking-wide font-display transition-colors group-hover/section:text-primary"
+                    )}>
+                        {title}
+                    </h3>
+                    <p className="hidden md:block mt-1 text-xs font-mono text-gray-500 opacity-0 group-hover/section:opacity-100 transition-opacity duration-300 transform -translate-x-4 group-hover/section:translate-x-0">
+                        {subtitle}
+                    </p>
+                    <p className="md:hidden mt-1 text-[10px] font-mono text-gray-600">
+                        {subtitle}
+                    </p>
+                </div>
                 {categoryId && (
                     <Link
                         to={`/category/${categoryId}`}
@@ -28,14 +35,15 @@ const MovieSection = ({ title, movies, onSelectMovie, isSpecial = false, categor
                     </Link>
                 )}
             </div>
-            <div className="flex gap-5 overflow-x-auto pb-8 snap-x hide-scrollbar pr-4 items-stretch">
-                {movies.map(m => (
-                    <div className={cn("snap-start shrink-0 relative z-10", variant === 'visuals' ? "w-[280px]" : "w-[160px] md:w-[200px]")} key={m.id}>
+            <div className="flex gap-4 overflow-x-auto pb-8 snap-x hide-scrollbar pr-4 items-stretch">
+                {movies.map((m, i) => (
+                    <div
+                        className={cn("snap-start shrink-0 relative z-10", variant === 'visuals' ? "w-[280px]" : "w-[150px] md:w-[200px]")}
+                        key={m.id}
+                    >
                         <MovieCard movie={m} onClick={onSelectMovie} variant={variant} />
                     </div>
                 ))}
-
-                {/* 'See More' functionality moved to header title only */}
             </div>
         </section>
     );
@@ -43,20 +51,16 @@ const MovieSection = ({ title, movies, onSelectMovie, isSpecial = false, categor
 
 const DiscoverView = ({ onSelectMovie }) => {
     const [data, setData] = useState({
-        trending: [],
-        topRated: [],
-        action: [],
-        horror: [],
-        oscars: [],
-        argentina: [],
+        must_watch: [],
         short: [],
-        mindBending: [],
-        hiddenGems: [],
-        cult: [],
-        trueStory: [],
-        visuals: [],
-        sagas: [],
         conversation: [],
+        tech: [],
+        argentina: [],
+        thriller: [],
+        romance: [],
+        real_life: [],
+        sagas: [],
+        classic_author: [],
         featured: []
     });
     const [loading, setLoading] = useState(true);
@@ -64,49 +68,38 @@ const DiscoverView = ({ onSelectMovie }) => {
     useEffect(() => {
         const fetchAll = async () => {
             try {
-                // Parallel fetching for speed
                 const [
                     trending,
-                    topRated,
-                    action,
-                    horror,
-                    // Custom Collections
-                    oscars,
-                    argentina,
+                    must_watch,
                     short,
-                    mindBending,
-                    hiddenGems,
-                    cult,
-                    trueStory,
-                    visuals,
+                    conversation,
+                    tech,
+                    argentina,
+                    thriller,
+                    romance,
+                    real_life,
                     sagas,
-                    conversation
+                    classic_author
                 ] = await Promise.all([
                     getTrendingMovies(),
-                    getTopRatedMovies(),
-                    getMoviesByGenre(28), // Action
-                    getMoviesByGenre(27), // Horror
-                    getCustomCollection('oscars'),
-                    getCustomCollection('argentina'),
+                    getCustomCollection('must_watch'),
                     getCustomCollection('short'),
-                    getCustomCollection('mind_bending'),
-                    getCustomCollection('hidden_gems'),
-                    getCustomCollection('cult'),
-                    getCustomCollection('true_story'),
-                    getCustomCollection('visuals'),
+                    getCustomCollection('conversation'),
+                    getCustomCollection('tech'),
+                    getCustomCollection('argentina'),
+                    getCustomCollection('thriller'),
+                    getCustomCollection('romance'),
+                    getCustomCollection('real_life'),
                     getCustomCollection('sagas'),
-                    getCustomCollection('conversation')
+                    getCustomCollection('classic_author')
                 ]);
 
-                // Mix ALL for Hero (Max randomness)
-                const combined = [
-                    ...trending, ...oscars, ...argentina, ...short, ...mindBending,
-                    ...hiddenGems, ...cult, ...trueStory, ...visuals, ...sagas
-                ].sort(() => 0.5 - Math.random());
+                // Create a mix for hero
+                const combined = [...trending, ...must_watch, ...argentina].sort(() => 0.5 - Math.random());
 
                 setData({
-                    trending, oscars, argentina, short, mindBending, hiddenGems,
-                    cult, trueStory, visuals, sagas, conversation,
+                    must_watch, short, conversation, tech, argentina,
+                    thriller, romance, real_life, sagas, classic_author,
                     featured: combined.slice(0, 10)
                 });
             } catch (err) {
@@ -128,20 +121,86 @@ const DiscoverView = ({ onSelectMovie }) => {
 
     return (
         <div className="pb-24">
-            {/* Main Featured Carousel (Randomized Mix) */}
             <HeroCarousel movies={data.featured} onRegisterAction={onSelectMovie} />
 
             <div className="mt-8 space-y-2">
-                <MovieSection title="👑 Ganadoras del Oscar" movies={data.oscars} onSelectMovie={onSelectMovie} isSpecial={true} categoryId="oscars" variant="oscar" />
-                <MovieSection title="🧠 Ingeniería en el Guion" movies={data.mindBending} onSelectMovie={onSelectMovie} categoryId="mind_bending" variant="mind_bending" />
-                <MovieSection title="🇦🇷 Joyas del Cine Argentino" movies={data.argentina} onSelectMovie={onSelectMovie} categoryId="argentina" variant="argentina" />
-                <MovieSection title="⏳ Cine Express" movies={data.short} onSelectMovie={onSelectMovie} categoryId="short" variant="short" />
-                <MovieSection title="💎 Joyas Ocultas" movies={data.hiddenGems} onSelectMovie={onSelectMovie} categoryId="hidden_gems" variant="hidden_gems" />
-                <MovieSection title="📜 Basado en Hechos Reales" movies={data.trueStory} onSelectMovie={onSelectMovie} categoryId="true_story" variant="true_story" />
-                <MovieSection title="🎨 Fotogramas Perfectos" movies={data.visuals} onSelectMovie={onSelectMovie} categoryId="visuals" variant="visuals" />
-                <MovieSection title="📼 Cine de Culto" movies={data.cult} onSelectMovie={onSelectMovie} categoryId="cult" variant="cult" />
-                <MovieSection title="📚 Grandes Sagas" movies={data.sagas} onSelectMovie={onSelectMovie} categoryId="sagas" variant="sagas" />
-                <MovieSection title="🧉 Para un Mate de por medio" movies={data.conversation} onSelectMovie={onSelectMovie} categoryId="conversation" variant="conversation" />
+                <MovieSection
+                    title="Garantía Total"
+                    subtitle="Cero riesgo. Historias que todo el mundo ama y que no podés no haber visto."
+                    movies={data.must_watch}
+                    onSelectMovie={onSelectMovie}
+                    categoryId="must_watch"
+                />
+                <MovieSection
+                    title="Cortitas y al Pie"
+                    subtitle="Cine de alta eficiencia. Calidad pura en menos de 90 minutos para cuando el tiempo vuela."
+                    movies={data.short}
+                    onSelectMovie={onSelectMovie}
+                    categoryId="short"
+                    variant="short"
+                />
+                <MovieSection
+                    title="Mate y Sobremesa"
+                    subtitle="Charlas que valen la pena. Historias humanas para acompañar la tarde en el depto."
+                    movies={data.conversation}
+                    onSelectMovie={onSelectMovie}
+                    categoryId="conversation"
+                />
+                <MovieSection
+                    title="El Laboratorio"
+                    subtitle="Física, sistemas y el futuro. El rincón para los que buscamos entender cómo funciona el mundo."
+                    movies={data.tech}
+                    onSelectMovie={onSelectMovie}
+                    categoryId="tech"
+                    variant="mind_bending"
+                />
+                <MovieSection
+                    title="El Aguante"
+                    subtitle="Identidad, calle y talento. Lo mejor de nuestro cine para inflar el pecho."
+                    movies={data.argentina}
+                    onSelectMovie={onSelectMovie}
+                    categoryId="argentina"
+                    variant="argentina"
+                />
+                <MovieSection
+                    title="Pulso a Mil"
+                    subtitle="Tensión constante. Preparate el café porque acá no hay respiro hasta los créditos finales."
+                    movies={data.thriller}
+                    onSelectMovie={onSelectMovie}
+                    categoryId="thriller"
+                />
+                <MovieSection
+                    title="Primera Cita"
+                    subtitle="Clima perfecto. Pelis que te hacen quedar bien y te dejan con una sonrisa."
+                    movies={data.romance}
+                    onSelectMovie={onSelectMovie}
+                    categoryId="romance"
+                    variant="visuals"
+                />
+                <MovieSection
+                    title="Misiones de Verdad"
+                    subtitle="La realidad sin filtros. Casos reales que demuestran que la posta supera a cualquier guion."
+                    movies={data.real_life}
+                    onSelectMovie={onSelectMovie}
+                    categoryId="real_life"
+                    variant="true_story"
+                />
+                <MovieSection
+                    title="Viaje de Ida"
+                    subtitle="Plan de fin de semana. Entrá a estos universos y no salgas hasta que termine el maratón."
+                    movies={data.sagas}
+                    onSelectMovie={onSelectMovie}
+                    categoryId="sagas"
+                    variant="sagas"
+                />
+                <MovieSection
+                    title="Solo para Locos"
+                    subtitle="Filtro de autor. Técnica, encuadre y alma para los que buscamos el cine en estado puro."
+                    movies={data.classic_author}
+                    onSelectMovie={onSelectMovie}
+                    categoryId="classic_author"
+                    variant="cult"
+                />
             </div>
         </div>
     );

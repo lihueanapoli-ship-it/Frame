@@ -92,54 +92,48 @@ export const getCustomCollection = async (type, page = 1) => {
         let params = { sort_by: 'popularity.desc', 'vote_count.gte': 100, page };
 
         switch (type) {
-            case 'oscars':
-                // Strict "Best Picture Winners" using a community maintained list ID (e.g. 634)
-                // We use List ID 634 ("Academy Award Best Picture Winners") or a reliable one.
-                // Note: Lists usually don't support simple pagination like discover, they return items.
-                // We will simulate pagination if list is long, or just return all and slice in frontend if needed.
-                // But for now, let's keep it simple. If it's a list, we return all (or max 100).
-                const oscarList = await getList('634');
-                if (oscarList && oscarList.length > 0) {
-                    // Sort Chronologically Reverse
-                    const sorted = oscarList.sort((a, b) => new Date(b.release_date) - new Date(a.release_date));
-                    // Simulate pagination for list
-                    const pageSize = 20;
-                    return sorted.slice((page - 1) * pageSize, page * pageSize);
-                }
-                params = { sort_by: 'vote_average.desc', 'vote_count.gte': 5000, without_genres: '16,99', with_awards: true, page };
-                break;
-            case 'argentina':
-                params = { ...params, with_original_language: 'es', region: 'AR', sort_by: 'popularity.desc' };
-                // TMDB filter for Argentina as production country is 'with_origin_country=AR'
+            case 'must_watch':
+                // "Los Infaltables": High rating, high vote count. Classics.
+                params = { ...params, 'vote_average.gte': 8.2, 'vote_count.gte': 10000, sort_by: 'vote_average.desc' };
                 break;
             case 'short':
-                params = { ...params, 'with_runtime.lte': 90, sort_by: 'popularity.desc', 'vote_average.gte': 7 };
-                break;
-            case 'mind_bending':
-                // Keywords: mindfuck, psychological thriller, philosophy
-                params = { ...params, with_keywords: '1701|9866|156094', sort_by: 'popularity.desc' };
-                break;
-            case 'hidden_gems':
-                params = { ...params, 'vote_average.gte': 8.0, 'vote_count.lte': 3000, 'vote_count.gte': 100, sort_by: 'vote_average.desc' };
-                break;
-            case 'cult':
-                params = { ...params, with_keywords: '9799', sort_by: 'vote_count.desc' }; // 9799 = cult film
-                break;
-            case 'true_story':
-                params = { ...params, with_keywords: '9672|3205', sort_by: 'popularity.desc' }; // based on true story
-                break;
-            case 'visuals':
-                // Hard to filter by visuals. We'll use a specific director list or high budget sci-fi
-                params = { ...params, with_genres: '878,14', 'vote_average.gte': 7.5, sort_by: 'popularity.desc' };
-                break;
-            case 'sagas':
-                // Collections are hard to filter by in discover. 
-                // We'll use high revenue and Adventure/Action genres to approximate "Blockbuster Sagas"
-                params = { ...params, with_genres: '12,28', sort_by: 'revenue.desc', 'vote_count.gte': 1000 };
+                // "Cortitas y al Pie": <= 90 mins
+                params = { ...params, 'with_runtime.lte': 90, 'vote_count.gte': 500, sort_by: 'popularity.desc' };
                 break;
             case 'conversation':
-                // Drama + Romance, no Action
-                params = { ...params, with_genres: '18,10749', without_genres: '28,878,12', sort_by: 'vote_average.desc' };
+                // "Mate y Sobremesa": Dramas, indie feel.
+                params = { ...params, with_genres: '18', without_genres: '28,878,27', 'vote_average.gte': 7.5, sort_by: 'popularity.desc' };
+                break;
+            case 'tech':
+                // "El Laboratorio": Sci-Fi
+                params = { ...params, with_genres: '878', sort_by: 'popularity.desc' };
+                break;
+            case 'argentina':
+                // "El Aguante" handled by with_origin_country below, just setting basic params here
+                params = { ...params, region: 'AR', sort_by: 'popularity.desc' };
+                break;
+            case 'thriller':
+                // "Pulso a Mil": Thriller/Mystery
+                params = { ...params, with_genres: '53,9648', sort_by: 'popularity.desc' };
+                break;
+            case 'romance':
+                // "Primera Cita": Romance, Comedy
+                params = { ...params, with_genres: '10749,35', 'vote_average.gte': 7, sort_by: 'popularity.desc' };
+                break;
+            case 'real_life':
+                // "Misiones de Verdad": History, Documentary or based on true story keyword
+                params = { ...params, with_keywords: '9672', sort_by: 'popularity.desc' }; // 9672 = based on true story
+                break;
+            case 'sagas':
+                // "Viaje de Ida": Collections/Franchises. Keywords: trilogy(180547), sequel(933), franchise.
+                // Best logic: High revenue adventure/fantasy
+                params = { ...params, with_genres: '12,14', sort_by: 'revenue.desc' };
+                break;
+            case 'classic_author':
+                // "Solo para Locos": Low popularity but high rating? Or known auteur keywords?
+                // Let's try "Arthouse" logic: High rating, lower vote count cap? Or specific keywords like "surrealism", "philosophical".
+                // Keyword: 2398 (surrealism), 390 (neo-noir), 14750 (cult film)
+                params = { ...params, with_keywords: '2398|390|14750', sort_by: 'vote_average.desc', 'vote_count.gte': 200 };
                 break;
             default:
                 break;
