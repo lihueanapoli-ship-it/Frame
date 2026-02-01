@@ -76,22 +76,38 @@ const StatsView = () => {
     // 3. Genre Radar Data
     const genreData = useMemo(() => {
         const counts = {};
+        // Standard TMDB Genre Map
+        const map = {
+            28: 'Acción', 12: 'Aventura', 16: 'Animación', 35: 'Comedia', 80: 'Crimen',
+            99: 'Documental', 18: 'Drama', 10751: 'Familia', 14: 'Fantasía', 36: 'Historia',
+            27: 'Terror', 10402: 'Música', 9648: 'Misterio', 10749: 'Romance', 878: 'Sci-Fi',
+            10770: 'TV Movie', 53: 'Thriller', 10752: 'Bélica', 37: 'Western'
+        };
+
         watched.forEach(m => {
-            m.genre_ids?.forEach(id => {
-                // Map IDs to Names
-                // Simple mapping for demo
-                const map = { 28: 'Acción', 12: 'Aventura', 18: 'Drama', 35: 'Comedia', 27: 'Terror', 878: 'Sci-Fi' };
+            // Helper: Normalize genres from various sources (genre_ids or genres object)
+            let ids = [];
+            if (m.genre_ids && m.genre_ids.length > 0) {
+                ids = m.genre_ids;
+            } else if (m.genres && m.genres.length > 0) {
+                ids = m.genres.map(g => g.id);
+            }
+
+            ids.forEach(id => {
                 const name = map[id] || 'Otros';
                 if (name !== 'Otros') counts[name] = (counts[name] || 0) + 1;
             });
         });
 
-        // Transform to Array
-        return Object.keys(counts).map(key => ({
-            subject: key,
-            A: counts[key],
-            fullMark: watched.length // Normalize?
-        })).slice(0, 6); // Top 6 genres
+        // Transform to Array and Sort by Count
+        return Object.keys(counts)
+            .map(key => ({
+                subject: key,
+                A: counts[key],
+                fullMark: watched.length
+            }))
+            .sort((a, b) => b.A - a.A) // Sort descending
+            .slice(0, 6); // Take top 6
     }, [watched]);
 
     // 4. Rating Distribution (Histogram)
