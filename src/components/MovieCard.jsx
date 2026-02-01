@@ -5,9 +5,11 @@ import { Star } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { ClockIcon } from '@heroicons/react/24/outline'; // Reloj
 import { CheckIcon, PlusIcon } from '@heroicons/react/24/solid'; // Icons for actions
+import { useSound } from '../contexts/SoundContext';
 
 const MovieCard = ({ movie, onClick, rating, variant = 'default', onAddToWatchlist, onMarkWatched }) => { // Added action props placeholders
     const [isHovered, setIsHovered] = useState(false);
+    const { playHover, playClick } = useSound();
 
     // --- VARIANT LOGIC ---
     const isOscar = variant === 'oscar';
@@ -29,9 +31,15 @@ const MovieCard = ({ movie, onClick, rating, variant = 'default', onAddToWatchli
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            onHoverStart={() => setIsHovered(true)}
+            onHoverStart={() => {
+                setIsHovered(true);
+                playHover();
+            }}
             onHoverEnd={() => setIsHovered(false)}
-            onClick={() => onClick(movie)}
+            onClick={() => {
+                playClick();
+                onClick(movie);
+            }}
             className={cn(
                 "group relative bg-surface rounded-xl overflow-hidden shadow-lg cursor-pointer",
                 // Base transform handled by Framer Motion now

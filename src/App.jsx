@@ -3,6 +3,7 @@ import { AnimatePresence } from 'framer-motion';
 import { BrowserRouter, Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import { MovieProvider } from './contexts/MovieContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { SoundProvider } from './contexts/SoundContext';
 import DiscoverView from './views/DiscoverView';
 import LibraryView from './views/LibraryView';
 import WelcomeView from './views/WelcomeView';
@@ -109,7 +110,9 @@ function App() {
         <BrowserRouter>
             <AuthProvider>
                 <MovieProvider>
-                    <AppContent />
+                    <SoundProvider>
+                        <AppContent />
+                    </SoundProvider>
                 </MovieProvider>
             </AuthProvider>
         </BrowserRouter>
