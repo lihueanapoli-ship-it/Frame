@@ -162,9 +162,10 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                         if (!user) { loginWithGoogle(); return; }
                                         addToWatchlist(movie);
                                     }}
-                                    className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold transition-all border border-white/5 cursor-pointer active:scale-95"
+                                    className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-semibold transition-all border border-white/10 backdrop-blur-md cursor-pointer active:scale-95 group"
                                 >
-                                    <PlusIcon className="w-5 h-5" /> Por Ver
+                                    <PlusIcon className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" />
+                                    <span className="tracking-wide">Por Ver</span>
                                 </button>
                                 <button
                                     onClick={(e) => {
@@ -172,9 +173,10 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                         if (!user) { loginWithGoogle(); return; }
                                         addToWatched(movie, 0);
                                     }}
-                                    className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-white text-black hover:bg-gray-200 font-bold transition-all cursor-pointer active:scale-95"
+                                    className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gradient-to-r from-white to-gray-200 hover:to-gray-100 text-black font-bold transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_25px_rgba(255,255,255,0.2)] cursor-pointer active:scale-95"
                                 >
-                                    <CheckIcon className="w-5 h-5" /> Ya la vi
+                                    <CheckIcon className="w-5 h-5" />
+                                    <span className="tracking-wide">Ya la vi</span>
                                 </button>
                             </div>
                         )}
@@ -182,14 +184,14 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                         {watchlistState && (
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between px-1">
-                                    <span className="text-sm text-primary font-medium">En tu lista "Por Ver"</span>
+                                    <span className="text-sm text-primary font-medium tracking-wide">Agregada a tu lista</span>
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             removeMovie(movie.id);
                                             onClose();
                                         }}
-                                        className="text-xs text-red-400 hover:text-white"
+                                        className="text-xs text-red-400 hover:text-white bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 rounded-full transition-colors"
                                     >
                                         Eliminar
                                     </button>
@@ -199,9 +201,10 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                         e.stopPropagation();
                                         moveFromWatchlistToWatched(movie.id);
                                     }}
-                                    className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-primary text-white hover:bg-primary-hover font-bold transition-all shadow-lg shadow-primary/20 cursor-pointer active:scale-95"
+                                    className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gradient-to-r from-primary to-purple-600 text-white font-bold transition-all shadow-lg shadow-primary/20 hover:shadow-primary/40 cursor-pointer active:scale-95"
                                 >
-                                    <CheckIcon className="w-5 h-5" /> Marcar como Vista
+                                    <CheckIcon className="w-5 h-5" />
+                                    <span className="tracking-wide">Marcar como Vista</span>
                                 </button>
                             </div>
                         )}

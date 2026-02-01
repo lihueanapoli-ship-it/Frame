@@ -21,7 +21,6 @@ const GENRES = [
     { id: 10749, name: "Romance", emoji: "💘" },
     { id: 878, name: "Ciencia Ficción", emoji: "🚀" },
     { id: 10770, name: "Película de TV", emoji: "📺" },
-    { id: 53, name: "Thriller", emoji: "🔪" },
     { id: 10752, name: "Bélica", emoji: "⚔️" },
     { id: 37, name: "Western", emoji: "🌵" },
 ];
