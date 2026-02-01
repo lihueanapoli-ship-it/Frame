@@ -14,10 +14,25 @@ const CategoryView = ({ onSelectMovie }) => {
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
 
-    const fetchData = useCallback(async (pageNum, reset = false, currentId = id) => {
-        if (pageNum === 1) setLoading(true);
-        let results = [];
-        let pageTitle = '';
+    try {
+        switch (currentId) {
+            case 'trending':
+                results = await getTrendingMovies(pageNum);
+                break;
+            case 'topRated':
+                results = await getTopRatedMovies(pageNum);
+                break;
+            case 'action_pure':
+                results = await getMoviesByGenre(28, pageNum);
+                break;
+            case 'horror_rec':
+                results = await getMoviesByGenre(27, pageNum);
+                break;
+            default:
+                results = await getCustomCollection(currentId, pageNum);
+        }
+
+        pageTitle = 'COLECCIÓN';
 
         // Validar que seguimos en la misma categoría (Race condition protection simple)
         if (currentId !== id) return;
@@ -85,7 +100,7 @@ return (
                 >
                     <ArrowLeftIcon className="w-6 h-6 text-white" />
                 </button>
-                <h1 className="text-3xl font-bold text-white tracking-tight">{title}</h1>
+                <h1 className="text-2xl font-display font-bold tracking-widest uppercase text-white">{title}</h1>
             </div>
 
             <button

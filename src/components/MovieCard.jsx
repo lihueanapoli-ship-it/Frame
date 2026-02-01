@@ -11,16 +11,8 @@ const MovieCard = ({ movie, onClick, rating, variant = 'default', onAddToWatchli
     const [isHovered, setIsHovered] = useState(false);
     const { playHover, playClick } = useSound();
 
-    // --- VARIANT LOGIC ---
-    const isOscar = variant === 'oscar';
-    const isArgentina = variant === 'argentina';
-    const isShort = variant === 'short';
-    const isMindBending = variant === 'mind_bending';
-    const isHiddenGem = variant === 'hidden_gems';
-    const isTrueStory = variant === 'true_story';
-    const isVisual = variant === 'visuals';
-    const isCult = variant === 'cult';
-    const isSaga = variant === 'sagas';
+    // --- VARIANT LOGIC (REMOVED as per cleanup request) ---
+    // Standardized card appearance
 
     // --- METADATA HELPERS ---
     const year = movie.release_date ? movie.release_date.split('-')[0] : 'N/A';
@@ -42,9 +34,7 @@ const MovieCard = ({ movie, onClick, rating, variant = 'default', onAddToWatchli
             className={cn(
                 "group relative bg-surface rounded-xl overflow-hidden shadow-lg cursor-pointer",
                 // Base transform handled by Framer Motion now
-                "border border-transparent", // Base border
-                isOscar && "border-yellow-500/30",
-                isArgentina && "border-sky-400/20"
+                "border border-transparent" // Base border
             )}
             whileHover={{
                 scale: 1.05,
@@ -66,38 +56,20 @@ const MovieCard = ({ movie, onClick, rating, variant = 'default', onAddToWatchli
 
             {/* Visual Aspect: Poster vs Backdrop */}
             <div className={cn(
-                "w-full overflow-hidden relative",
-                isVisual ? "aspect-[16/9]" : "aspect-[2/3]"
+                "w-full overflow-hidden relative aspect-[2/3]", // Force portrait aspect ratio always
             )}>
-                {/* Sagas Stack Effect */}
-                {isSaga && (
-                    <>
-                        <div className="absolute top-2 left-2 right-2 bottom-0 bg-white/5 rounded-t-lg transform -translate-y-2 scale-95 z-0" />
-                        <div className="absolute top-4 left-4 right-4 bottom-0 bg-white/5 rounded-t-lg transform -translate-y-4 scale-90 z-[-1]" />
-                    </>
-                )}
 
                 <motion.img
-                    src={isVisual ? getBackdropUrl(movie.backdrop_path) : getPosterUrl(movie.poster_path)}
+                    src={getPosterUrl(movie.poster_path)} // Always use poster
                     alt={movie.title}
-                    className={cn(
-                        "w-full h-full object-cover",
-                        isHiddenGem && "brightness-75 saturate-50"
-                    )}
+                    className="w-full h-full object-cover"
                     loading="lazy"
-                    animate={{
-                        filter: isHovered && isHiddenGem ? "brightness(1.1) saturate(1)" :
-                            isHiddenGem ? "brightness(0.75) saturate(0.5)" : "none"
-                    }}
                 />
 
                 {/* Dark Gradient Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-300" />
 
-                {/* Overlays / Badges */}
-                {/* ... (Existing badges logic kept simple for brevity, imagine they are here) */}
-                {isOscar && <div className="absolute top-2 right-2 bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded shadow-lg flex items-center gap-1 z-10"><span>🏆</span> {year}</div>}
-
+                {/* Overlays / Badges - REMOVED SPECIFIC BADGES */}
 
                 {/* Quick Actions - Slide Up on Hover */}
                 <div className="absolute bottom-0 left-0 right-0 p-3 z-30 flex gap-2 justify-center pb-safe overflow-hidden pointer-events-none">
@@ -110,16 +82,7 @@ const MovieCard = ({ movie, onClick, rating, variant = 'default', onAddToWatchli
                                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
                                 className="flex gap-2 w-full pointer-events-auto"
                             >
-                                {/* We don't have direct handlers here yet, usually passed down or handled in Detail. 
-                                    For now just visual representation or stopPropagation if implemented. */}
-                                {/* 
-                                <button className="flex-1 bg-white/10 hover:bg-primary hover:text-black backdrop-blur-md py-2 rounded-lg flex items-center justify-center transition-colors">
-                                    <PlusIcon className="w-5 h-5" />
-                                </button>
-                                <button className="flex-1 bg-white/10 hover:bg-green-500 hover:text-black backdrop-blur-md py-2 rounded-lg flex items-center justify-center transition-colors">
-                                    <CheckIcon className="w-5 h-5" />
-                                </button>
-                                */}
+                                {/* Future actions */}
                             </motion.div>
                         )}
                     </AnimatePresence>
@@ -127,21 +90,16 @@ const MovieCard = ({ movie, onClick, rating, variant = 'default', onAddToWatchli
             </div>
 
             <div className="p-3 relative z-10 bg-surface">
-                <h3 className={cn(
-                    "font-semibold text-white truncate text-sm md:text-base transition-colors group-hover:text-primary",
-                    isCult && "font-mono tracking-tighter text-gray-200"
-                )}>{movie.title}</h3>
+                <h3 className="font-semibold text-white truncate text-sm md:text-base transition-colors group-hover:text-primary">
+                    {movie.title}
+                </h3>
 
                 <div className="flex justify-between items-center mt-1">
                     <span className="text-secondary text-xs font-medium">
-                        {isOscar ? "Mejor Película" :
-                            isArgentina ? "Dir. Argentino" :
-                                isShort ? "Ideal Express" :
-                                    isVisual ? "Fotografía Pura" :
-                                        year}
+                        {year}
                     </span>
 
-                    {rating > 0 && !isOscar && (
+                    {rating > 0 && (
                         <div className="flex items-center text-yellow-400 gap-1 bg-yellow-400/10 px-1.5 py-0.5 rounded-md">
                             <Star size={10} fill="currentColor" />
                             <span className="text-xs font-bold">{rating}</span>
