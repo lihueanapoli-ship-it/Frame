@@ -44,7 +44,7 @@ const HeroCarousel = ({ movies, onRegisterAction }) => {
                 </motion.div>
             </AnimatePresence>
 
-            <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12 z-50">
+            <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12 z-30">
                 <motion.div
                     key={`text-${movie.id}`}
                     initial={{ y: 20, opacity: 0 }}
