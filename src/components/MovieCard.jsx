@@ -97,9 +97,6 @@ const MovieCard = ({ movie, onClick, rating, variant = 'default', onAddToWatchli
                 {/* Overlays / Badges */}
                 {/* ... (Existing badges logic kept simple for brevity, imagine they are here) */}
                 {isOscar && <div className="absolute top-2 right-2 bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded shadow-lg flex items-center gap-1 z-10"><span>🏆</span> {year}</div>}
-                {isArgentina && <div className="absolute top-2 right-2 z-10"><img src="https://flagcdn.com/w40/ar.png" alt="AR" className="w-5 h-auto rounded shadow-sm opacity-90" /></div>}
-                {isShort && <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1 z-10 border border-white/10"><ClockIcon className="w-3 h-3 text-primary" /> {'< 90m'}</div>}
-                {isMindBending && <div className="absolute top-2 right-2 bg-purple-900/80 backdrop-blur text-white text-[10px] font-mono px-2 py-0.5 rounded border border-purple-500/30 z-10">🧠 4/5</div>}
 
 
                 {/* Quick Actions - Slide Up on Hover */}

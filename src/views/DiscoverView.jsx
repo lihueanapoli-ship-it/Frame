@@ -175,7 +175,6 @@ const DiscoverView = ({ onSelectMovie }) => {
                     movies={data.romance}
                     onSelectMovie={onSelectMovie}
                     categoryId="romance"
-                    variant="visuals"
                 />
                 <MovieSection
                     title="Misiones de Verdad"
