@@ -6,15 +6,24 @@ import { Loader2 } from 'lucide-react';
 
 const GENRES = [
     { id: 28, name: "Acción", emoji: "💥" },
-    { id: 35, name: "Comedia", emoji: "🤣" },
-    { id: 27, name: "Terror", emoji: "👻" },
-    { id: 18, name: "Drama", emoji: "🎭" },
-    { id: 878, name: "Ciencia Ficción", emoji: "🚀" },
-    { id: 10749, name: "Romance", emoji: "💘" },
-    { id: 53, name: "Thriller", emoji: "🔪" },
+    { id: 12, name: "Aventura", emoji: "🤠" },
     { id: 16, name: "Animación", emoji: "🎨" },
+    { id: 35, name: "Comedia", emoji: "🤣" },
+    { id: 80, name: "Crimen", emoji: "🕵️" },
     { id: 99, name: "Documental", emoji: "🌍" },
+    { id: 18, name: "Drama", emoji: "🎭" },
+    { id: 10751, name: "Familia", emoji: "👨‍👩‍👧‍👦" },
+    { id: 14, name: "Fantasía", emoji: "🐉" },
+    { id: 36, name: "Historia", emoji: "🏛️" },
+    { id: 27, name: "Terror", emoji: "👻" },
+    { id: 10402, name: "Música", emoji: "🎵" },
+    { id: 9648, name: "Misterio", emoji: "🔦" },
+    { id: 10749, name: "Romance", emoji: "💘" },
+    { id: 878, name: "Ciencia Ficción", emoji: "🚀" },
+    { id: 10770, name: "Película de TV", emoji: "📺" },
+    { id: 53, name: "Thriller", emoji: "🔪" },
     { id: 10752, name: "Bélica", emoji: "⚔️" },
+    { id: 37, name: "Western", emoji: "🌵" },
 ];
 
 const SearchView = ({ onSelectMovie }) => {
