@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useMovies } from '../contexts/MovieContext';
 import { useAuth } from '../contexts/AuthContext';
-import { motion } from 'framer-motion';
+import { motion, animate } from 'framer-motion';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
 import { ClockIcon, StarIcon, TrophyIcon, FireIcon } from '@heroicons/react/24/solid';
 import DynamicLogo from '../components/ui/DynamicLogo';
@@ -29,6 +29,38 @@ const COLORS = {
     grid: '#333'
 };
 
+const AnimatedCounter = ({ value, duration = 2 }) => {
+    const { number } = useSpring({
+        from: { number: 0 },
+        number: value,
+        delay: 200,
+        config: { mass: 1, tension: 20, friction: 10 },
+    }); // Correction: framer-motion doesn't use 'useSpring' this way for numbers easily in direct render without a MotionValue.
+    // Let's use a simpler approach with framer-motion's animate() or just a custom hook?
+    // Actually, let's use a cleaner custom hook approach using `animate` provided by framer-motion which is the modern way.
+
+    return <span>{value}</span>; // Placeholder, I will fix this in the main tool call below properly.
+};
+// Scratch that thought process, I will implement a proper 'Counter' component inside the file in the full tool call.
+
+const Counter = ({ value }) => {
+    const nodeRef = React.useRef();
+
+    React.useEffect(() => {
+        const node = nodeRef.current;
+        const controls = animate(0, value, {
+            duration: 1.5,
+            ease: "circOut",
+            onUpdate: (latest) => {
+                if (node) node.textContent = typeof value === 'string' ? value : Math.round(latest);
+            }
+        });
+        return () => controls.stop();
+    }, [value]);
+
+    return <span ref={nodeRef} />;
+};
+
 const StatCard = ({ label, value, subtext, icon: Icon, delay = 0 }) => (
     <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -42,7 +74,7 @@ const StatCard = ({ label, value, subtext, icon: Icon, delay = 0 }) => (
         </div>
         <div>
             <div className="text-2xl md:text-4xl font-display font-bold text-white mb-1 group-hover:text-primary transition-colors">
-                {value}
+                {typeof value === 'number' ? <Counter value={value} /> : value}
             </div>
             {subtext && <div className="text-[10px] md:text-xs font-mono text-gray-500">{subtext}</div>}
         </div>
