@@ -16,9 +16,9 @@ export default defineConfig({
         clientsClaim: true,
       },
       manifest: {
-        name: 'Frame - Movie Manager',
+        name: 'Frame - Enfocá tu pasión',
         short_name: 'Frame',
-        description: 'Cinematic Movie Tracking',
+        description: 'Tu vida en 24 cuadros por segundo',
         theme_color: '#09090b',  // Zinc 950 to match bg
         background_color: '#09090b',
         display: 'standalone',
