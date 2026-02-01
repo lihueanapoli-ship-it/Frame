@@ -12,6 +12,7 @@ import BottomNav from './components/navigation/BottomNav';
 import MovieDetail from './components/MovieDetail';
 import DynamicLogo from './components/ui/DynamicLogo';
 import StatsView from './views/StatsView';
+import SpotlightCursor from './components/ui/SpotlightCursor';
 
 // Wrapper component to use Hooks like useNavigate
 const AppContent = () => {
@@ -57,6 +58,7 @@ const AppContent = () => {
 
     return (
         <div className="min-h-screen bg-background text-white font-sans selection:bg-primary selection:text-white">
+            <SpotlightCursor />
             <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-background/50 border-b border-white/5 transition-all duration-300">
                 <div className="flex h-16 items-center w-full px-4 max-w-7xl mx-auto justify-between">
                     <a href="/" onClick={(e) => {

@@ -131,12 +131,12 @@ const WelcomeView = () => {
                         FRAME
                     </h1>
                     <p className="font-mono text-xs md:text-sm text-cyan-500 tracking-[0.2em] uppercase mb-8">
-                        Tu vida en 24 cuadros por segundo
+                        Enfocá tu pasión
                     </p>
 
                     <p className="font-sans text-gray-400 text-lg md:text-xl font-light italic opacity-80 max-w-lg mx-auto leading-relaxed">
-                        "Dejá de ver películas por inercia. <br />
-                        <span className="text-white font-medium not-italic">Empezá a curar tu propia historia.</span>"
+                        "La diferencia entre ver y observar está en el registro. <br />
+                        <span className="text-white font-medium not-italic">Capturá hoy las películas que vas a querer recordar mañana.</span>"
                     </p>
                 </motion.div>
 
@@ -153,7 +153,7 @@ const WelcomeView = () => {
                     >
                         <div className="absolute inset-0 w-0 bg-cyan-500 transition-all duration-[250ms] ease-out group-hover:w-full opacity-10" />
                         <span className="relative font-mono text-xs tracking-widest text-white group-hover:text-cyan-400 transition-colors">
-                            [ INICIAR SESIÓN CON GOOGLE ]
+                            [ INICIAR SESIÓN ]
                         </span>
                     </button>
                 </motion.div>
