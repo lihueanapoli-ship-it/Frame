@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import { MovieProvider } from './contexts/MovieContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import DiscoverView from './views/DiscoverView';
@@ -11,6 +11,7 @@ import SearchView from './views/SearchView'; // Import SearchView
 import BottomNav from './components/navigation/BottomNav';
 import MovieDetail from './components/MovieDetail';
 import DynamicLogo from './components/ui/DynamicLogo';
+import WelcomeView from './views/WelcomeView';
 import StatsView from './views/StatsView';
 
 // Wrapper component to use Hooks like useNavigate
@@ -49,58 +50,44 @@ const AppContent = () => {
         );
     };
 
+    // Loading State (Optional: Add a spinner if needed, but for now we just wait)
+    // If we want a strict gate:
+    if (!user) {
+        return <WelcomeView />;
+    }
+
     return (
         <div className="min-h-screen bg-background text-white font-sans selection:bg-primary selection:text-white">
-            {/* ... */}
-
             <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-background/50 border-b border-white/5 transition-all duration-300">
                 <div className="flex h-16 items-center w-full px-4 max-w-7xl mx-auto justify-between">
                     <a href="/" onClick={(e) => {
                         e.preventDefault();
-                        window.location.href = '/';
-                    }} className="flex items-center gap-3 group">
-                        <DynamicLogo />
-                        <span className="font-display font-bold text-2xl tracking-wide text-white group-hover:text-primary transition-colors">
-                            FRAME
-                        </span>
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }} className="font-bold text-lg tracking-tight hover:text-primary transition-colors cursor-pointer">
+                        <div className="flex items-center gap-2">
+                            <div className="scale-75"><DynamicLogo /></div>
+                            <span className="font-display text-2xl tracking-tight">FRAME</span>
+                        </div>
                     </a>
                     <UserMenu />
                 </div>
             </header>
 
-            <main className="mx-auto w-full max-w-7xl animate-fade-in mb-20">
-                <Routes>
-                    <Route
-                        path="/"
-                        element={<DiscoverView onSelectMovie={setSelectedMovie} />}
-                    />
-                    <Route
-                        path="/search"
-                        element={<SearchView onSelectMovie={setSelectedMovie} />}
-                    />
-                    <Route
-                        path="/library"
-                        element={<LibraryView onSelectMovie={setSelectedMovie} />}
-                    />
-                    import StatsView from './views/StatsView';
-
-
-                    {/* ... */}
-
-                    <Route
-                        path="/category/:id"
-                        element={<CategoryView onSelectMovie={setSelectedMovie} />}
-                    />
-                    <Route
-                        path="/dashboard"
-                        element={<StatsView />}
-                    />
-                </Routes>
+            <main className="container max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 pb-32">
+                <AnimatePresence mode="wait">
+                    <Routes>
+                        <Route path="/" element={<DiscoverView onSelectMovie={setSelectedMovie} />} />
+                        <Route path="/search" element={<SearchView onSelectMovie={setSelectedMovie} />} />
+                        <Route path="/library" element={<LibraryView onSelectMovie={setSelectedMovie} />} />
+                        <Route path="/dashboard" element={<StatsView />} />
+                        <Route path="/category/:id" element={<CategoryView onSelectMovie={setSelectedMovie} />} />
+                        <Route path="*" element={<Navigate to="/" replace />} />
+                    </Routes>
+                </AnimatePresence>
             </main>
 
             <BottomNav />
 
-            {/* Global Detail Modal */}
             <AnimatePresence>
                 {selectedMovie && (
                     <MovieDetail
