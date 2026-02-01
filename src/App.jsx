@@ -30,6 +30,7 @@ const AppContent = () => {
     // Auth Hooks
     const { user, loading, logout } = useAuth();
     const { language, toggleLanguage } = useLanguage();
+    const navigate = useNavigate();
 
     // 1. Loading Guard
     if (loading) {
@@ -115,6 +116,7 @@ const AppContent = () => {
                 <div className="flex h-20 items-center w-full px-4 max-w-7xl mx-auto justify-between">
                     <a href="/" onClick={(e) => {
                         e.preventDefault();
+                        navigate('/');
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                         setLogoKey(prev => prev + 1); // Trigger animation
                     }} className="font-bold text-lg tracking-tight hover:text-primary transition-colors cursor-pointer group">

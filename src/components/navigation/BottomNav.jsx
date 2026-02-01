@@ -9,7 +9,7 @@ const BottomNav = () => {
         { name: 'Inicio', path: '/', icon: HomeIcon, activeIcon: HomeIconSolid },
         { name: 'Explorar', path: '/search', icon: MagnifyingGlassIcon, activeIcon: SearchIconSolid },
         { name: 'ADN', path: '/dashboard', icon: ChartBarIcon, activeIcon: ChartBarIconSolid },
-        { name: 'Lib', path: '/library', icon: RectangleStackIcon, activeIcon: LibraryIconSolid },
+        { name: 'Listas', path: '/library', icon: RectangleStackIcon, activeIcon: LibraryIconSolid },
     ];
 
     return (
