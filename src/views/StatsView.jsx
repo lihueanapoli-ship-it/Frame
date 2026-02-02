@@ -328,7 +328,7 @@ const StatsView = () => {
                 {/* 5. Rating Histogram - Spans 2 cols */}
                 <div className="col-span-1 md:col-span-2 bg-surface border border-white/5 p-6 flex flex-col min-h-[300px]">
                     <h3 className="font-mono text-xs text-gray-500 uppercase tracking-widest mb-4">CURVA DE EXIGENCIA</h3>
-                    <div className="flex-1 w-full h-full min-h-[250px]">
+                    <div className="w-full h-[250px]">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={ratingDistribution}>
                                 <XAxis dataKey="rating" stroke="#333" tick={{ fill: '#6B7280', fontSize: 10, fontFamily: 'monospace' }} />
