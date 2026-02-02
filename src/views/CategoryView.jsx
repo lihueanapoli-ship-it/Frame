@@ -36,7 +36,13 @@ const CategoryView = ({ onSelectMovie }) => {
                         };
                         const recommendations = await getPersonalizedRecommendations(userData, 'intermediate');
                         const allRecs = recommendations.forYou || [];
+
+                        console.log('[CategoryView] for_you: Total recommendations fetched:', allRecs.length);
+
+                        // Store ALL recommendations
                         setAllRecommendations(allRecs);
+
+                        // Display only first batch
                         results = allRecs.slice(0, displayCount);
                         pageTitle = 'TU ADN';
                     } else {
@@ -98,6 +104,8 @@ const CategoryView = ({ onSelectMovie }) => {
         setMovies([]);
         setPage(1);
         setHasMore(true);
+        setDisplayCount(20); // Reset display count
+        setAllRecommendations([]); // Reset all recommendations
         // Reseteamos loading a true inmediatamente al cambiar id
         setLoading(true);
         fetchData(1, true, id);
