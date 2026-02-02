@@ -16,6 +16,7 @@ import MovieCard from '../components/MovieCard';
  */
 const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, variant = 'default', isEmpty = false, emptyMessage }) => {
     const [isHovered, setIsHovered] = useState(false);
+    const [hoveredMovieId, setHoveredMovieId] = useState(null);
 
     if (isEmpty && emptyMessage) {
         return (
@@ -40,7 +41,7 @@ const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, vari
 
     return (
         <section
-            className="mb-8 group"
+            className="mb-8"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
@@ -63,7 +64,10 @@ const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, vari
                 {categoryId && (
                     <Link
                         to={`/category/${categoryId}`}
-                        className="text-primary hover:text-primary-hover transition-colors flex items-center gap-1 text-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                        className={cn(
+                            "text-primary hover:text-primary-hover transition-all flex items-center gap-1 text-sm",
+                            hoveredMovieId ? "opacity-100" : "opacity-0"
+                        )}
                     >
                         <span>Ver todo</span>
                         <ChevronRight className="w-4 h-4" />
@@ -74,7 +78,12 @@ const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, vari
             {/* Movies Horizontal Scroll */}
             <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory">
                 {movies.slice(0, 10).map((movie) => (
-                    <div key={movie.id} className="flex-shrink-0 w-[200px] snap-start">
+                    <div
+                        key={movie.id}
+                        className="flex-shrink-0 w-[200px] snap-start"
+                        onMouseEnter={() => setHoveredMovieId(movie.id)}
+                        onMouseLeave={() => setHoveredMovieId(null)}
+                    >
                         <MovieCard
                             movie={movie}
                             onClick={() => onSelectMovie(movie)}
