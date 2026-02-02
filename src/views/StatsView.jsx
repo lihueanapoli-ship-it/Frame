@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useMovies } from '../contexts/MovieContext';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, animate } from 'framer-motion';
@@ -6,6 +6,7 @@ import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadius
 import { ClockIcon, StarIcon, TrophyIcon, FireIcon } from '@heroicons/react/24/solid';
 import DynamicLogo from '../components/ui/DynamicLogo';
 import { cn } from '../lib/utils';
+import { getMovieDetails } from '../api/tmdb';
 
 // Helper: Convert mins to days/hours/min
 const formatRuntime = (mins) => {
@@ -87,6 +88,37 @@ const StatsView = () => {
     const { watched, watchlist } = useMovies();
     const { user } = useAuth();
 
+    // State for fetched genres
+    const [movieGenres, setMovieGenres] = useState({});
+
+    // Fetch movie details to get genres (since we strip them when saving)
+    useEffect(() => {
+        const fetchGenres = async () => {
+            const genreMap = {};
+
+            // Fetch details for up to 30 most recent movies
+            const moviesToFetch = watched.slice(0, 30);
+
+            const promises = moviesToFetch.map(async (movie) => {
+                try {
+                    const details = await getMovieDetails(movie.id);
+                    if (details && details.genres) {
+                        genreMap[movie.id] = details.genres;
+                    }
+                } catch (err) {
+                    console.warn('[StatsView] Failed to fetch genres for:', movie.id);
+                }
+            });
+
+            await Promise.all(promises);
+            setMovieGenres(genreMap);
+        };
+
+        if (watched.length > 0) {
+            fetchGenres();
+        }
+    }, [watched.length]); // Re-fetch when watched count changes
+
     // 1. Calculate Telemetry (Total Runtime)
     const runtimes = useMemo(() => {
         // Assuming 'runtime' exists in movie object. If not, we estimate 120min.
@@ -105,42 +137,39 @@ const StatsView = () => {
 
     const rankProgress = Math.min((watched.length / 50) * 100, 100);
 
-    // 3. Genre Radar Data
+    // 3. Genre Radar Data - Using fetched genres
     const genreData = useMemo(() => {
         const counts = {};
-        // Standard TMDB Genre Map
-        const map = {
-            28: 'Acción', 12: 'Aventura', 16: 'Animación', 35: 'Comedia', 80: 'Crimen',
-            99: 'Documental', 18: 'Drama', 10751: 'Familia', 14: 'Fantasía', 36: 'Historia',
-            27: 'Terror', 10402: 'Música', 9648: 'Misterio', 10749: 'Romance', 878: 'Sci-Fi',
-            10770: 'TV Movie', 53: 'Thriller', 10752: 'Bélica', 37: 'Western'
-        };
 
-        watched.forEach(m => {
-            // Helper: Normalize genres from various sources (genre_ids or genres object)
-            let ids = [];
-            if (m.genre_ids && m.genre_ids.length > 0) {
-                ids = m.genre_ids;
-            } else if (m.genres && m.genres.length > 0) {
-                ids = m.genres.map(g => g.id);
+        // Count genres from fetched data
+        watched.forEach(movie => {
+            const genres = movieGenres[movie.id];
+            if (genres && genres.length > 0) {
+                genres.forEach(genre => {
+                    counts[genre.name] = (counts[genre.name] || 0) + 1;
+                });
             }
-
-            ids.forEach(id => {
-                const name = map[id] || 'Otros';
-                if (name !== 'Otros') counts[name] = (counts[name] || 0) + 1;
-            });
         });
 
-        // Transform to Array and Sort by Count
-        return Object.keys(counts)
+        // Transform to Array, Sort by Count, Take top 5
+        const sorted = Object.keys(counts)
             .map(key => ({
                 subject: key,
                 A: counts[key],
-                fullMark: watched.length
+                fullMark: Math.max(...Object.values(counts))
             }))
-            .sort((a, b) => b.A - a.A) // Sort descending
-            .slice(0, 6); // Take top 6
-    }, [watched]);
+            .sort((a, b) => b.A - a.A)
+            .slice(0, 5); // Top 5 géneros
+
+        // If no data yet, return placeholder
+        if (sorted.length === 0) {
+            return [
+                { subject: 'Cargando...', A: 0, fullMark: 1 }
+            ];
+        }
+
+        return sorted;
+    }, [watched, movieGenres]);
 
     // 4. Rating Distribution (Histogram)
     const ratingDistribution = useMemo(() => {
