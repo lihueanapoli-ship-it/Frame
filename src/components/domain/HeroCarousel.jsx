@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getBackdropUrl, getPosterUrl, getGenreNames } from '../../api/tmdb';
 import { PlusIcon } from '@heroicons/react/24/outline';
 
-const HeroCarousel = ({ movies, onRegisterAction }) => {
+const HeroCarousel = ({ movies, onSelectMovie }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
 
     // Auto-rotate
@@ -20,7 +20,7 @@ const HeroCarousel = ({ movies, onRegisterAction }) => {
 
     return (
         <div
-            onClick={() => onRegisterAction(movie)}
+            onClick={() => onSelectMovie(movie)}
             className="relative w-full aspect-[4/5] md:aspect-[21/9] overflow-hidden rounded-b-3xl md:rounded-3xl shadow-2xl bg-surface cursor-pointer group"
         >
             <AnimatePresence mode='wait'>

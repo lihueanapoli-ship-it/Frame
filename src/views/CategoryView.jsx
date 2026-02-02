@@ -208,9 +208,6 @@ const CategoryView = ({ onSelectMovie }) => {
                                 <span className="text-base font-bold text-white tracking-wide">
                                     Ver más recomendaciones
                                 </span>
-                                <span className="text-xs font-mono text-gray-400">
-                                    +20 películas
-                                </span>
                             </button>
                         </div>
                     )}
