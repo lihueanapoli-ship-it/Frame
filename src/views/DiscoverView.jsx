@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { getTrendingMovies, getTopRatedMovies, getCustomCollection } from '../api/tmdb';
 import { useUserProfile } from '../contexts/UserProfileContext';
 import { useMovies } from '../contexts/MovieContext';
@@ -16,7 +16,40 @@ import MovieCard from '../components/MovieCard';
  */
 const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, variant = 'default', isEmpty = false, emptyMessage }) => {
     const [isHovered, setIsHovered] = useState(false);
-    const [hoveredMovieId, setHoveredMovieId] = useState(null);
+    const scrollRef = useRef(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const [startX, setStartX] = useState(0);
+    const [scrollLeft, setScrollLeft] = useState(0);
+
+    // Mouse drag handlers (Netflix-style)
+    const handleMouseDown = (e) => {
+        setIsDragging(true);
+        setStartX(e.pageX - scrollRef.current.offsetLeft);
+        setScrollLeft(scrollRef.current.scrollLeft);
+        scrollRef.current.style.cursor = 'grabbing';
+    };
+
+    const handleMouseLeave = () => {
+        setIsDragging(false);
+        if (scrollRef.current) {
+            scrollRef.current.style.cursor = 'grab';
+        }
+    };
+
+    const handleMouseUp = () => {
+        setIsDragging(false);
+        if (scrollRef.current) {
+            scrollRef.current.style.cursor = 'grab';
+        }
+    };
+
+    const handleMouseMove = (e) => {
+        if (!isDragging) return;
+        e.preventDefault();
+        const x = e.pageX - scrollRef.current.offsetLeft;
+        const walk = (x - startX) * 2; // Scroll speed multiplier
+        scrollRef.current.scrollLeft = scrollLeft - walk;
+    };
 
     if (isEmpty && emptyMessage) {
         return (
@@ -61,13 +94,11 @@ const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, vari
                         </p>
                     )}
                 </div>
+                {/* Ver todo - Siempre visible */}
                 {categoryId && (
                     <Link
                         to={`/category/${categoryId}`}
-                        className={cn(
-                            "text-primary hover:text-primary-hover transition-all flex items-center gap-1 text-sm",
-                            hoveredMovieId ? "opacity-100" : "opacity-0"
-                        )}
+                        className="text-primary hover:text-primary-hover transition-colors flex items-center gap-1 text-sm"
                     >
                         <span>Ver todo</span>
                         <ChevronRight className="w-4 h-4" />
@@ -75,14 +106,19 @@ const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, vari
                 )}
             </div>
 
-            {/* Movies Horizontal Scroll */}
-            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory">
+            {/* Movies Horizontal Scroll - Netflix style drag */}
+            <div
+                ref={scrollRef}
+                className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory cursor-grab select-none"
+                onMouseDown={handleMouseDown}
+                onMouseLeave={handleMouseLeave}
+                onMouseUp={handleMouseUp}
+                onMouseMove={handleMouseMove}
+            >
                 {movies.slice(0, 10).map((movie) => (
                     <div
                         key={movie.id}
                         className="flex-shrink-0 w-[200px] snap-start"
-                        onMouseEnter={() => setHoveredMovieId(movie.id)}
-                        onMouseLeave={() => setHoveredMovieId(null)}
                     >
                         <MovieCard
                             movie={movie}
