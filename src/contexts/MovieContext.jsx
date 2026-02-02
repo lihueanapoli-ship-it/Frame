@@ -28,43 +28,67 @@ export const MovieProvider = ({ children }) => {
     // Sync Cloud Data
     useEffect(() => {
         if (!user || !db) {
+            console.log('[MovieContext] No user or db, clearing cloud state');
             setCloudWatchlist([]);
             setCloudWatched([]);
             return;
         }
 
+        console.log('[MovieContext] Setting up Firebase listener for user:', user.uid);
         const userRef = doc(db, 'users', user.uid);
 
         // Real-time listener
         const unsubscribe = onSnapshot(userRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
+                console.log('[MovieContext] 📥 Received from Firebase:', {
+                    watchlist: data.watchlist?.length || 0,
+                    watched: data.watched?.length || 0
+                });
                 setCloudWatchlist(data.watchlist || []);
                 setCloudWatched(data.watched || []);
             } else {
+                console.log('[MovieContext] Document does not exist, creating with local data');
                 // Create user doc if not exists, and strictly merge local data if present
                 const initialData = {
                     watchlist: localWatchlist.length > 0 ? localWatchlist : [],
                     watched: localWatched.length > 0 ? localWatched : []
                 };
+                console.log('[MovieContext] Creating initial doc with:', {
+                    watchlist: initialData.watchlist.length,
+                    watched: initialData.watched.length
+                });
                 setDoc(userRef, initialData, { merge: true });
             }
+        }, (error) => {
+            console.error('[MovieContext] ❌ Firebase listener error:', error);
         });
 
-        return () => unsubscribe();
-    }, [user]);
+        return () => {
+            console.log('[MovieContext] Cleaning up Firebase listener');
+            unsubscribe();
+        };
+    }, [user, db]); // localWatchlist/localWatched se usan solo en la creación inicial
 
     // Helpers to update Cloud
     const updateCloud = async (newWatchlist, newWatched) => {
         if (!user || !db) return;
         const userRef = doc(db, 'users', user.uid);
         try {
-            await updateDoc(userRef, {
+            // Use setDoc with merge instead of updateDoc
+            // This works even if the document doesn't exist yet
+            await setDoc(userRef, {
                 watchlist: newWatchlist,
                 watched: newWatched
+            }, { merge: true });
+
+            console.log('[MovieContext] ✅ Synced to cloud:', {
+                watchlist: newWatchlist.length,
+                watched: newWatched.length
             });
         } catch (e) {
-            console.error("Error syncing to cloud:", e);
+            console.error("[MovieContext] ❌ Error syncing to cloud:", e);
+            throw e; // Re-throw para que el catch en addToWatchlist funcione
         }
     };
 
