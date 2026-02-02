@@ -134,6 +134,16 @@ const CategoryView = ({ onSelectMovie }) => {
 
     const canLoadMore = id === 'for_you' && displayCount < allRecommendations.length;
 
+    // Debug log
+    if (id === 'for_you') {
+        console.log('[CategoryView] Tu ADN Debug:', {
+            displayCount,
+            allRecommendationsLength: allRecommendations.length,
+            moviesLength: movies.length,
+            canLoadMore
+        });
+    }
+
     return (
         <div className="min-h-screen pb-20 pt-20 px-4 max-w-7xl mx-auto">
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -178,14 +188,20 @@ const CategoryView = ({ onSelectMovie }) => {
 
                     {/* Load More button - Only for Tu ADN */}
                     {canLoadMore && (
-                        <div className="flex justify-center mt-12">
+                        <div className="flex flex-col items-center gap-4 mt-12">
+                            <div className="text-xs font-mono text-gray-500">
+                                Mostrando {movies.length} de {allRecommendations.length} recomendaciones
+                            </div>
                             <button
                                 onClick={loadMore}
-                                className="flex flex-col items-center gap-2 px-6 py-4 bg-white/5 hover:bg-white/10 rounded-xl transition-all group"
+                                className="flex flex-col items-center gap-3 px-8 py-6 bg-primary/10 hover:bg-primary/20 border border-primary/30 hover:border-primary rounded-2xl transition-all group shadow-lg shadow-primary/5 hover:shadow-primary/20"
                             >
-                                <ChevronDownIcon className="w-6 h-6 text-primary group-hover:translate-y-1 transition-transform" />
-                                <span className="text-sm font-mono text-gray-400 group-hover:text-white transition-colors">
+                                <ChevronDownIcon className="w-8 h-8 text-primary group-hover:translate-y-2 transition-transform duration-300" />
+                                <span className="text-base font-bold text-white tracking-wide">
                                     Ver más recomendaciones
+                                </span>
+                                <span className="text-xs font-mono text-gray-400">
+                                    +20 películas
                                 </span>
                             </button>
                         </div>
