@@ -2,10 +2,10 @@
  * 🧬 Tu ADN - Sistema Avanzado de Recomendaciones
  * 
  * Este sistema analiza profundamente el comportamiento del usuario:
- * 1. Géneros favoritos ponderados por rating
+ * 1. Géneros favoritos ponderados por rating (1-10 estrellas)
  * 2. Décadas preferidas
  * 3. Directores favoritos
- * 4. Películas similares a las mejor rankeadas
+ * 4. Películas similares a las mejor rankeadas (8-10 estrellas)
  * 5. Patterns de voting (prefiere películas populares vs indie)
  * 
  * Todo basado en data real del usuario.
@@ -140,7 +140,7 @@ function analyzeUserProfile(watchedWithDetails) {
     watchedWithDetails.forEach(movie => {
         const rating = movie.userRating || 0;
 
-        // Análisis de géneros (ponderado por rating)
+        // Análisis de géneros (ponderado por rating 1-10 estrellas)
         if (movie.genres) {
             movie.genres.forEach(genre => {
                 if (!genreScores[genre.id]) {
@@ -153,7 +153,8 @@ function analyzeUserProfile(watchedWithDetails) {
                 }
 
                 // Ponderar: películas con rating alto valen más
-                const weight = rating > 0 ? rating : 2.5; // Default neutral
+                // Escala 1-10: rating >= 8 es excelente, 5 es neutral
+                const weight = rating > 0 ? rating : 5; // Default neutral (5/10)
                 genreScores[genre.id].score += weight;
                 genreScores[genre.id].count += 1;
             });
@@ -189,7 +190,7 @@ function analyzeUserProfile(watchedWithDetails) {
     return {
         topGenres,
         topDecades,
-        avgRating: ratedCount > 0 ? totalRating / ratedCount : 3.5,
+        avgRating: ratedCount > 0 ? totalRating / ratedCount : 7.0, // Default neutral (7/10)
         totalWatched: watchedWithDetails.length,
         // Pattern: prefiere películas populares vs indie
         prefersPopular: calculatePopularityPreference(watchedWithDetails)
@@ -241,9 +242,9 @@ async function getGenreBasedRecommendations(profile, watched, watchlist) {
  * Recomendaciones basadas en películas similares a las mejor rankeadas
  */
 async function getSimilarBasedRecommendations(watchedWithDetails, watched, watchlist) {
-    // Tomar top 5 películas con rating >= 4
+    // Tomar top 5 películas con rating >= 8 (escala 1-10)
     const topRated = watchedWithDetails
-        .filter(m => (m.userRating || 0) >= 4)
+        .filter(m => (m.userRating || 0) >= 8)
         .sort((a, b) => (b.userRating || 0) - (a.userRating || 0))
         .slice(0, 5);
 
