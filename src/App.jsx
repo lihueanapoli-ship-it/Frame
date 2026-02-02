@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BrowserRouter, Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import { MovieProvider } from './contexts/MovieContext';
@@ -17,7 +17,8 @@ import SpotlightCursor from './components/ui/SpotlightCursor';
 import PageTransitionOverlay from './components/ui/PageTransitionOverlay';
 
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
-import { UserProfileProvider } from './contexts/UserProfileContext';
+import { UserProfileProvider, useUserProfile } from './contexts/UserProfileContext';
+import OnboardingModal from './components/onboarding/OnboardingModal';
 
 // ... (previous imports)
 
@@ -31,7 +32,18 @@ const AppContent = () => {
     // Auth Hooks
     const { user, loading, logout } = useAuth();
     const { language, toggleLanguage } = useLanguage();
+    const { profile, loading: profileLoading } = useUserProfile();
     const navigate = useNavigate();
+
+    // Onboarding state
+    const [showOnboarding, setShowOnboarding] = useState(false);
+
+    // Check if user needs onboarding
+    useEffect(() => {
+        if (user && profile && !profile.onboardingCompleted) {
+            setShowOnboarding(true);
+        }
+    }, [user, profile]);
 
     // 1. Loading Guard
     if (loading) {
@@ -168,6 +180,12 @@ const AppContent = () => {
                     />
                 )}
             </AnimatePresence>
+
+            {/* Onboarding Modal */}
+            <OnboardingModal
+                isOpen={showOnboarding}
+                onComplete={() => setShowOnboarding(false)}
+            />
         </div>
     );
 }

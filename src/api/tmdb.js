@@ -160,13 +160,14 @@ export const getCustomCollection = async (type, page = 1) => {
     }
 };
 
-export const getMoviesByGenre = async (genreId, page = 1) => {
+export const getMoviesByGenre = async (genreId, extraParams = {}, page = 1) => {
     try {
         const response = await tmdbClient.get('/discover/movie', {
             params: {
                 with_genres: genreId,
                 sort_by: 'popularity.desc',
-                page
+                page,
+                ...extraParams
             }
         });
         return response.data.results;
@@ -175,6 +176,51 @@ export const getMoviesByGenre = async (genreId, page = 1) => {
         return [];
     }
 };
+
+/**
+ * Get similar movies to a given movie ID
+ */
+export const getSimilarMovies = async (movieId) => {
+    try {
+        const response = await tmdbClient.get(`/movie/${movieId}/similar`);
+        return response.data.results;
+    } catch (error) {
+        console.error(`Error getting similar movies for ${movieId}:`, error);
+        return [];
+    }
+};
+
+/**
+ * Discover movies with custom parameters
+ */
+export const discoverMovies = async (params = {}) => {
+    try {
+        const response = await tmdbClient.get('/discover/movie', { params });
+        return response.data.results;
+    } catch (error) {
+        console.error('Error discovering movies:', error);
+        return [];
+    }
+};
+
+/**
+ * Get movies by director (using person ID)
+ */
+export const getDirectorMovies = async (directorId) => {
+    try {
+        const response = await tmdbClient.get('/discover/movie', {
+            params: {
+                with_crew: directorId,
+                sort_by: 'popularity.desc'
+            }
+        });
+        return response.data.results;
+    } catch (error) {
+        console.error(`Error getting movies for director ${directorId}:`, error);
+        return [];
+    }
+};
+
 
 export const getTrendingMovies = async (page = 1) => {
     try {
