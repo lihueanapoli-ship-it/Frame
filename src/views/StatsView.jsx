@@ -302,7 +302,7 @@ const StatsView = () => {
                 {/* 4. Radar Chart - Spans 2 cols, 2 rows */}
                 <div className="col-span-1 md:col-span-2 row-span-2 bg-surface border border-white/5 p-4 min-h-[300px] flex flex-col">
                     <h3 className="font-mono text-xs text-gray-500 uppercase tracking-widest mb-4">RADAR DE GÉNEROS</h3>
-                    <div className="flex-1 w-full h-full min-h-[250px]">
+                    <div className="w-full h-[300px]">
                         <ResponsiveContainer width="100%" height="100%">
                             <RadarChart cx="50%" cy="50%" outerRadius="70%" data={genreData}>
                                 <PolarGrid stroke="#333" />
