@@ -134,10 +134,31 @@ export const MovieProvider = ({ children }) => {
     };
 
     // ========================================
+    // HELPER: Strip unnecessary data
+    // Firebase has 1MB limit per document
+    // We only need: id, title, poster_path, rating, dates
+    // ========================================
+    const stripMovieData = (movie) => {
+        return {
+            id: movie.id,
+            title: movie.title,
+            poster_path: movie.poster_path || null,
+            release_date: movie.release_date || null,
+            // Keep these if they exist
+            ...(movie.rating !== undefined && { rating: movie.rating }),
+            ...(movie.addedAt && { addedAt: movie.addedAt }),
+            ...(movie.watchedAt && { watchedAt: movie.watchedAt })
+        };
+    };
+
+    // ========================================
     // ADD TO WATCHLIST
     // ========================================
     const addToWatchlist = (movie) => {
-        const movieToAdd = { ...movie, addedAt: new Date().toISOString() };
+        const movieToAdd = {
+            ...stripMovieData(movie),  // ✨ Only essential data
+            addedAt: new Date().toISOString()
+        };
 
         // Check duplicates
         if (watchlist.some(m => m.id === movie.id) || watched.some(m => m.id === movie.id)) {
@@ -175,11 +196,18 @@ export const MovieProvider = ({ children }) => {
         if (existingIndex >= 0) {
             // Update existing
             newWatched = [...watched];
-            newWatched[existingIndex] = { ...watched[existingIndex], rating };
+            newWatched[existingIndex] = {
+                ...newWatched[existingIndex],
+                rating
+            };
             console.log('[MovieContext] 🔄 Updating rating:', movie.title, rating);
         } else {
             // Add new
-            const movieToAdd = { ...movie, rating, watchedAt: new Date().toISOString() };
+            const movieToAdd = {
+                ...stripMovieData(movie),  // ✨ Only essential data
+                rating,
+                watchedAt: new Date().toISOString()
+            };
             newWatched = [...watched, movieToAdd];
             console.log('[MovieContext] ✅ Marking as watched:', movie.title);
         }
