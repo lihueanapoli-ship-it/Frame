@@ -176,13 +176,25 @@ const DiscoverView = ({ onSelectMovie }) => {
     };
 
     const fetchPersonalizedRecommendations = async () => {
-        if (!profile || watched.length === 0) return;
+        if (watched.length === 0) return;
 
         try {
+            console.log('[DiscoverView] Fetching personalized recommendations for', watched.length, 'watched movies');
+
+            // Construct userData with the structure expected by recommendations.js
+            const userData = {
+                movieData: {
+                    watched,
+                    watchlist
+                }
+            };
+
             const recommendations = await getPersonalizedRecommendations(
-                profile,
+                userData,
                 expertiseLevel
             );
+
+            console.log('[DiscoverView] Got recommendations:', recommendations.forYou?.length || 0);
 
             setData(prev => ({
                 ...prev,
