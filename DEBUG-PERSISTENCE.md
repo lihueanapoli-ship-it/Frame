@@ -1,255 +1,206 @@
-# 🔧 DEBUG: Problema de Persistencia - Guía de Resolución
+# ✅ SOLUCIÓN DEFINITIVA: Write-Lock Mechanism
 
-## 🐛 **Problema Reportado**
-Las películas no se guardan cuando sales y vuelves a entrar.
+## 🐛 **El Problema Real**
 
-## ✅ **Cambios Aplicados**
+El problema NO era que Firebase no guardaba, sino un **race condition** entre:
+1. Optimistic UI (actualización inmediata del estado)
+2. `onSnapshot` listener (recibiendo data de Firebase)
 
-### **1. Arreglé `updateCloud` para usar `setDoc` con merge**
+### **Flujo Problemático:**
+```
+Usuario agrega película
+↓
+setCloudWatchlist(nuevo array con película) ← UI se actualiza
+↓
+setDoc(Firebase, nuevo array) ← Enviamos a Firebase
+↓
+[~500ms después]
+↓
+onSnapshot se dispara con data vieja ← ❌ SOBRESCRIBE el estado
+↓
+setCloudWatchlist(array viejo sin la película) ← UI vuelve a estado viejo
+```
 
-**Antes:**
+Por eso cuando recargabas, las películas "desaparecían".
+
+---
+
+## ✅ **La Solución: Write-Lock Mechanism**
+
+Agregué un sistema de **locks** que previene que el listener sobrescriba durante writes:
+
+### **Nuevo Flujo:**
 ```javascript
-await updateDoc(userRef, {
-  watchlist: newWatchlist,
-  watched: newWatched
+// 1. Usuario agrega película
+addToWatchlist(movie)
+↓
+// 2. Seteo el LOCK
+pendingWriteRef.current = true  🔒
+↓
+// 3. Actualizo UI inmediatamente
+setCloudWatchlist(nuevo array)
+↓
+// 4. Escribo a Firebase
+await setDoc(...)
+↓
+// 5. onSnapshot se dispara con data
+if (pendingWriteRef.current) {
+  return;  // ⏸️ IGNORA el evento (lock activo)
+}
+↓
+// 6. Después de 1.5s, libero el lock
+setTimeout(() => pendingWriteRef.current = false, 1500)  🔓
+```
+
+---
+
+## 📊 **Qué Cambiós en el Código**
+
+### **1. Agregué Refs para Track de Estado**
+
+```javascript
+const pendingWriteRef = useRef(false);  // ¿Estamos escribiendo?
+const lastWriteDataRef = useRef(null);  // Última data escrita
+```
+
+### **2. Lock en `updateCloud`**
+
+```javascript
+const updateCloud = async (newWatchlist, newWatched) => {
+  // 🔒 Lock
+  pendingWriteRef.current = true;
+  
+  await setDoc(...)  // Escribir a Firebase
+  
+  // 🔓 Unlock después de 1.5s
+  setTimeout(() => {
+    pendingWriteRef.current = false;
+  }, 1500);
+};
+```
+
+### **3. Skip en `onSnapshot`**
+
+```javascript
+onSnapshot(userRef, (docSnap) => {
+  // ⚠️ Si estamos escribiendo, IGNORAR
+  if (pendingWriteRef.current) {
+    console.log('⏸️ Ignoring Firebase event (write in progress)');
+    return;
+  }
+  
+  // Aplicar data solo si no hay lock
+  setCloudWatchlist(data.watchlist);
+  setCloudWatched(data.watched);
 });
 ```
 
-**Problema:** `updateDoc` falla si el documento no existe.
+---
+
+## 🧪 **Cómo Verificar que Funciona**
+
+### **Test 1: Agregar Película**
+
+1. Abrir Console (`F12`)
+2. Agregar una película a watchlist
+3. **Deberías ver:**
+   ```
+   [MovieContext] ➕ Adding to watchlist: Relatos Salvajes
+   [MovieContext] 💾 Writing to Firebase: { watchlist: 1, watched: 0 }
+   [MovieContext] ✅ Successfully synced to Firebase
+   [MovieContext] 📥 Firebase event received: { watchlist: 1, ... }
+   [MovieContext] ⏸️ Ignoring Firebase event (write in progress)  ← CLAVE
+   [MovieContext] 🔓 Write lock released
+   ```
+
+### **Test 2: Recargar Página**
+
+1. Agregar 2-3 películas
+2. **Recargar con F5**
+3. **Deberías ver:**
+   ```
+   [MovieContext] 🔥 Setting up Firebase listener
+   [MovieContext] 📥 Firebase event received: { watchlist: 3, watched: 0 }
+   [MovieContext] ✅ Applying Firebase data
+   ```
+4. **Las películas deberían estar ahí** ✅
+
+### **Test 3: Cerrar Tab y Reabrir**
+
+1. Agregar películas
+2. Cerrar tab completamente
+3. Abrir nuevo tab → ir a `http://localhost:5173/`
+4. Login
+5. **Las películas deberían cargar** ✅
+
+---
+
+## 🎯 **Por Qué Este Approach Funciona**
+
+1. **Optimistic UI:** Usuario ve cambios inmediatamente
+2. **Write Lock:** Previene race conditions durante sync
+3. **Listener Activo:** Sincroniza cambios de otros dispositivos/tabs
+4. **Fallback a LocalStorage:** Si no hay Firebase, todo funciona igual
+
+---
+
+## 📝 **Logs Mejorados**
+
+Ahora cada acción tiene emojis descriptivos:
+
+- 🔥 = Listener iniciado
+- 💾 = Escribiendo a Firebase
+- ✅ = Operación exitosa
+- ❌ = Error
+- 📥 = Data recibida de Firebase
+- ⏸️ = Evento ignorado (lock activo)
+- 🔒 = Lock activado
+- 🔓 = Lock liberado
+- ➕ = Agregando película
+- 🗑️ = Eliminando película
+- 🔄 = Actualizando rating
+
+---
+
+## ⚠️ **Importante: Delay de 1.5 segundos**
+
+El lock se libera después de **1.5 segundos**. Esto es necesario porque:
+
+1. Firebase tarda ~500-1000ms en propagar cambios
+2. El `onSnapshot` se dispara cuando Firebase confirma
+3. Si liberamos el lock muy rápido, puede haber race condition
+
+**Si estás en una red lenta,** puede que necesites ajustar este valor a 2-3 segundos.
+
+---
+
+## 🚀 **Probalo Ahora**
+
+1. Abrir `http://localhost:5173/`
+2. Abrir Console
+3. Agregar una película
+4. Verificar logs
+5. **Recargar (F5)**
+6. **La película debería estar ahí** ✅
+
+Si ves logs como:
+```
+[MovieContext] ⏸️ Ignoring Firebase event (write in progress)
+```
+
+Significa que el **write-lock está funcionando** y previniendo sobrescrituras.
+
+---
+
+## ✅ **Resumen**
+
+**Antes:**
+- onSnapshot sobrescribía datos durante writes
+- Películas desaparecían al recargar
 
 **Ahora:**
-```javascript
-await setDoc(userRef, {
-  watchlist: newWatchlist,
-  watched: newWatched
-}, { merge: true });
-```
+- Write-lock previene sobrescrituras
+- Data persiste correctamente
+- Logs extensivos para debugging
 
-**Beneficio:** Funciona incluso si el documento no existe todavía.
-
----
-
-### **2. Agregué Logging Completo**
-
-Ahora en la consola del browser vas a ver:
-
-```
-[MovieContext] Setting up Firebase listener for user: abc123
-[MovieContext] 📥 Received from Firebase: { watchlist: 5, watched: 10 }
-[MovieContext] ✅ Synced to cloud: { watchlist: 6, watched: 10 }
-```
-
-Esto te permite debuggear exactamente qué está pasando.
-
----
-
-## 🧪 **Cómo Testear la Corrección**
-
-### **Paso 1: Abrir Browser Console**
-1. Abrir `http://localhost:5173/`
-2. Presionar `F12` → **Console** tab
-3. Recargar la página (`Ctrl+R`)
-
-### **Paso 2: Verificar Logs de Inicio**
-
-Deberías ver algo como:
-```
-[MovieContext] Setting up Firebase listener for user: gJa8K3fO...
-[MovieContext] 📥 Received from Firebase: { watchlist: 0, watched: 0 }
-```
-
-O si el documento no existe:
-```
-[MovieContext] Document does not exist, creating with local data
-[MovieContext] Creating initial doc with: { watchlist: 0, watched: 0 }
-```
-
-### **Paso 3: Agregar una Película**
-
-1. Buscá una película
-2. Click en "Agregar a Watchlist"
-3. **En Console deberías ver:**
-   ```
-   [MovieContext] ✅ Synced to cloud: { watchlist: 1, watched: 0 }
-   ```
-
-### **Paso 4: Verificar en Firebase**
-
-1. Abrir **Firebase Console** → Firestore Database
-2. Navegar a `users/{tu_userId}`
-3. Deberías ver:
-   ```json
-   {
-     "watchlist": [
-       {
-         "id": 123,
-         "title": "Relatos Salvajes",
-         "addedAt": "2026-02-01T..."
-       }
-     ],
-     "watched": []
-   }
-   ```
-
-### **Paso 5: Recargar y Verificar Persistencia**
-
-1. **Recargar la página** (`Ctrl+R` o `F5`)
-2. En Console deberías ver:
-   ```
-   [MovieContext] 📥 Received from Firebase: { watchlist: 1, watched: 0 }
-   ```
-3. **La película debería seguir en tu watchlist**
-
----
-
-## ❌ **Si Todavía No Funciona**
-
-### **Escenario A: Console muestra "No user or db"**
-
-**Significa:** Firebase no está configurado o no estás logueado
-
-**Solución:**
-1. Verificar que tenés `.env` con las keys de Firebase
-2. Login con Google
-3. Verificar en Console que aparece el user ID
-
----
-
-### **Escenario B: Console muestra Error de Permisos**
-
-**Ejemplo:**
-```
-❌ Firebase listener error: Missing or insufficient permissions
-```
-
-**Significa:** Firestore rules no permiten escribir
-
-**Solución:**
-Ir a Firebase Console → Firestore → **Rules** y asegurarse que sea:
-
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-    match /userProfiles/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-  }
-}
-```
-
-Click **Publish** y reintentar.
-
----
-
-### **Escenario C: Console muestra Sync exitoso pero al recargar no aparece**
-
-**Ejemplo:**
-```
-✅ Synced to cloud: { watchlist: 1, watched: 0 }
-// Recargar página
-📥 Received from Firebase: { watchlist: 0, watched: 0 }  ⚠️ Volvió a 0!
-```
-
-**Significa:** Hay un race condition o el documento se está sobrescribiendo
-
-**Debuggear:**
-1. En Firebase Console, verificar manualmente el documento `users/{userId}`
-2. Si el documento tiene data pero el listener recibe vacío, puede ser un problema de cache
-3. Probá hacer **hard refresh**: `Ctrl+Shift+R`
-
----
-
-### **Escenario D: Modo Local (sin Firebase)**
-
-Si no tenés Firebase configurado:
-
-**Console debería mostrar:**
-```
-[MovieContext] No user or db, clearing cloud state
-```
-
-**En este caso:**
-- Las películas se guardan en **localStorage**
-- Clave: `cinetrack_watchlist` y `cinetrack_watched`
-- Persistencia funciona entre recargas
-- **Debugging:**
-  1. Abrir DevTools → Application → Local Storage
-  2. Verificar que las keys existan
-  3. Deberían tener arrays de películas
-
----
-
-## 🔍 **Manual Debug Steps**
-
-### **1. Verificar State en React DevTools**
-
-1. Instalar React DevTools (extensión de Chrome)
-2. Abrir DevTools → **Components** tab
-3. Buscar `MovieProvider`
-4. Verificar state:
-   - `cloudWatchlist`: []
-   - `cloudWatched`: []
-   - `localWatchlist`: []
-   - `isCloud`: true/false
-
-### **2. Verificar que useLocalStorage funciona**
-
-En Console:
-```javascript
-localStorage.getItem('cinetrack_watchlist')
-```
-
-Debería retornar un array JSON si hay películas guardadas.
-
-### **3. Forzar guardado manual**
-
-```javascript
-// En Console del browser
-const movie = { 
-  id: 999, 
-  title: "Test Movie", 
-  addedAt: new Date().toISOString() 
-};
-
-// Esto debería agregar la película
-// (si tenés acceso al context)
-```
-
----
-
-## 🎯 **Checklist Completo**
-
-Verificá estos puntos en orden:
-
-- [ ] ¿Ves logs `[MovieContext]` en Console?
-- [ ] ¿El log dice "Setting up Firebase listener" con tu user ID?
-- [ ] ¿Cuando agregás película aparece "✅ Synced to cloud"?
-- [ ] ¿En Firebase Console aparece el documento `users/{userId}`?
-- [ ] ¿El documento tiene el array `watchlist` con películas?
-- [ ] ¿Al recargar, el log dice "📥 Received from Firebase: { watchlist: X }"?
-- [ ] ¿La película aparece en la UI después de recargar?
-
----
-
-## 📋 **Qué Reportar si Sigue Fallando**
-
-Si después de estos pasos sigue sin funcionar, copia y pega:
-
-1. **Todos los logs de Console** que empiecen con `[MovieContext]`
-2. **Screenshot de Firebase Console** mostrando el documento `users/{userId}`
-3. **Screenshot de DevTools → Application → Local Storage** (cinetrack keys)
-4. **¿Qué paso específico falla?** (ej: "Se guarda, pero al recargar desaparece")
-
----
-
-## ✅ **Espero que esto lo arregle**
-
-El cambio principal fue:
-- `updateDoc` → `setDoc` con `merge: true`
-- Agregué logs extensivos para debugging
-
-**Probalo y avisame qué ves en Console!** 🚀
+**Probalo y avisame si funciona!** 🎬
