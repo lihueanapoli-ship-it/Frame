@@ -4,7 +4,7 @@ import { getCustomCollection, getTrendingMovies, getTopRatedMovies, getMoviesByG
 import { getPersonalizedRecommendations } from '../utils/recommendations';
 import { useMovies } from '../contexts/MovieContext';
 import MovieCard from '../components/MovieCard';
-import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { Loader2 } from 'lucide-react';
 
 const CategoryView = ({ onSelectMovie }) => {
@@ -16,6 +16,10 @@ const CategoryView = ({ onSelectMovie }) => {
     const [title, setTitle] = useState('');
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
+
+    // For "Tu ADN" - progressive loading
+    const [allRecommendations, setAllRecommendations] = useState([]);
+    const [displayCount, setDisplayCount] = useState(20);
 
     const fetchData = useCallback(async (pageNum, reset = false, currentId = id) => {
         if (pageNum === 1) setLoading(true);
@@ -31,9 +35,12 @@ const CategoryView = ({ onSelectMovie }) => {
                             movieData: { watched, watchlist }
                         };
                         const recommendations = await getPersonalizedRecommendations(userData, 'intermediate');
-                        results = recommendations.forYou || [];
+                        const allRecs = recommendations.forYou || [];
+                        setAllRecommendations(allRecs);
+                        results = allRecs.slice(0, displayCount);
                         pageTitle = 'TU ADN';
                     } else {
+                        setAllRecommendations([]);
                         results = [];
                         pageTitle = 'TU ADN';
                     }
@@ -115,6 +122,18 @@ const CategoryView = ({ onSelectMovie }) => {
         await fetchData(randomPage, true, id);
     };
 
+    const loadMore = () => {
+        if (id === 'for_you') {
+            setDisplayCount(prev => {
+                const newCount = prev + 20;
+                setMovies(allRecommendations.slice(0, newCount));
+                return newCount;
+            });
+        }
+    };
+
+    const canLoadMore = id === 'for_you' && displayCount < allRecommendations.length;
+
     return (
         <div className="min-h-screen pb-20 pt-20 px-4 max-w-7xl mx-auto">
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -128,13 +147,16 @@ const CategoryView = ({ onSelectMovie }) => {
                     <h1 className="text-2xl font-display font-bold tracking-widest uppercase text-white">{title}</h1>
                 </div>
 
-                <button
-                    onClick={shuffle}
-                    disabled={loading}
-                    className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg text-sm font-bold transition-all disabled:opacity-50"
-                >
-                    🎲 <span className="hidden md:inline">{loading ? "Cargando..." : "Refrescar"}</span>
-                </button>
+                {/* Shuffle button - Hidden for "Tu ADN" */}
+                {id !== 'for_you' && (
+                    <button
+                        onClick={shuffle}
+                        disabled={loading}
+                        className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg text-sm font-bold transition-all disabled:opacity-50"
+                    >
+                        🎲 <span className="hidden md:inline">{loading ? "Cargando..." : "Refrescar"}</span>
+                    </button>
+                )}
             </header>
 
             {loading && movies.length === 0 ? (
@@ -153,6 +175,21 @@ const CategoryView = ({ onSelectMovie }) => {
                             />
                         ))}
                     </div>
+
+                    {/* Load More button - Only for Tu ADN */}
+                    {canLoadMore && (
+                        <div className="flex justify-center mt-12">
+                            <button
+                                onClick={loadMore}
+                                className="flex flex-col items-center gap-2 px-6 py-4 bg-white/5 hover:bg-white/10 rounded-xl transition-all group"
+                            >
+                                <ChevronDownIcon className="w-6 h-6 text-primary group-hover:translate-y-1 transition-transform" />
+                                <span className="text-sm font-mono text-gray-400 group-hover:text-white transition-colors">
+                                    Ver más recomendaciones
+                                </span>
+                            </button>
+                        </div>
+                    )}
 
                 </>
             )}
