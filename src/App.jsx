@@ -18,7 +18,6 @@ import PageTransitionOverlay from './components/ui/PageTransitionOverlay';
 
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { UserProfileProvider, useUserProfile } from './contexts/UserProfileContext';
-import OnboardingModal from './components/onboarding/OnboardingModal';
 
 // ... (previous imports)
 
@@ -29,21 +28,12 @@ const AppContent = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [logoKey, setLogoKey] = useState(0); // Key to restart animation
 
+
     // Auth Hooks
     const { user, loading, logout } = useAuth();
     const { language, toggleLanguage } = useLanguage();
     const { profile, loading: profileLoading } = useUserProfile();
     const navigate = useNavigate();
-
-    // Onboarding state
-    const [showOnboarding, setShowOnboarding] = useState(false);
-
-    // Check if user needs onboarding
-    useEffect(() => {
-        if (user && profile && !profile.onboardingCompleted) {
-            setShowOnboarding(true);
-        }
-    }, [user, profile]);
 
     // 1. Loading Guard
     if (loading) {
@@ -180,12 +170,6 @@ const AppContent = () => {
                     />
                 )}
             </AnimatePresence>
-
-            {/* Onboarding Modal */}
-            <OnboardingModal
-                isOpen={showOnboarding}
-                onComplete={() => setShowOnboarding(false)}
-            />
         </div>
     );
 }

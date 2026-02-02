@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getTrendingMovies, getTopRatedMovies, getMoviesByGenre, getCustomCollection } from '../api/tmdb';
+import { getTrendingMovies, getTopRatedMovies, getCustomCollection } from '../api/tmdb';
 import { useUserProfile } from '../contexts/UserProfileContext';
 import { useMovies } from '../contexts/MovieContext';
 import { getPersonalizedRecommendations } from '../utils/recommendations';
@@ -7,21 +7,55 @@ import HeroCarousel from '../components/domain/HeroCarousel';
 import { Loader2, ChevronRight, Sparkles } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Link } from 'react-router-dom';
+import MovieCard from '../components/MovieCard';
 
-// ... imports
-import MovieCard from '../components/MovieCard'; // Import our new powerful card
+/**
+ * MovieSection Component
+ * 
+ * Subtítulo aparece solo on hover para UI más limpia
+ */
+const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, variant = 'default', isEmpty = false, emptyMessage }) => {
+    const [isHovered, setIsHovered] = useState(false);
 
-const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, variant = 'default' }) => {
+    if (isEmpty && emptyMessage) {
+        return (
+            <section className="mb-8">
+                {/* Section Header */}
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-2xl md:text-3xl font-display text-white">
+                        {title}
+                    </h2>
+                </div>
+
+                {/* Empty State */}
+                <div className="bg-surface/30 border border-white/10 rounded-xl p-8 text-center">
+                    <Sparkles className="w-12 h-12 text-primary/50 mx-auto mb-4" />
+                    <p className="text-text-secondary max-w-md mx-auto">
+                        {emptyMessage}
+                    </p>
+                </div>
+            </section>
+        );
+    }
+
     return (
-        <section className="mb-8">
+        <section
+            className="mb-8 group"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+        >
             {/* Section Header */}
             <div className="flex items-center justify-between mb-4">
                 <div>
                     <h2 className="text-2xl md:text-3xl font-display text-white mb-1">
                         {title}
                     </h2>
+                    {/* Subtitle visible on hover */}
                     {subtitle && (
-                        <p className="text-sm text-gray-400">
+                        <p className={cn(
+                            "text-sm text-gray-400 transition-all duration-300",
+                            isHovered ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1"
+                        )}>
                             {subtitle}
                         </p>
                     )}
@@ -29,7 +63,7 @@ const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, vari
                 {categoryId && (
                     <Link
                         to={`/category/${categoryId}`}
-                        className="text-primary hover:text-primary-hover transition-colors flex items-center gap-1 text-sm"
+                        className="text-primary hover:text-primary-hover transition-colors flex items-center gap-1 text-sm opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                         <span>Ver todo</span>
                         <ChevronRight className="w-4 h-4" />
@@ -57,7 +91,6 @@ const DiscoverView = ({ onSelectMovie }) => {
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState({
         trending: [],
-        topRated: [],
         must_watch: [],
         short: [],
         conversation: [],
@@ -68,17 +101,15 @@ const DiscoverView = ({ onSelectMovie }) => {
         real_life: [],
         sagas: [],
         classic_author: [],
-        // NUEVO: Recomendaciones personalizadas
+        // Tu ADN (personalizado)
         forYou: []
     });
 
-    // Hooks de contexto
     const { profile, expertiseLevel, trackBehavior } = useUserProfile();
     const { watched, watchlist } = useMovies();
 
     useEffect(() => {
         fetchAll();
-        // Track que el usuario visitó Discover
         trackBehavior('discoverViewCount', 1);
     }, []);
 
@@ -94,7 +125,6 @@ const DiscoverView = ({ onSelectMovie }) => {
         try {
             const [
                 trending,
-                topRated,
                 must_watch,
                 short,
                 conversation,
@@ -107,7 +137,6 @@ const DiscoverView = ({ onSelectMovie }) => {
                 classic_author
             ] = await Promise.all([
                 getTrendingMovies(),
-                getTopRatedMovies(),
                 getCustomCollection('must_watch'),
                 getCustomCollection('short'),
                 getCustomCollection('conversation'),
@@ -122,7 +151,6 @@ const DiscoverView = ({ onSelectMovie }) => {
 
             setData({
                 trending,
-                topRated,
                 must_watch,
                 short,
                 conversation,
@@ -133,10 +161,10 @@ const DiscoverView = ({ onSelectMovie }) => {
                 real_life,
                 sagas,
                 classic_author,
-                forYou: [] // Se llena después
+                forYou: []
             });
 
-            // Fetch recomendaciones personalizadas si el usuario tiene películas
+            // Fetch recomendaciones si hay películas vistas
             if (watched.length > 0) {
                 fetchPersonalizedRecommendations();
             }
@@ -179,32 +207,24 @@ const DiscoverView = ({ onSelectMovie }) => {
             <HeroCarousel movies={data.trending.slice(0, 5)} onSelectMovie={onSelectMovie} />
 
             <div className="space-y-6 mt-8">
-                {/* NUEVO: Sección Personalizada "Según tus gustos" */}
-                {data.forYou.length > 0 && (
+                {/* 🧬 TU ADN - Siempre visible, primer carrusel */}
+                {watched.length > 0 ? (
                     <MovieSection
-                        title="Según tus gustos"
-                        subtitle="Recomendaciones personalizadas basadas en tu biblioteca"
+                        title="Tu ADN"
+                        subtitle="Películas seleccionadas para tu perfil cinematográfico único"
                         movies={data.forYou}
                         onSelectMovie={onSelectMovie}
                         variant="personalized"
                     />
+                ) : (
+                    <MovieSection
+                        title="Tu ADN"
+                        isEmpty={true}
+                        emptyMessage="Marcá películas como vistas para descubrir tu perfil cinematográfico único y recibir recomendaciones personalizadas basadas en tus gustos."
+                    />
                 )}
 
-                {/* Colecciones Originales */}
-                <MovieSection
-                    title="Popular esta semana"
-                    subtitle="Lo más visto en los últimos días"
-                    movies={data.trending}
-                    onSelectMovie={onSelectMovie}
-                />
-
-                <MovieSection
-                    title="Mejor Rankeadas"
-                    subtitle="Las películas con mejor puntuación de la historia"
-                    movies={data.topRated}
-                    onSelectMovie={onSelectMovie}
-                />
-
+                {/* Resto de Colecciones (sin "Popular esta semana" ni "Mejor Rankeadas") */}
                 <MovieSection
                     title="Los Infaltables"
                     subtitle="Clásicos que todo el mundo ama y que no podés no haber visto"
