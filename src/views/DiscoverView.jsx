@@ -1,356 +1,297 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { getTrendingMovies, getTopRatedMovies, getCustomCollection } from '../api/tmdb';
+import { getTrendingMovies, getTopRatedMovies, getMoviesByGenre, getCustomCollection } from '../api/tmdb';
 import { useUserProfile } from '../contexts/UserProfileContext';
 import { useMovies } from '../contexts/MovieContext';
-import { getPersonalizedRecommendations, getContextualCollections, getContextualTitle } from '../utils/recommendations';
+import { getPersonalizedRecommendations } from '../utils/recommendations';
 import HeroCarousel from '../components/domain/HeroCarousel';
-import MovieCard from '../components/MovieCard';
-import { Loader2, ChevronRight, Sparkles, TrendingUp, Star, Clock } from 'lucide-react';
+import { Loader2, ChevronRight, Sparkles } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Link } from 'react-router-dom';
 
-/**
- * DiscoverView - ADAPTIVE VERSION
- * 
- * Esta vista se adapta según el expertise level del usuario:
- * 
- * NOVICE:
- * - Colecciones populares (clásicos, trending, top rated)
- * - Textos explicativos simples
- * - Foco en facilitar decisiones rápidas
- * 
- * INTERMEDIATE:
- * - Mix de popular + personalizado
- * - "Porque te gustó X" sections
- * - Géneros favoritos destacados
- * 
- * EXPERT:
- * - Highly personalized
- * - Deep cuts (películas raras)
- * - Contexto temporal (hora, día de semana)
- * - Metadata visible
- */
+// ... imports
+import MovieCard from '../components/MovieCard'; // Import our new powerful card
 
-const MovieSection = ({
-    title,
-    subtitle,
-    icon: Icon,
-    movies,
-    onSelectMovie,
-    categoryId,
-    variant = 'default',
-    loading = false
-}) => {
-    if (loading) {
-        return (
-            <section className="mb-12">
-                <div className="flex items-center justify-between mb-6">
-                    <div>
-                        <div className="h-8 w-48 bg-white/10 rounded animate-pulse mb-2" />
-                        <div className="h-4 w-64 bg-white/5 rounded animate-pulse" />
-                    </div>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                    {[...Array(5)].map((_, i) => (
-                        <div key={i} className="aspect-[2/3] bg-white/10 rounded-lg animate-pulse" />
-                    ))}
-                </div>
-            </section>
-        );
-    }
-
-    if (!movies || movies.length === 0) return null;
-
+const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, variant = 'default' }) => {
     return (
-        <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-12"
-        >
+        <section className="mb-8">
             {/* Section Header */}
-            <div className="flex items-start justify-between mb-6">
-                <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                        {Icon && <Icon className="w-6 h-6 text-primary" />}
-                        <h2 className="text-2xl md:text-3xl font-display text-white">
-                            {title}
-                        </h2>
-                    </div>
+            <div className="flex items-center justify-between mb-4">
+                <div>
+                    <h2 className="text-2xl md:text-3xl font-display text-white mb-1">
+                        {title}
+                    </h2>
                     {subtitle && (
-                        <p className="text-sm md:text-base text-text-secondary">
+                        <p className="text-sm text-gray-400">
                             {subtitle}
                         </p>
                     )}
                 </div>
-
                 {categoryId && (
                     <Link
                         to={`/category/${categoryId}`}
-                        className="flex items-center gap-1 text-primary hover:text-primary-hover transition-colors text-sm font-medium"
+                        className="text-primary hover:text-primary-hover transition-colors flex items-center gap-1 text-sm"
                     >
-                        Ver todo
+                        <span>Ver todo</span>
                         <ChevronRight className="w-4 h-4" />
                     </Link>
                 )}
             </div>
 
-            {/* Movies Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {/* Movies Horizontal Scroll */}
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory">
                 {movies.slice(0, 10).map((movie) => (
-                    <MovieCard
-                        key={movie.id}
-                        movie={movie}
-                        onClick={() => onSelectMovie(movie)}
-                        variant={variant}
-                    />
+                    <div key={movie.id} className="flex-shrink-0 w-[200px] snap-start">
+                        <MovieCard
+                            movie={movie}
+                            onClick={() => onSelectMovie(movie)}
+                            variant={variant}
+                        />
+                    </div>
                 ))}
             </div>
-        </motion.section>
+        </section>
     );
 };
 
 const DiscoverView = ({ onSelectMovie }) => {
-    const { expertiseLevel, uiConfig, profile, trackBehavior } = useUserProfile();
+    const [loading, setLoading] = useState(true);
+    const [data, setData] = useState({
+        trending: [],
+        topRated: [],
+        must_watch: [],
+        short: [],
+        conversation: [],
+        tech: [],
+        argentina: [],
+        thriller: [],
+        romance: [],
+        real_life: [],
+        sagas: [],
+        classic_author: [],
+        // NUEVO: Recomendaciones personalizadas
+        forYou: []
+    });
+
+    // Hooks de contexto
+    const { profile, expertiseLevel, trackBehavior } = useUserProfile();
     const { watched, watchlist } = useMovies();
 
-    const [loading, setLoading] = useState(true);
-    const [sections, setSections] = useState([]);
-    const [heroMovies, setHeroMovies] = useState([]);
-
     useEffect(() => {
-        fetchAdaptiveContent();
-
+        fetchAll();
         // Track que el usuario visitó Discover
         trackBehavior('discoverViewCount', 1);
-    }, [expertiseLevel, watched.length]);
+    }, []);
 
-    const fetchAdaptiveContent = async () => {
+    // Re-fetch recomendaciones cuando cambie la biblioteca
+    useEffect(() => {
+        if (watched.length > 0) {
+            fetchPersonalizedRecommendations();
+        }
+    }, [watched.length, expertiseLevel]);
+
+    const fetchAll = async () => {
         setLoading(true);
-
         try {
-            // HERO siempre muestra trending
-            const trending = await getTrendingMovies();
-            setHeroMovies(trending.slice(0, 5));
+            const [
+                trending,
+                topRated,
+                must_watch,
+                short,
+                conversation,
+                tech,
+                argentina,
+                thriller,
+                romance,
+                real_life,
+                sagas,
+                classic_author
+            ] = await Promise.all([
+                getTrendingMovies(),
+                getTopRatedMovies(),
+                getCustomCollection('must_watch'),
+                getCustomCollection('short'),
+                getCustomCollection('conversation'),
+                getCustomCollection('tech'),
+                getCustomCollection('argentina'),
+                getCustomCollection('thriller'),
+                getCustomCollection('romance'),
+                getCustomCollection('real_life'),
+                getCustomCollection('sagas'),
+                getCustomCollection('classic_author')
+            ]);
 
-            let adaptiveSections = [];
+            setData({
+                trending,
+                topRated,
+                must_watch,
+                short,
+                conversation,
+                tech,
+                argentina,
+                thriller,
+                romance,
+                real_life,
+                sagas,
+                classic_author,
+                forYou: [] // Se llena después
+            });
 
-            // ========================================
-            // NOVICE: Popular + Classics
-            // ========================================
-            if (expertiseLevel === 'novice') {
-                const [topRated, mustWatch, shortMovies] = await Promise.all([
-                    getTopRatedMovies(),
-                    getCustomCollection('must_watch'),
-                    getCustomCollection('short')
-                ]);
-
-                adaptiveSections = [
-                    {
-                        title: '🔥 Tendencias',
-                        subtitle: 'Lo más visto de la semana',
-                        icon: TrendingUp,
-                        movies: trending,
-                        categoryId: null
-                    },
-                    {
-                        title: '⭐ Mejor Rankeadas',
-                        subtitle: 'Películas que amas todos',
-                        icon: Star,
-                        movies: topRated,
-                        categoryId: null
-                    },
-                    {
-                        title: '🎬 Los Infaltables',
-                        subtitle: 'Clásicos que tenés que ver',
-                        icon: null,
-                        movies: mustWatch,
-                        categoryId: 'must_watch'
-                    },
-                    {
-                        title: '⏱️ Cortitas y al Pie',
-                        subtitle: 'Menos de 90 minutos',
-                        icon: Clock,
-                        movies: shortMovies,
-                        categoryId: 'short'
-                    }
-                ];
+            // Fetch recomendaciones personalizadas si el usuario tiene películas
+            if (watched.length > 0) {
+                fetchPersonalizedRecommendations();
             }
-
-            // ========================================
-            // INTERMEDIATE: Personalized Mix
-            // ========================================
-            else if (expertiseLevel === 'intermediate') {
-                // Obtener recomendaciones personalizadas
-                const recommendations = await getPersonalizedRecommendations(
-                    profile,
-                    expertiseLevel
-                );
-
-                const [thriller, romance] = await Promise.all([
-                    getCustomCollection('thriller'),
-                    getCustomCollection('romance')
-                ]);
-
-                adaptiveSections = [
-                    {
-                        title: getContextualTitle('forYou', expertiseLevel),
-                        subtitle: 'Películas seleccionadas para tu perfil',
-                        icon: Sparkles,
-                        movies: recommendations.forYou,
-                        categoryId: null
-                    },
-                    {
-                        title: '🔥 Tendencias',
-                        subtitle: 'Lo más popular ahora',
-                        icon: TrendingUp,
-                        movies: trending,
-                        categoryId: null
-                    },
-                    {
-                        title: getContextualTitle('similar', expertiseLevel),
-                        subtitle: 'Basado en películas que rankeaste alto',
-                        icon: null,
-                        movies: recommendations.similar,
-                        categoryId: null
-                    },
-                    {
-                        title: '🎭 Pulso a Mil',
-                        subtitle: 'Thriller y misterio',
-                        icon: null,
-                        movies: thriller,
-                        categoryId: 'thriller'
-                    },
-                    {
-                        title: '💕 Primera Cita',
-                        subtitle: 'Romance y comedia',
-                        icon: null,
-                        movies: romance,
-                        categoryId: 'romance'
-                    }
-                ];
-            }
-
-            // ========================================
-            // EXPERT: Highly Personalized + Deep Cuts
-            // ========================================
-            else if (expertiseLevel === 'expert') {
-                const recommendations = await getPersonalizedRecommendations(
-                    profile,
-                    expertiseLevel
-                );
-
-                const contextualCollections = getContextualCollections(profile);
-
-                const [auteur, argentina] = await Promise.all([
-                    getCustomCollection('classic_author'),
-                    getCustomCollection('argentina')
-                ]);
-
-                adaptiveSections = [
-                    {
-                        title: getContextualTitle('forYou', expertiseLevel),
-                        subtitle: 'Algoritmo personalizado basado en tu biblioteca',
-                        icon: Sparkles,
-                        movies: recommendations.forYou,
-                        categoryId: null
-                    },
-                    // Contextual (time-based)
-                    ...(contextualCollections.length > 0 ? [{
-                        title: contextualCollections[0].title,
-                        subtitle: contextualCollections[0].subtitle,
-                        icon: Clock,
-                        movies: [], // TODO: fetch based on filters
-                        categoryId: contextualCollections[0].id
-                    }] : []),
-                    {
-                        title: getContextualTitle('deepCuts', 'expert'),
-                        subtitle: 'Películas raras con alta calidad',
-                        icon: null,
-                        movies: recommendations.deepCuts,
-                        categoryId: null
-                    },
-                    {
-                        title: '🔥 Trending (Reference)',
-                        subtitle: 'Para estar al día',
-                        icon: TrendingUp,
-                        movies: trending.slice(0, 5), // Menos espacio para trending
-                        categoryId: null
-                    },
-                    {
-                        title: '🎨 Solo para Locos',
-                        subtitle: 'Cine de autor y experimental',
-                        icon: null,
-                        movies: auteur,
-                        categoryId: 'classic_author'
-                    },
-                    {
-                        title: '🇦🇷 El Aguante',
-                        subtitle: 'Cine argentino',
-                        icon: null,
-                        movies: argentina,
-                        categoryId: 'argentina'
-                    }
-                ];
-            }
-
-            setSections(adaptiveSections);
         } catch (error) {
-            console.error('[DiscoverView] Error fetching content:', error);
+            console.error("Error fetching movies:", error);
         } finally {
             setLoading(false);
         }
     };
 
-    if (loading && sections.length === 0) {
+    const fetchPersonalizedRecommendations = async () => {
+        if (!profile || watched.length === 0) return;
+
+        try {
+            const recommendations = await getPersonalizedRecommendations(
+                profile,
+                expertiseLevel
+            );
+
+            setData(prev => ({
+                ...prev,
+                forYou: recommendations.forYou || []
+            }));
+        } catch (error) {
+            console.error('[DiscoverView] Error fetching recommendations:', error);
+        }
+    };
+
+    if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="text-center">
-                    <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
-                    <p className="text-text-secondary">
-                        {expertiseLevel === 'novice'
-                            ? 'Cargando películas...'
-                            : expertiseLevel === 'intermediate'
-                                ? 'Personalizando tu feed...'
-                                : 'Curando contenido para tu perfil...'}
-                    </p>
-                </div>
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
             </div>
         );
     }
 
     return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-        >
+        <div>
             {/* Hero Carousel */}
-            {heroMovies.length > 0 && (
-                <div className="mb-12">
-                    <HeroCarousel
-                        movies={heroMovies}
-                        onSelectMovie={onSelectMovie}
-                    />
-                </div>
-            )}
+            <HeroCarousel movies={data.trending.slice(0, 5)} onSelectMovie={onSelectMovie} />
 
-            {/* Adaptive Sections */}
-            <div className="space-y-8">
-                {sections.map((section, index) => (
+            <div className="space-y-6 mt-8">
+                {/* NUEVO: Sección Personalizada "Según tus gustos" */}
+                {data.forYou.length > 0 && (
                     <MovieSection
-                        key={`${section.title}-${index}`}
-                        title={section.title}
-                        subtitle={section.subtitle}
-                        icon={section.icon}
-                        movies={section.movies}
+                        title="Según tus gustos"
+                        subtitle="Recomendaciones personalizadas basadas en tu biblioteca"
+                        movies={data.forYou}
                         onSelectMovie={onSelectMovie}
-                        categoryId={section.categoryId}
-                        loading={loading}
+                        variant="personalized"
                     />
-                ))}
+                )}
+
+                {/* Colecciones Originales */}
+                <MovieSection
+                    title="Popular esta semana"
+                    subtitle="Lo más visto en los últimos días"
+                    movies={data.trending}
+                    onSelectMovie={onSelectMovie}
+                />
+
+                <MovieSection
+                    title="Mejor Rankeadas"
+                    subtitle="Las películas con mejor puntuación de la historia"
+                    movies={data.topRated}
+                    onSelectMovie={onSelectMovie}
+                />
+
+                <MovieSection
+                    title="Los Infaltables"
+                    subtitle="Clásicos que todo el mundo ama y que no podés no haber visto"
+                    movies={data.must_watch}
+                    onSelectMovie={onSelectMovie}
+                    categoryId="must_watch"
+                />
+
+                <MovieSection
+                    title="Cortitas y al Pie"
+                    subtitle="90 minutos o menos. Directo al grano sin filtros"
+                    movies={data.short}
+                    onSelectMovie={onSelectMovie}
+                    categoryId="short"
+                />
+
+                <MovieSection
+                    title="Mate y Sobremesa"
+                    subtitle="Historias que todo el mundo ama y que no podés no haber visto"
+                    movies={data.conversation}
+                    onSelectMovie={onSelectMovie}
+                    categoryId="conversation"
+                />
+
+                <MovieSection
+                    title="El Laboratorio"
+                    subtitle="Sci-fi, distopías y aventuras futuristas"
+                    movies={data.tech}
+                    onSelectMovie={onSelectMovie}
+                    categoryId="tech"
+                />
+
+                <MovieSection
+                    title="El Aguante"
+                    subtitle="Cine argentino en su máximo esplendor"
+                    movies={data.argentina}
+                    onSelectMovie={onSelectMovie}
+                    categoryId="argentina"
+                    variant="argentina"
+                />
+
+                <MovieSection
+                    title="Pulso a Mil"
+                    subtitle="Thriller, suspenso y adrenalina pura"
+                    movies={data.thriller}
+                    onSelectMovie={onSelectMovie}
+                    categoryId="thriller"
+                    variant="thriller"
+                />
+
+                <MovieSection
+                    title="Primera Cita"
+                    subtitle="Romance, comedia y lo mejor de ambos mundos"
+                    movies={data.romance}
+                    onSelectMovie={onSelectMovie}
+                    categoryId="romance"
+                    variant="romance"
+                />
+
+                <MovieSection
+                    title="Misiones de Verdad"
+                    subtitle="Casos reales que demuestran que la posta supera la ficción"
+                    movies={data.real_life}
+                    onSelectMovie={onSelectMovie}
+                    categoryId="real_life"
+                    variant="documentary"
+                />
+
+                <MovieSection
+                    title="Viaje de Ida"
+                    subtitle="Sagas y trilogías. Garantía Total"
+                    movies={data.sagas}
+                    onSelectMovie={onSelectMovie}
+                    categoryId="sagas"
+                    variant="saga"
+                />
+
+                <MovieSection
+                    title="Solo para Locos"
+                    subtitle="Filtro de autor. Técnica, encuadre y alma para los que buscamos el cine en estado puro."
+                    movies={data.classic_author}
+                    onSelectMovie={onSelectMovie}
+                    categoryId="classic_author"
+                    variant="cult"
+                />
             </div>
-        </motion.div>
+        </div>
     );
 };
 
