@@ -37,9 +37,9 @@ const profile = analyzeUserProfile(watchedWithDetails);
 
 **Qué analiza:**
 1. **Géneros Ponderados por Rating:**
-   - Película con 5 estrellas → género vale 5 puntos
-   - Película con 3 estrellas → género vale 3 puntos
-   - Película sin rating → género vale 2.5 puntos (neutral)
+   - Película con 10 estrellas → género vale 10 puntos
+   - Película con 7 estrellas → género vale 7 puntos
+   - Película sin rating → género vale 5 puntos (neutral)
 
 2. **Décadas Favoritas:**
    - ¿Preferís cine de los 80s? ¿2000s? ¿clásico?
@@ -85,9 +85,9 @@ discoverMovies({
 
 #### **B) Similar-Based (Basadas en Similares)**
 ```javascript
-// Toma tus películas con rating >= 4
+// Toma tus películas con rating >= 8 estrellas (escala 1-10)
 const topRated = watched
-  .filter(m => m.userRating >= 4)
+  .filter(m => m.userRating >= 8)
   .slice(0, 5);
 
 // Fetch similares de cada una
@@ -132,17 +132,22 @@ Luego se ordenan por score y retornan las top 20.
 
 ## 📊 **Ejemplo Completo**
 
-**Usuario con este perfil:**
-- Vio 25 películas
-- Top géneros: Drama (4.5★), Thriller (4.2★), Crimen (4.0★)
-- Rating promedio: 4.1
-- Década favorita: 2010s
-- Prefiere indie (popularity promedio: 35)
+**Usuario vio:**
+- Relatos Salvajes → 10★
+- Parasite → 9★  
+- The Father → 8★
+- Inception → 7★
+- Tenet → 5★
 
-**Películas mejor rankeadas (5★):**
-- Relatos Salvajes (Drama, Crimen)
-- Parasite (Drama, Thriller)
-- Whiplash (Drama, Música)
+**Géneros:**
+- Drama: (10 + 9 + 8 + 7) / 4 = 8.5 promedio → MUY alto peso
+- Thriller: (9 + 8) / 2 = 8.5 promedio → MUY alto peso  
+- Acción: (7 + 5) / 2 = 6.0 promedio → Peso medio
+
+**Resultado:**
+✅ Priorizará Drama y Thriller
+⚠️ Acción tiene menos prioridad
+🎯 Buscará similares SOLO a Relatos, Parasite y The Father (8+★)
 
 **Recomendaciones generadas:**
 
@@ -191,7 +196,7 @@ Luego se ordenan por score y retornan las top 20.
 ### **Para ver Tu ADN working:**
 
 1. **Marcá 10-15 películas como vistas**
-2. **Dale ratings (1-5 estrellas)** a al menos 5
+2. **Dale ratings (1-10 estrellas)** a al menos 5
 3. **Ir a Discover**
 4. **Abrir Console** (F12)
 5. Deberías ver:
