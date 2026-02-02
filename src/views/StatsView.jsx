@@ -303,7 +303,7 @@ const StatsView = () => {
                 <div className="col-span-1 md:col-span-2 row-span-2 bg-surface border border-white/5 p-4 min-h-[300px] flex flex-col">
                     <h3 className="font-mono text-xs text-gray-500 uppercase tracking-widest mb-4">RADAR DE GÉNEROS</h3>
                     <div className="w-full h-[300px]">
-                        <ResponsiveContainer width={800} height={300}>
+                        <ResponsiveContainer width="100%" height={300} minWidth={300} minHeight={300}>
                             <RadarChart cx="50%" cy="50%" outerRadius="70%" data={genreData}>
                                 <PolarGrid stroke="#333" />
                                 <PolarAngleAxis dataKey="subject" tick={{ fill: '#9CA3AF', fontSize: 10, fontFamily: 'monospace' }} />
@@ -329,7 +329,7 @@ const StatsView = () => {
                 <div className="col-span-1 md:col-span-2 bg-surface border border-white/5 p-6 flex flex-col min-h-[300px]">
                     <h3 className="font-mono text-xs text-gray-500 uppercase tracking-widest mb-4">CURVA DE EXIGENCIA</h3>
                     <div className="w-full h-[250px]">
-                        <ResponsiveContainer width={800} height={250}>
+                        <ResponsiveContainer width="100%" height={250} minWidth={300} minHeight={250}>
                             <BarChart data={ratingDistribution}>
                                 <XAxis dataKey="rating" stroke="#333" tick={{ fill: '#6B7280', fontSize: 10, fontFamily: 'monospace' }} />
                                 <Tooltip
