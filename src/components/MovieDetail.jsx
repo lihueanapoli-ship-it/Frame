@@ -274,11 +274,16 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                                         "text-primary"
                                             )}>
                                                 {(hoverRating || userRating)}/10 • {
-                                                    (hoverRating || userRating) <= 2 ? "Mala" :
-                                                        (hoverRating || userRating) <= 4 ? "Regular" :
-                                                            (hoverRating || userRating) <= 6 ? "Pasable" :
-                                                                (hoverRating || userRating) <= 8 ? "Muy Buena" :
-                                                                    "¡Obra Maestra!"
+                                                    (hoverRating || userRating) === 1 ? "Horrible" :
+                                                        (hoverRating || userRating) === 2 ? "Muy mala" :
+                                                            (hoverRating || userRating) === 3 ? "Mala" :
+                                                                (hoverRating || userRating) === 4 ? "Por debajo del promedio" :
+                                                                    (hoverRating || userRating) === 5 ? "Regular" :
+                                                                        (hoverRating || userRating) === 6 ? "Decente" :
+                                                                            (hoverRating || userRating) === 7 ? "Buena" :
+                                                                                (hoverRating || userRating) === 8 ? "Muy buena" :
+                                                                                    (hoverRating || userRating) === 9 ? "Excelente" :
+                                                                                        "Obra maestra"
                                                 }
                                             </span>
                                         </motion.div>
