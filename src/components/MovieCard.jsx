@@ -6,6 +6,8 @@ import { cn } from '../lib/utils';
 import { ClockIcon } from '@heroicons/react/24/outline'; // Reloj
 import { CheckIcon, PlusIcon } from '@heroicons/react/24/solid'; // Icons for actions
 import { useSound } from '../contexts/SoundContext';
+import OscarBadge from './badges/OscarBadge';
+import { isOscarWinner } from '../constants/oscarWinners';
 
 const MovieCard = ({ movie, onClick, rating, variant = 'default', onAddToWatchlist, onMarkWatched }) => { // Added action props placeholders
     const [isHovered, setIsHovered] = useState(false);
@@ -69,7 +71,8 @@ const MovieCard = ({ movie, onClick, rating, variant = 'default', onAddToWatchli
                 {/* Dark Gradient Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-300" />
 
-                {/* Overlays / Badges - REMOVED SPECIFIC BADGES */}
+                {/* Overlays / Badges */}
+                {isOscarWinner(movie.id) && <OscarBadge />}
 
                 {/* Quick Actions - Slide Up on Hover */}
                 <div className="absolute bottom-0 left-0 right-0 p-3 z-30 flex gap-2 justify-center pb-safe overflow-hidden pointer-events-none">
