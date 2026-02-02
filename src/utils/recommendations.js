@@ -70,7 +70,7 @@ export async function getPersonalizedRecommendations(userData, expertiseLevel = 
         console.log('[Tu ADN] ✅ Recomendaciones generadas:', scoredMovies.length);
 
         return {
-            forYou: scoredMovies.slice(0, 20),
+            forYou: scoredMovies, // Devolver TODAS (hasta 50)
             basedOnGenres: genreBased.slice(0, 20),
             similar: similarBased.slice(0, 20),
             deepCuts: deepCuts.slice(0, 15)
