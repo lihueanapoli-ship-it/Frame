@@ -89,7 +89,7 @@ export const MovieProvider = ({ children }) => {
     }, [user, db]);
 
     // ========================================
-    // CLOUD SYNC FUNCTION
+    // CLOUD SYNC FUNCTION (Debounced)
     // ========================================
     const syncToCloud = async (newWatchlist, newWatched) => {
         if (!user || !db) {
@@ -97,40 +97,43 @@ export const MovieProvider = ({ children }) => {
             return;
         }
 
-        // Set syncing flag
-        isSyncingRef.current = true;
-
-        // Clear any existing timeout
+        // Clear any existing sync timeout
         if (syncTimeoutRef.current) {
             clearTimeout(syncTimeoutRef.current);
         }
 
-        const userRef = doc(db, 'users', user.uid);
+        // Debounce: Wait 500ms before syncing (batch multiple changes)
+        syncTimeoutRef.current = setTimeout(async () => {
+            // Set syncing flag
+            isSyncingRef.current = true;
 
-        try {
-            console.log('[MovieContext] 💾 Syncing to Firebase:', {
-                watchlist: newWatchlist.length,
-                watched: newWatched.length
-            });
+            const userRef = doc(db, 'users', user.uid);
 
-            await setDoc(userRef, {
-                watchlist: newWatchlist,
-                watched: newWatched,
-                lastUpdated: new Date().toISOString()
-            }, { merge: true });
+            try {
+                console.log('[MovieContext] 💾 Syncing to Firebase:', {
+                    watchlist: newWatchlist.length,
+                    watched: newWatched.length
+                });
 
-            console.log('[MovieContext] ✅ Sync successful');
+                await setDoc(userRef, {
+                    watchlist: newWatchlist,
+                    watched: newWatched,
+                    lastUpdated: new Date().toISOString()
+                }, { merge: true });
 
-        } catch (error) {
-            console.error('[MovieContext] ❌ Sync failed:', error);
-            throw error;
-        } finally {
-            // Release sync flag after 2 seconds to ensure Firebase propagation
-            syncTimeoutRef.current = setTimeout(() => {
-                isSyncingRef.current = false;
-                console.log('[MovieContext] 🔓 Sync flag released');
-            }, 2000);
-        }
+                console.log('[MovieContext] ✅ Sync successful');
+
+            } catch (error) {
+                console.error('[MovieContext] ❌ Sync failed:', error);
+                throw error;
+            } finally {
+                // Release sync flag after 1 second to ensure Firebase propagation
+                setTimeout(() => {
+                    isSyncingRef.current = false;
+                    console.log('[MovieContext] 🔓 Sync flag released');
+                }, 1000);
+            }
+        }, 500); // Debounce 500ms
     };
 
     // ========================================
