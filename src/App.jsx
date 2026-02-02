@@ -17,6 +17,7 @@ import SpotlightCursor from './components/ui/SpotlightCursor';
 import PageTransitionOverlay from './components/ui/PageTransitionOverlay';
 
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
+import { UserProfileProvider } from './contexts/UserProfileContext';
 
 // ... (previous imports)
 
@@ -176,11 +177,13 @@ function App() {
         <BrowserRouter>
             <AuthProvider>
                 <LanguageProvider>
-                    <MovieProvider>
-                        <SoundProvider>
-                            <AppContent />
-                        </SoundProvider>
-                    </MovieProvider>
+                    <UserProfileProvider>
+                        <MovieProvider>
+                            <SoundProvider>
+                                <AppContent />
+                            </SoundProvider>
+                        </MovieProvider>
+                    </UserProfileProvider>
                 </LanguageProvider>
             </AuthProvider>
         </BrowserRouter>

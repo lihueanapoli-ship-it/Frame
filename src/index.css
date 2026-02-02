@@ -1,3 +1,6 @@
+/* Import Design System Tokens */
+@import './design-system/tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,7 +11,11 @@
     }
 
     body {
-        @apply bg-background text-text antialiased;
+        background-color: var(--color-bg-primary);
+        color: var(--color-text-primary);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
         overflow-x: hidden;
     }
 
@@ -74,7 +81,8 @@
     }
 
     ::selection {
-        @apply bg-primary/30 text-primary;
+        background-color: var(--color-brand-muted);
+        color: var(--color-brand-primary);
     }
 }
 

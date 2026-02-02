@@ -165,7 +165,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                     className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-semibold transition-all border border-white/10 backdrop-blur-md cursor-pointer active:scale-95 group"
                                 >
                                     <PlusIcon className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" />
-                                    <span className="tracking-wide">Por Ver</span>
+                                    <span className="tracking-wide">Quiero verla</span>
                                 </button>
                                 <button
                                     onClick={(e) => {

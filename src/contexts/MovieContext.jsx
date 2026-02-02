@@ -73,17 +73,29 @@ export const MovieProvider = ({ children }) => {
         const movieToAdd = { ...movie, addedAt: new Date().toISOString() };
 
         // Avoid duplicates
-        if (watchlist.some(m => m.id === movie.id) || watched.some(m => m.id === movie.id)) return;
+        if (watchlist.some(m => m.id === movie.id) || watched.some(m => m.id === movie.id)) {
+            console.log('[MovieContext] Movie already in watchlist or watched');
+            return;
+        }
+
+        const newWatchlist = [...watchlist, movieToAdd];
 
         if (isCloud) {
-            // Optimistic update handled by listener usually, but here we can just wait for listener or update locally to feel fast?
-            // Since we use onSnapshot, updating the DB triggers the state update.
-            const newWatchlist = [...watchlist, movieToAdd];
-            updateCloud(newWatchlist, watched);
+            // ✨ OPTIMISTIC UI: Update state immediately
+            setCloudWatchlist(newWatchlist);
+
+            // Then sync to cloud in background
+            updateCloud(newWatchlist, watched).catch(error => {
+                console.error('[MovieContext] Failed to sync watchlist:', error);
+                // Rollback on error
+                setCloudWatchlist(watchlist);
+                // TODO: Show toast notification to user
+            });
         } else {
-            setLocalWatchlist([...localWatchlist, movieToAdd]);
+            setLocalWatchlist(newWatchlist);
         }
     };
+
 
     const addToWatched = (movie, rating = 0) => {
         // Filter out from watchlist
@@ -103,7 +115,20 @@ export const MovieProvider = ({ children }) => {
         }
 
         if (isCloud) {
-            updateCloud(newWatchlist, newWatched);
+            // ✨ OPTIMISTIC UI: Update state immediately
+            const prevWatchlist = cloudWatchlist;
+            const prevWatched = cloudWatched;
+
+            setCloudWatchlist(newWatchlist);
+            setCloudWatched(newWatched);
+
+            // Then sync to cloud
+            updateCloud(newWatchlist, newWatched).catch(error => {
+                console.error('[MovieContext] Failed to sync watched:', error);
+                // Rollback
+                setCloudWatchlist(prevWatchlist);
+                setCloudWatched(prevWatched);
+            });
         } else {
             setLocalWatchlist(newWatchlist);
             setLocalWatched(newWatched);
@@ -122,12 +147,26 @@ export const MovieProvider = ({ children }) => {
         const newWatched = watched.filter(m => m.id !== movieId);
 
         if (isCloud) {
-            updateCloud(newWatchlist, newWatched);
+            // ✨ OPTIMISTIC UI: Update state immediately
+            const prevWatchlist = cloudWatchlist;
+            const prevWatched = cloudWatched;
+
+            setCloudWatchlist(newWatchlist);
+            setCloudWatched(newWatched);
+
+            // Then sync to cloud
+            updateCloud(newWatchlist, newWatched).catch(error => {
+                console.error('[MovieContext] Failed to remove movie:', error);
+                // Rollback
+                setCloudWatchlist(prevWatchlist);
+                setCloudWatched(prevWatched);
+            });
         } else {
             setLocalWatchlist(newWatchlist);
             setLocalWatched(newWatched);
         }
     };
+
 
     const isWatched = (id) => watched.some(m => m.id === id);
     const isInWatchlist = (id) => watchlist.some(m => m.id === id);
