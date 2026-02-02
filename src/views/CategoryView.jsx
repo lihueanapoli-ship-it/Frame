@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getCustomCollection, getTrendingMovies, getTopRatedMovies, getMoviesByGenre } from '../api/tmdb';
+import { getPersonalizedRecommendations } from '../utils/recommendations';
+import { useMovies } from '../contexts/MovieContext';
 import MovieCard from '../components/MovieCard';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { Loader2 } from 'lucide-react';
@@ -8,6 +10,7 @@ import { Loader2 } from 'lucide-react';
 const CategoryView = ({ onSelectMovie }) => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { watched, watchlist } = useMovies();
     const [movies, setMovies] = useState([]);
     const [loading, setLoading] = useState(true);
     const [title, setTitle] = useState('');
@@ -21,23 +24,40 @@ const CategoryView = ({ onSelectMovie }) => {
 
         try {
             switch (currentId) {
+                case 'for_you':
+                    // Personalized recommendations
+                    if (watched.length > 0) {
+                        const userData = {
+                            movieData: { watched, watchlist }
+                        };
+                        const recommendations = await getPersonalizedRecommendations(userData, 'intermediate');
+                        results = recommendations.forYou || [];
+                        pageTitle = 'TU ADN';
+                    } else {
+                        results = [];
+                        pageTitle = 'TU ADN';
+                    }
+                    break;
                 case 'trending':
                     results = await getTrendingMovies(pageNum);
+                    pageTitle = 'TENDENCIAS';
                     break;
                 case 'topRated':
                     results = await getTopRatedMovies(pageNum);
+                    pageTitle = 'MEJOR RANKEADAS';
                     break;
                 case 'action_pure':
                     results = await getMoviesByGenre(28, pageNum);
+                    pageTitle = 'ACCIÓN PURA';
                     break;
                 case 'horror_rec':
                     results = await getMoviesByGenre(27, pageNum);
+                    pageTitle = 'TERROR';
                     break;
                 default:
                     results = await getCustomCollection(currentId, pageNum);
+                    pageTitle = 'COLECCIÓN';
             }
-
-            pageTitle = 'COLECCIÓN';
 
             // Validar que seguimos en la misma categoría (Race condition protection simple)
             if (currentId !== id) return;
@@ -65,7 +85,7 @@ const CategoryView = ({ onSelectMovie }) => {
         } finally {
             if (currentId === id) setLoading(false);
         }
-    }, [id]);
+    }, [id, watched, watchlist]);
 
     useEffect(() => {
         setMovies([]);

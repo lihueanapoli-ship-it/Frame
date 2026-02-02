@@ -115,7 +115,7 @@ const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, vari
                 onMouseUp={handleMouseUp}
                 onMouseMove={handleMouseMove}
             >
-                {movies.slice(0, 10).map((movie) => (
+                {movies.slice(0, 20).map((movie) => (
                     <div
                         key={movie.id}
                         className="flex-shrink-0 w-[200px] snap-start"
@@ -272,6 +272,7 @@ const DiscoverView = ({ onSelectMovie }) => {
                         movies={data.forYou}
                         onSelectMovie={onSelectMovie}
                         variant="personalized"
+                        categoryId="for_you"
                     />
                 ) : (
                     <MovieSection
