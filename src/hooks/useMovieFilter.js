@@ -9,7 +9,7 @@ export const MOVIE_STATUS = {
 /**
  * useMovieFilter Hook
  * Filters and sorts movies.
- * Updated to support correct data properties (addedAt, rating, release_date).
+ * Updated to support ratingSource ('tmdb' or 'user') and proper genre/runtime handling.
  */
 export const useMovieFilter = (movies, {
     search = '',
@@ -18,7 +18,8 @@ export const useMovieFilter = (movies, {
     genres = [],
     minRating = 0,
     runtime = 'any', // 'any', 'short', 'medium', 'long'
-    yearRange = { min: 1900, max: new Date().getFullYear() + 5 }
+    yearRange = { min: 1900, max: new Date().getFullYear() + 5 },
+    ratingSource = 'tmdb' // 'tmdb' | 'user'
 }) => {
 
     const filteredMovies = useMemo(() => {
@@ -30,7 +31,10 @@ export const useMovieFilter = (movies, {
 
             // 2. Genre Filter
             if (genres.length > 0) {
-                if (!movie.genres || !movie.genres.some(g => genres.includes(g.id))) return false;
+                // Normalize genre extraction: support both 'genre_ids' (array of Int) and 'genres' (array of Obj)
+                const movieGenreIds = movie.genre_ids || movie.genres?.map(g => g.id) || [];
+                // Check if movie has ANY of the selected genres
+                if (!movieGenreIds.some(id => genres.includes(id))) return false;
             }
 
             // 3. Search Filter
@@ -39,21 +43,28 @@ export const useMovieFilter = (movies, {
                 if (!movie.title.toLowerCase().includes(query)) return false;
             }
 
-            // 4. Rating Filter (Only relevant if movie is rated or we only show rated ones?)
-            // If minRating > 0, exclude unrated or low rated.
-            // 4. Rating Filter (Scale 0-10)
-            // Consider both TMDB rating and User rating (scaled to 10)
-            const tmdbRating = movie.vote_average || 0;
-            const userRating = (movie.rating || 0) * 2;
-            const searchRating = Math.max(tmdbRating, userRating);
+            // 4. Rating Filter
+            // Differentiate between TMDB Score (0-10) and User Rating (0-5)
+            let r = 0;
+            if (ratingSource === 'user') {
+                r = movie.rating || 0; // 0-5
+            } else {
+                r = movie.vote_average || 0; // 0-10
+            }
 
-            if (minRating > 0 && searchRating < minRating) return false;
+            if (minRating > 0 && r < minRating) return false;
 
             // 5. Runtime Filter
             const mins = movie.runtime || 0;
-            if (runtime === 'short' && (mins === 0 || mins >= 90)) return false;
-            if (runtime === 'medium' && (mins < 90 || mins > 120)) return false;
-            if (runtime === 'long' && mins <= 120) return false;
+            // Note: If runtime is missing (0), we usually exclude it if a filter is active, or include?
+            // User says "Debes saber la duración...". If 0, we can't really know. 
+            // Lets assume 0 means "unknown" and exclude if strict filter? Or include?
+            // Standard approach: exclude if filter is specific.
+            if (runtime !== 'any' && mins === 0) return false;
+
+            if (runtime === 'short' && mins >= 90) return false; // < 90
+            if (runtime === 'medium' && (mins < 90 || mins > 120)) return false; // 90-120
+            if (runtime === 'long' && mins <= 120) return false; // > 120
 
             // 6. Year Filter
             const y = movie.release_date ? parseInt(movie.release_date.substring(0, 4)) : 0;
@@ -65,20 +76,23 @@ export const useMovieFilter = (movies, {
         }).sort((a, b) => {
             // Sorting Logic
             switch (sort) {
-                case 'rating': return (b.rating || 0) - (a.rating || 0);
+                case 'rating':
+                    const rateA = ratingSource === 'user' ? (a.rating || 0) : (a.vote_average || 0);
+                    const rateB = ratingSource === 'user' ? (b.rating || 0) : (b.vote_average || 0);
+                    return rateB - rateA;
                 case 'year':
                     const dateA = new Date(a.release_date || 0);
                     const dateB = new Date(b.release_date || 0);
-                    return dateB - dateA;
+                    return dateB - dateA; // Newest first
                 case 'runtime': return (b.runtime || 0) - (a.runtime || 0);
                 case 'date_added':
                 default:
                     const timeA = new Date(a.addedAt || a.watchedAt || 0);
                     const timeB = new Date(b.addedAt || b.watchedAt || 0);
-                    return timeB - timeA;
+                    return timeB - timeA; // Newest added first
             }
         });
-    }, [movies, search, sort, status, genres, minRating, runtime, yearRange]);
+    }, [movies, search, sort, status, genres, minRating, runtime, yearRange, ratingSource]);
 
     return { filteredMovies, totalCount: filteredMovies.length };
 };

@@ -139,15 +139,23 @@ export const MovieProvider = ({ children }) => {
     // ========================================
     // HELPER: Strip unnecessary data
     // Firebase has 1MB limit per document
-    // We only need: id, title, poster_path, rating, dates
+    // We only need: id, title, poster_path, rating, dates, runtime, genres
     // ========================================
     const stripMovieData = (movie) => {
+        // Normalize genres to IDs
+        let genre_ids = movie.genre_ids || [];
+        if ((!genre_ids || genre_ids.length === 0) && movie.genres) {
+            genre_ids = movie.genres.map(g => g.id);
+        }
+
         return {
             id: movie.id,
             title: movie.title,
             poster_path: movie.poster_path || null,
             release_date: movie.release_date || null,
             vote_average: movie.vote_average || 0,
+            runtime: movie.runtime || 0,
+            genre_ids: genre_ids,
             // Keep these if they exist
             ...(movie.rating !== undefined && { rating: movie.rating }),
             ...(movie.addedAt && { addedAt: movie.addedAt }),

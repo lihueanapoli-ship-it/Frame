@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useMovies } from '../contexts/MovieContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useMovieFilter } from '../hooks/useMovieFilter';
@@ -7,19 +7,31 @@ import BottomSheet from '../components/ui/BottomSheet';
 import { FilterChip } from '../components/ui/FilterChip';
 import { createPortal } from 'react-dom';
 import { AdjustmentsHorizontalIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { FilmIcon, CheckBadgeIcon, StarIcon, ClockIcon, CalendarIcon } from '@heroicons/react/24/solid';
+import { FilmIcon, CheckBadgeIcon, StarIcon, ClockIcon } from '@heroicons/react/24/solid';
 import { cn } from '../lib/utils';
 import { motion } from 'framer-motion';
 
-// Basic Genre List (In a real app, fetch from API)
-const GENRES = [
+// Complete Genre List for Mapping
+const ALL_GENRES = [
     { id: 28, name: "Acción" },
-    { id: 878, name: "Sci-Fi" },
-    { id: 18, name: "Drama" },
+    { id: 12, name: "Aventura" },
+    { id: 16, name: "Animación" },
     { id: 35, name: "Comedia" },
+    { id: 80, name: "Crimen" },
+    { id: 99, name: "Documental" },
+    { id: 18, name: "Drama" },
+    { id: 10751, name: "Familia" },
+    { id: 14, name: "Fantasía" },
+    { id: 36, name: "Historia" },
     { id: 27, name: "Terror" },
+    { id: 10402, name: "Música" },
+    { id: 9648, name: "Misterio" },
     { id: 10749, name: "Romance" },
-    { id: 16, name: "Animación" }
+    { id: 878, name: "Sci-Fi" },
+    { id: 10770, name: "TV Movie" },
+    { id: 10752, name: "Bélica" },
+    { id: 37, name: "Western" },
+    { id: 53, name: "Suspense" }
 ];
 
 const LibraryView = ({ onSelectMovie }) => {
@@ -33,14 +45,61 @@ const LibraryView = ({ onSelectMovie }) => {
     const [sortOption, setSortOption] = useState('date_added'); // 'date_added', 'rating', 'year'
     const [minRating, setMinRating] = useState(0);
     const [runtimeFilter, setRuntimeFilter] = useState('any'); // 'any', 'short', 'medium', 'long'
-    const [yearRange, setYearRange] = useState({ min: 1970, max: new Date().getFullYear() });
+    const [yearRange, setYearRange] = useState({ min: 1900, max: new Date().getFullYear() + 5 });
 
     // Data
     const { watchlist, watched } = useMovies();
     const { user, loginWithGoogle } = useAuth();
+
+    // Derived Settings based on Tab
+    const ratingSource = activeTab === 'watchlist' ? 'tmdb' : 'user';
+
+    // Clear filters when switching tabs to prevent invalid states (e.g. minRating 8 in user mode)
+    useEffect(() => {
+        clearFilters();
+    }, [activeTab]);
+
+    // Calculate Top 5 Genres based on 'watched' history (User preferences)
+    // Used for both lists as "User's favorite genres"
+    const topGenres = useMemo(() => {
+        if (!watched || !watched.length) {
+            // Default generic mix if no history
+            return ALL_GENRES.filter(g => [28, 35, 18, 878, 27].includes(g.id));
+        }
+
+        const counts = {};
+        watched.forEach(m => {
+            // Extract IDs
+            const ids = m.genre_ids || m.genres?.map(g => g.id) || [];
+            ids.forEach(id => { counts[id] = (counts[id] || 0) + 1; });
+        });
+
+        // Sort by frequency
+        const sortedIds = Object.entries(counts)
+            .sort((a, b) => b[1] - a[1])
+            .map(([id]) => parseInt(id));
+
+        // Get unique top 5 mapped to objects
+        let top = [];
+        for (const id of sortedIds) {
+            const genre = ALL_GENRES.find(g => g.id === id);
+            if (genre) top.push(genre);
+            if (top.length >= 5) break;
+        }
+
+        // Fill if less than 5
+        if (top.length < 5) {
+            const existing = top.map(g => g.id);
+            const fillers = ALL_GENRES.filter(g => !existing.includes(g.id)).slice(0, 5 - top.length);
+            top = [...top, ...fillers];
+        }
+
+        return top;
+    }, [watched]);
+
     const rawMovies = activeTab === 'watchlist' ? watchlist : watched;
 
-    // Smart Filtering Hook (Always run hooks before return)
+    // Smart Filtering Hook
     const { filteredMovies, totalCount } = useMovieFilter(rawMovies, {
         search: localSearch,
         status: 'all',
@@ -48,7 +107,8 @@ const LibraryView = ({ onSelectMovie }) => {
         genres: selectedGenres,
         minRating,
         runtime: runtimeFilter,
-        yearRange
+        yearRange,
+        ratingSource // Passing the source context
     });
 
     if (!user) {
@@ -82,7 +142,7 @@ const LibraryView = ({ onSelectMovie }) => {
         setSortOption('date_added');
         setMinRating(0);
         setRuntimeFilter('any');
-        setYearRange({ min: 1970, max: new Date().getFullYear() });
+        setYearRange({ min: 1900, max: new Date().getFullYear() + 5 });
     };
 
     const activeFilterCount = (selectedGenres.length > 0 ? 1 : 0) + (minRating > 0 ? 1 : 0) + (runtimeFilter !== 'any' ? 1 : 0) + (sortOption !== 'date_added' ? 1 : 0);
@@ -166,7 +226,11 @@ const LibraryView = ({ onSelectMovie }) => {
                 {totalCount === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20 opacity-50">
                         <FilmIcon className="w-16 h-16 text-gray-700 mb-4" />
-                        <p className="text-gray-400">No se encontraron películas</p>
+                        <p className="text-gray-400">
+                            {activeFilterCount > 0
+                                ? "No hay coincidencias en esta lista."
+                                : activeTab === 'watchlist' ? "Tu lista está vacía." : "Aún no has marcado películas vistas."}
+                        </p>
                         {activeFilterCount > 0 && (
                             <button onClick={clearFilters} className="mt-4 text-primary text-sm font-bold">
                                 Limpiar filtros
@@ -194,7 +258,8 @@ const LibraryView = ({ onSelectMovie }) => {
                                 <MovieCard
                                     movie={movie}
                                     onClick={onSelectMovie}
-                                    rating={movie.rating}
+                                    // If in watched, show user rating. If watchlist, can show TMDB rating or nothing.
+                                    rating={activeTab === 'watched' ? movie.rating : undefined}
                                 />
                             </motion.div>
                         ))}
@@ -202,12 +267,12 @@ const LibraryView = ({ onSelectMovie }) => {
                 )}
             </div>
 
-            {/* Filter Bottom Sheet (Redesigned) */}
+            {/* Filter Bottom Sheet */}
             {createPortal(
                 <BottomSheet
                     isOpen={isFilterOpen}
                     onClose={() => setIsFilterOpen(false)}
-                    title="Filtros Avanzados"
+                    title={`Filtros: ${activeTab === 'watchlist' ? 'Por ver' : 'Vistas'}`}
                 >
                     <div className="space-y-8 pb-8">
                         {/* 1. Sort Section */}
@@ -236,28 +301,49 @@ const LibraryView = ({ onSelectMovie }) => {
                             </div>
                         </div>
 
-                        {/* 2. Rating Filter (2-9 range) */}
+                        {/* 2. Rating Filter (Dynamic Logic) */}
                         <div>
                             <div className="flex justify-between items-center mb-3">
-                                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Calificación Mínima</h4>
-                                <span className="text-xs font-mono text-primary">{minRating > 0 ? `${minRating}+ Puntos` : 'Cualquiera'}</span>
+                                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+                                    {activeTab === 'watchlist' ? 'Calidad TMDB Mínima' : 'Tu Calificación Mínima'}
+                                </h4>
+                                <span className="text-xs font-mono text-primary">
+                                    {minRating > 0 ? `${minRating}+ ${activeTab === 'watchlist' ? 'Puntos' : 'Estrellas'}` : 'Cualquiera'}
+                                </span>
                             </div>
-                            <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 bg-surface-elevated p-3 rounded-xl border border-white/5">
-                                {[2, 3, 4, 5, 6, 7, 8, 9].map(score => (
-                                    <button
-                                        key={score}
-                                        onClick={() => setMinRating(minRating === score ? 0 : score)}
-                                        className={cn(
-                                            "aspect-square rounded-lg flex items-center justify-center text-sm font-bold transition-all border",
-                                            minRating === score
-                                                ? "bg-primary text-black border-primary shadow-[0_0_10px_rgba(250,204,21,0.3)]"
-                                                : "bg-transparent border-white/5 text-gray-400 hover:bg-white/10 hover:text-white"
-                                        )}
-                                    >
-                                        {score}
-                                    </button>
-                                ))}
-                            </div>
+
+                            {activeTab === 'watchlist' ? (
+                                // TMDB Scale (2-9)
+                                <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 bg-surface-elevated p-3 rounded-xl border border-white/5">
+                                    {[2, 3, 4, 5, 6, 7, 8, 9].map(score => (
+                                        <button
+                                            key={score}
+                                            onClick={() => setMinRating(minRating === score ? 0 : score)}
+                                            className={cn(
+                                                "aspect-square rounded-lg flex items-center justify-center text-sm font-bold transition-all border",
+                                                minRating === score
+                                                    ? "bg-primary text-black border-primary shadow-[0_0_10px_rgba(250,204,21,0.3)]"
+                                                    : "bg-transparent border-white/5 text-gray-400 hover:bg-white/10 hover:text-white"
+                                            )}
+                                        >
+                                            {score}
+                                        </button>
+                                    ))}
+                                </div>
+                            ) : (
+                                // User Scale (1-5 Stars)
+                                <div className="flex gap-2 justify-between bg-surface-elevated p-3 rounded-xl border border-white/5">
+                                    {[1, 2, 3, 4, 5].map(star => (
+                                        <button
+                                            key={star}
+                                            onClick={() => setMinRating(minRating === star ? 0 : star)}
+                                            className="transition-transform active:scale-90"
+                                        >
+                                            <StarIcon className={cn("w-8 h-8 transition-colors", star <= minRating ? "text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]" : "text-gray-700")} />
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         {/* 3. Runtime Filter */}
@@ -287,7 +373,7 @@ const LibraryView = ({ onSelectMovie }) => {
                             </div>
                         </div>
 
-                        {/* 4. Years (Simpler Decades for Mobile intuitive) */}
+                        {/* 4. Years */}
                         <div>
                             <h4 className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-widest">Década</h4>
                             <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
@@ -322,14 +408,14 @@ const LibraryView = ({ onSelectMovie }) => {
                             </div>
                         </div>
 
-                        {/* 5. Genres */}
+                        {/* 5. Genres (Dynamic Top 5) */}
                         <div>
                             <div className="flex justify-between items-center mb-3">
-                                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Géneros</h4>
+                                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Tus Géneros Favoritos</h4>
                                 {selectedGenres.length > 0 && <span className="text-xs text-primary">{selectedGenres.length} seleccionados</span>}
                             </div>
                             <div className="flex flex-wrap gap-2">
-                                {GENRES.map(g => (
+                                {topGenres.map(g => (
                                     <FilterChip
                                         key={g.id}
                                         label={g.name}
