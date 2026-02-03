@@ -2,13 +2,32 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { useMovies } from '../contexts/MovieContext';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, animate } from 'framer-motion';
-import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
-import { ClockIcon, StarIcon, TrophyIcon, FireIcon, FilmIcon, BookmarkIcon } from '@heroicons/react/24/solid';
+import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, BarChart, Bar, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { ClockIcon, StarIcon, TrophyIcon, FireIcon, FilmIcon, BookmarkIcon, ChevronUpIcon } from '@heroicons/react/24/solid';
 import DynamicLogo from '../components/ui/DynamicLogo';
 import { cn } from '../lib/utils';
 import { getMovieDetails } from '../api/tmdb';
 import { getGenresForMovies } from '../utils/genreCache';
 import { OSCAR_BEST_PICTURE_WINNERS } from '../constants/oscarWinners';
+
+// ==========================================
+// CONSTANTS & CONFIG
+// ==========================================
+
+// Immersive Cinema Ranks
+// Max level implicitly around 500
+const CINEMA_RANKS = [
+    { min: 0, title: "Turista de Estudio", desc: "Acabas de entrar al set." },
+    { min: 10, title: "Extra de Fondo", desc: "Ya sabes dónde pararte." },
+    { min: 25, title: "Claquetista", desc: "¡Luces, cámara, acción!" },
+    { min: 50, title: "Focus Puller", desc: "Manteniendo la nitidez." },
+    { min: 100, title: "Montajista", desc: "Creando narrativa en las sombras." },
+    { min: 200, title: "Director de Fotografía", desc: "Pintando con luz." },
+    { min: 300, title: "Guionista Auteur", desc: "La pluma es más fuerte que el lente." },
+    { min: 400, title: "Productor Visionario", desc: "Haces que lo imposible suceda." },
+    { min: 480, title: "Arquitecto de Sueños", desc: "Construyes realidades." },
+    { min: 500, title: "Lumière Renacido", desc: "Eres el cine mismo." }
+];
 
 // Helper: Convert mins to days/hours/min
 const formatRuntime = (mins) => {
@@ -32,18 +51,47 @@ const COLORS = {
     grid: '#333'
 };
 
-const AnimatedCounter = ({ value, duration = 2 }) => {
-    const { number } = useSpring({
-        from: { number: 0 },
-        number: value,
-        delay: 200,
-        config: { mass: 1, tension: 20, friction: 10 },
-    }); // Correction: framer-motion doesn't use 'useSpring' this way for numbers easily in direct render without a MotionValue.
-    // Let's use a simpler approach with framer-motion's animate() or just a custom hook?
-    // Actually, let's use a cleaner custom hook approach using `animate` provided by framer-motion which is the modern way.
+const RankCard = ({ rank, currentCount }) => {
+    const isUnlocked = currentCount >= rank.min;
 
-    return <span>{value}</span>; // Placeholder, I will fix this in the main tool call below properly.
+    return (
+        <div className={cn(
+            "flex items-center gap-3 p-2 rounded-md transition-colors",
+            isUnlocked ? "text-primary" : "text-gray-600"
+        )}>
+            <div className={cn(
+                "w-2 h-2 rounded-full",
+                isUnlocked ? "bg-primary shadow-[0_0_8px_rgba(0,240,255,0.8)]" : "bg-gray-800"
+            )} />
+            <div className="flex-1">
+                <div className="flex justify-between items-baseline">
+                    <span className="font-display font-bold text-xs">{rank.title.toUpperCase()}</span>
+                    <span className="font-mono text-[10px] opacity-60">{rank.min} pelis</span>
+                </div>
+                {isUnlocked && <p className="text-[10px] font-mono opacity-80 leading-none mt-0.5">{rank.desc}</p>}
+            </div>
+        </div>
+    );
 };
+
+const AchievementBadge = ({ icon, title, desc, unlocked }) => (
+    <div className={cn(
+        "min-w-[140px] h-36 bg-surface border flex flex-col items-center justify-center p-4 transition-all duration-300 relative group overflow-hidden",
+        unlocked
+            ? "border-primary/30 bg-primary/5 hover:border-primary/60 hover:shadow-[0_0_15px_rgba(0,240,255,0.2)]"
+            : "border-white/5 opacity-40 grayscale"
+    )}>
+        {unlocked && <div className="absolute top-0 right-0 w-8 h-8 bg-primary/20 blur-xl rounded-full" />}
+        <div className={cn(
+            "w-12 h-12 rounded-full flex items-center justify-center mb-3 transition-transform group-hover:scale-110",
+            unlocked ? "bg-primary/20 text-primary" : "bg-white/5 text-gray-500"
+        )}>
+            <span className="text-2xl">{icon}</span>
+        </div>
+        <span className={cn("font-display font-bold text-xs text-center mb-1", unlocked ? "text-white" : "text-gray-500")}>{title}</span>
+        <span className="font-mono text-[9px] text-center text-gray-500 leading-tight">{desc}</span>
+    </div>
+);
 // Scratch that thought process, I will implement a proper 'Counter' component inside the file in the full tool call.
 
 const Counter = ({ value }) => {
@@ -86,24 +134,7 @@ const StatCard = ({ label, value, subtext, icon: Icon, delay = 0 }) => (
     </motion.div>
 );
 
-const AchievementBadge = ({ icon, title, desc, unlocked }) => (
-    <div className={cn(
-        "min-w-[140px] h-36 bg-surface border flex flex-col items-center justify-center p-4 transition-all duration-300 relative group overflow-hidden",
-        unlocked
-            ? "border-primary/30 bg-primary/5 hover:border-primary/60 hover:shadow-[0_0_15px_rgba(0,240,255,0.2)]"
-            : "border-white/5 opacity-40 grayscale"
-    )}>
-        {unlocked && <div className="absolute top-0 right-0 w-8 h-8 bg-primary/20 blur-xl rounded-full" />}
-        <div className={cn(
-            "w-12 h-12 rounded-full flex items-center justify-center mb-3 transition-transform group-hover:scale-110",
-            unlocked ? "bg-primary/20 text-primary" : "bg-white/5 text-gray-500"
-        )}>
-            <span className="text-2xl">{icon}</span>
-        </div>
-        <span className={cn("font-display font-bold text-xs text-center mb-1", unlocked ? "text-white" : "text-gray-500")}>{title}</span>
-        <span className="font-mono text-[9px] text-center text-gray-500 leading-tight">{desc}</span>
-    </div>
-);
+
 
 const StatsView = () => {
     const { watched, watchlist } = useMovies();
@@ -114,8 +145,8 @@ const StatsView = () => {
 
     // UI State
     const [radarMode, setRadarMode] = useState('consumption'); // 'consumption' | 'quality'
+    const [showAllRanks, setShowAllRanks] = useState(false);
 
-    // Fetch movie details to get genres (since we strip them when saving)
     // Fetch movie details to get genres (since we strip them when saving)
     useEffect(() => {
         const fetchAllGenres = async () => {
@@ -143,18 +174,30 @@ const StatsView = () => {
         return totalMinutes;
     }, [watched]);
 
-    // 2. Rank Logic
-    const rank = useMemo(() => {
+    // 2. Rank Logic (New System)
+    const currentRank = useMemo(() => {
         const count = watched.length;
-        if (count > 200) return "Director de Culto";
-        if (count > 100) return "Productor Ejecutivo";
-        if (count > 50) return "Editor Jefe";
-        if (count > 20) return "Asistente de Dirección";
-        if (count > 5) return "Asistente de Cámara";
-        return "Claquetista";
+        // Find the highest rank achieved. Clone to avoid mutating constant if sort used, but reverse creates new array on spread.
+        return [...CINEMA_RANKS].reverse().find(r => count >= r.min) || CINEMA_RANKS[0];
     }, [watched]);
 
-    const rankProgress = Math.min((watched.length / 50) * 100, 100);
+    const nextRank = useMemo(() => {
+        const count = watched.length;
+        return CINEMA_RANKS.find(r => r.min > count) || { min: 500, title: "Lumière Renacido", desc: "Eres el cine mismo." };
+    }, [watched]);
+
+    const rankProgress = useMemo(() => {
+        const count = watched.length;
+        if (count >= 500) return 100;
+
+        // Calculate progress within current bracket
+        const prevMin = currentRank.min;
+        const targetMin = nextRank.min;
+        const totalInBracket = targetMin - prevMin;
+        const currentInBracket = count - prevMin;
+
+        return Math.min(Math.max((currentInBracket / totalInBracket) * 100, 0), 100);
+    }, [watched, currentRank, nextRank]);
 
     // 3. Oscar Progress
     const oscarStats = useMemo(() => {
@@ -217,40 +260,50 @@ const StatsView = () => {
         return dist.filter(d => d.rating > 0);
     }, [watched]);
 
-    // 6. Heatmap Data
-    const heatmapData = useMemo(() => {
-        const weeks = [];
+    // 6. CINE-PULSE (Electrocardiograma Logic)
+    // Mountain/Stairs: +X per movie, -0.5 per day.
+    const cinePulseData = useMemo(() => {
+        const daysToShow = 60;
+        const data = [];
         const today = new Date();
-        const startDate = new Date(today);
-        startDate.setDate(today.getDate() - (52 * 7) + 1);
-
-        const formatDate = (d) => d.toISOString().split('T')[0];
-
         const watchedMap = {};
-        let maxInDay = 0;
 
         watched.forEach(m => {
             if (m.watchedAt) {
                 const d = m.watchedAt.split('T')[0];
                 watchedMap[d] = (watchedMap[d] || 0) + 1;
-                if (watchedMap[d] > maxInDay) maxInDay = watchedMap[d];
             }
         });
 
-        let current = new Date(startDate);
-        for (let w = 0; w < 52; w++) {
-            const week = [];
-            for (let d = 0; d < 7; d++) {
-                const dateStr = formatDate(current);
-                week.push({
+        // Calculate score with inertia
+        let score = 0;
+        const lookback = 90; // Calculate 90 days back for inertia, show 60
+
+        const startCalculation = new Date(today);
+        startCalculation.setDate(today.getDate() - lookback);
+
+        for (let i = 0; i <= lookback; i++) {
+            const currentDate = new Date(startCalculation);
+            currentDate.setDate(startCalculation.getDate() + i);
+            const dateStr = currentDate.toISOString().split('T')[0];
+
+            const moviesWatched = watchedMap[dateStr] || 0;
+
+            // Logic: Decrease by 0.5/day, Increase by 2/movie.
+            score = Math.max(0, score - 0.5);
+            score += (moviesWatched * 2);
+
+            // Only push to data if within window
+            if (i >= (lookback - daysToShow)) {
+                data.push({
                     date: dateStr,
-                    count: watchedMap[dateStr] || 0
+                    dayShort: currentDate.toLocaleDateString('es-ES', { weekday: 'narrow' }),
+                    score: parseFloat(score.toFixed(1)),
+                    movies: moviesWatched
                 });
-                current.setDate(current.getDate() + 1);
             }
-            weeks.push(week);
         }
-        return { weeks, maxInDay };
+        return data;
     }, [watched]);
 
     // 7. Dynamic Achievements
@@ -274,7 +327,8 @@ const StatsView = () => {
             title: 'EXPLORADOR',
             desc: 'Probaste 5 géneros distintos',
             icon: '🔭',
-            unlocked: currentRadarData.length >= 5
+            // Need to safeguard against undefined if currentRadarData not ready, though it should be.
+            unlocked: (radarMode === 'consumption' ? radarData.consumption : radarData.quality).length >= 5
         },
         {
             id: 'oscar_hunter',
@@ -288,7 +342,7 @@ const StatsView = () => {
             title: 'MARATONISTA',
             desc: '3 películas en un día',
             icon: '🔥',
-            unlocked: heatmapData.maxInDay >= 3
+            unlocked: cinePulseData.some(d => d.movies >= 3)
         },
         {
             id: 'cinephile',
@@ -328,55 +382,78 @@ const StatsView = () => {
             {/* Grid Layout - Modular */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 
-                {/* 1. Rank & Progress - Spans 2 cols */}
+                {/* 1. New Rank System - Spans 2 cols */}
                 <div className="col-span-1 md:col-span-2 row-span-1 bg-surface border border-white/5 p-6 relative overflow-hidden group">
-                    <div className="flex justify-between items-center mb-6">
+                    <div className="flex justify-between items-start mb-6 relative z-10">
                         <div className="flex items-center gap-3">
-                            <TrophyIcon className="w-8 h-8 text-yellow-500" />
+                            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center border border-primary/20">
+                                <TrophyIcon className="w-6 h-6 text-primary" />
+                            </div>
                             <div>
-                                <h3 className="font-display text-2xl text-white">{rank}</h3>
-                                <p className="font-mono text-xs text-gray-500">NIVEL ACTUAL</p>
+                                <h3 className="font-display text-2xl text-white tracking-wide">{currentRank.title.toUpperCase()}</h3>
+                                <p className="font-mono text-xs text-gray-400 max-w-[200px]">{currentRank.desc}</p>
                             </div>
                         </div>
                         <div className="text-right">
-                            <span className="font-display text-4xl text-primary">{watched.length}</span>
-                            <span className="text-sm text-gray-500 block">PELÍCULAS</span>
+                            <button
+                                onClick={() => setShowAllRanks(!showAllRanks)}
+                                className="text-[10px] font-mono text-primary hover:text-white underline mb-1"
+                            >
+                                {showAllRanks ? 'OCULTAR NIVELES' : 'VER TODOS LOS RANGOS'}
+                            </button>
+                            <div className="font-display text-4xl text-white">{watched.length} <span className="text-sm text-gray-500 font-sans font-normal">películas</span></div>
                         </div>
                     </div>
 
-                    {/* Level Progress */}
-                    <div className="mb-2 flex justify-between font-mono text-[10px] text-gray-500">
-                        <span>XP NIVEL</span>
-                        <span>{Math.round(rankProgress)}%</span>
-                    </div>
-                    <div className="relative h-1.5 bg-gray-800 w-full rounded-full overflow-hidden mb-6">
-                        <motion.div
-                            className="absolute top-0 bottom-0 left-0 bg-primary"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${rankProgress}%` }}
-                            transition={{ duration: 1.5, ease: "circOut" }}
-                        />
+                    {/* Rank Progress Bar */}
+                    <div className="relative z-10 mb-6">
+                        <div className="flex justify-between font-mono text-[10px] text-gray-500 mb-1">
+                            <span>PROGRESO ACTUAL</span>
+                            <span>SIGUIENTE: {nextRank.title.toUpperCase()} ({nextRank.min})</span>
+                        </div>
+                        <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                            <motion.div
+                                className="h-full bg-primary"
+                                initial={{ width: 0 }}
+                                animate={{ width: `${rankProgress}%` }}
+                                transition={{ duration: 1.0, ease: 'easeOut' }}
+                            />
+                        </div>
                     </div>
 
-                    {/* Oscar Progress (New Feature) */}
-                    <div className="flex justify-between items-end mb-2">
-                        <div className="flex items-center gap-2">
-                            <span className="text-lg">🏆</span>
-                            <span className="font-bold text-white text-sm">Progreso Oscars</span>
+                    {/* Expanded Ranks List (Dropdown) */}
+                    <motion.div
+                        initial={false}
+                        animate={{ height: showAllRanks ? 'auto' : 0, opacity: showAllRanks ? 1 : 0 }}
+                        className="overflow-hidden border-t border-white/5"
+                    >
+                        <div className="pt-4 grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                            {CINEMA_RANKS.map((r) => (
+                                <RankCard key={r.min} rank={r} currentCount={watched.length} />
+                            ))}
                         </div>
-                        <span className="font-mono text-xs text-yellow-500">{oscarStats.count} / {oscarStats.total}</span>
+                    </motion.div>
+
+                    {/* Oscar Progress embedded */}
+                    <div className="relative z-10 mt-4 pt-4 border-t border-white/5">
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="font-mono text-[10px] text-yellow-500 tracking-wider flex items-center gap-2">
+                                <span className="text-base">🏆</span> CARRERA AL OSCAR
+                            </span>
+                            <span className="font-mono text-xs text-white">{oscarStats.count} / {oscarStats.total}</span>
+                        </div>
+                        <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
+                            <motion.div
+                                className="h-full bg-yellow-500"
+                                initial={{ width: 0 }}
+                                animate={{ width: `${(oscarStats.count / oscarStats.total) * 100}%` }}
+                                transition={{ duration: 1.0, delay: 0.2 }}
+                            />
+                        </div>
                     </div>
-                    <div className="relative h-2 bg-gray-800 w-full rounded-full overflow-hidden border border-white/5">
-                        <motion.div
-                            className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-yellow-700 to-yellow-400"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${(oscarStats.count / oscarStats.total) * 100}%` }}
-                            transition={{ duration: 1.5, ease: "circOut", delay: 0.2 }}
-                        />
-                    </div>
-                    <p className="mt-2 text-[10px] text-gray-400 font-mono">
-                        Has visto el {Math.round((oscarStats.count / oscarStats.total) * 100)}% de las ganadoras a Mejor Película.
-                    </p>
+
+                    {/* Background glow */}
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
                 </div>
 
                 {/* 2. Telemetry */}
@@ -479,42 +556,49 @@ const StatsView = () => {
                     </div>
                 </div>
 
-                {/* 6. Activity Heatmap - Spans Full Width */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-4 bg-surface border border-white/5 p-6 overflow-x-auto">
+                {/* 6. CINE-PULSE (Replaces Heatmap) */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-4 bg-surface border border-white/5 p-6">
                     <div className="flex items-center justify-between mb-6">
-                        <h3 className="font-mono text-xs text-gray-500 uppercase tracking-widest">PULSO CINÉFILO (ÚLTIMOS 365 DÍAS)</h3>
-                        <div className="flex items-center gap-2 text-[10px] text-gray-500 font-mono">
-                            <span>MENOS</span>
-                            <div className="flex gap-1">
-                                <div className="w-2 h-2 bg-[#1f1f1f] rounded-sm" />
-                                <div className="w-2 h-2 bg-[#0e4429] rounded-sm" />
-                                <div className="w-2 h-2 bg-[#006d32] rounded-sm" />
-                                <div className="w-2 h-2 bg-[#26a641] rounded-sm" />
-                                <div className="w-2 h-2 bg-[#39d353] rounded-sm" />
-                            </div>
-                            <span>MÁS</span>
+                        <div>
+                            <h3 className="font-mono text-xs text-primary uppercase tracking-widest flex items-center gap-2">
+                                <FireIcon className="w-4 h-4" /> PULSO CINÉFILO (ÚLTIMOS 60 DÍAS)
+                            </h3>
+                            <p className="text-[10px] text-gray-500 mt-1 font-mono">Tu ritmo cardíaco de consumo. Sube al ver películas, decae con la inactividad.</p>
                         </div>
                     </div>
 
-                    <div className="flex gap-1 min-w-[800px]">
-                        {heatmapData.weeks.map((week, wIndex) => (
-                            <div key={wIndex} className="flex flex-col gap-1">
-                                {week.map((day, dIndex) => (
-                                    <div
-                                        key={`${wIndex}-${dIndex}`}
-                                        className={cn(
-                                            "w-3 h-3 rounded-sm transition-all hover:ring-1 hover:ring-white/50",
-                                            day.count === 0 ? "bg-[#1f1f1f]" :
-                                                day.count === 1 ? "bg-[#00F0FF]/20" :
-                                                    day.count === 2 ? "bg-[#00F0FF]/40" :
-                                                        day.count === 3 ? "bg-[#00F0FF]/60" :
-                                                            "bg-[#00F0FF]"
-                                        )}
-                                        title={`${day.date}: ${day.count} películas`}
-                                    />
-                                ))}
-                            </div>
-                        ))}
+                    <div className="w-full h-[250px]">
+                        <ResponsiveContainer width="100%" height={250}>
+                            <AreaChart data={cinePulseData}>
+                                <defs>
+                                    <linearGradient id="pulseGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#00F0FF" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="#00F0FF" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <XAxis
+                                    dataKey="date"
+                                    tickFormatter={(val) => val.slice(5)} // Show MM-DD
+                                    stroke="#333"
+                                    tick={{ fill: '#6B7280', fontSize: 10, fontFamily: 'monospace' }}
+                                    minTickGap={30}
+                                />
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: '#121212', borderColor: '#333', color: '#fff' }}
+                                    itemStyle={{ color: '#00F0FF', fontFamily: 'monospace' }}
+                                    labelFormatter={(label) => `Fecha: ${label}`}
+                                    formatter={(value, name) => [value, name === 'score' ? 'Nivel de Pulso' : 'Películas']}
+                                />
+                                <Area
+                                    type="monotone"
+                                    dataKey="score"
+                                    stroke="#00F0FF"
+                                    fillOpacity={1}
+                                    fill="url(#pulseGradient)"
+                                    strokeWidth={2}
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
 
