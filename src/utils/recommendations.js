@@ -86,30 +86,35 @@ export async function getPersonalizedRecommendations(userData, expertiseLevel = 
 // PASO 1: FETCH MOVIE DETAILS
 // ========================================
 
+import { getGenresForMovies } from './genreCache';
+
 /**
- * Fetch detalles completos de películas (con géneros)
- * Limitado a las 30 más recientes para performance
+ * Fetch detalles completos de TODAS las películas usando caché
+ * para evitar rate limits y permitir análisis completo.
  */
 async function fetchMovieDetails(movies) {
-    const recent = movies
-        .sort((a, b) => new Date(b.watchedAt || b.addedAt) - new Date(a.watchedAt || a.addedAt))
-        .slice(0, 30); // Solo las 30 más recientes
+    console.log(`[Tu ADN] 📥 Fetching details for ${movies.length} movies...`);
 
-    const detailsPromises = recent.map(movie =>
-        getMovieDetails(movie.id)
-            .then(details => ({
-                ...movie,
-                ...details,
-                // Mantener el rating del usuario
-                userRating: movie.rating || 0
-            }))
-            .catch(err => {
-                console.warn('[Tu ADN] ⚠️ Failed to fetch:', movie.id, err.message);
-                return null;
-            })
-    );
+    // 1. Ensure we have cached details for ALL movies (fetch missing in background)
+    // We don't await the full progress if it's too huge, but getGenresForMovies handles batching.
+    // For better UX, we await it so stats are accurate first time.
+    const cache = await getGenresForMovies(movies); // This now returns detailed cache { genres, release_date, runtime }
 
-    const results = await Promise.all(detailsPromises);
+    // 2. Map cached data to movie objects
+    const results = movies.map(movie => {
+        const cachedData = cache[movie.id];
+
+        if (!cachedData) return null; // Should not happen after await, unless API error
+
+        return {
+            ...movie,
+            genres: cachedData.genres || [],
+            release_date: cachedData.release_date || movie.release_date,
+            runtime: cachedData.runtime || 0,
+            userRating: movie.rating || 0
+        };
+    });
+
     return results.filter(m => m !== null);
 }
 

@@ -7,6 +7,7 @@ import { ClockIcon, StarIcon, TrophyIcon, FireIcon } from '@heroicons/react/24/s
 import DynamicLogo from '../components/ui/DynamicLogo';
 import { cn } from '../lib/utils';
 import { getMovieDetails } from '../api/tmdb';
+import { getGenresForMovies } from '../utils/genreCache';
 
 // Helper: Convert mins to days/hours/min
 const formatRuntime = (mins) => {
@@ -92,32 +93,26 @@ const StatsView = () => {
     const [movieGenres, setMovieGenres] = useState({});
 
     // Fetch movie details to get genres (since we strip them when saving)
+    // Fetch movie details to get genres (since we strip them when saving)
     useEffect(() => {
-        const fetchGenres = async () => {
-            const genreMap = {};
+        const fetchAllGenres = async () => {
+            if (watched.length === 0) return;
 
-            // Fetch details for up to 30 most recent movies
-            const moviesToFetch = watched.slice(0, 30);
+            // Use our centralized cache utility to fetch ALL genres progressively
+            // This handles rate limiting and caching automatically
+            const cache = await getGenresForMovies(watched);
 
-            const promises = moviesToFetch.map(async (movie) => {
-                try {
-                    const details = await getMovieDetails(movie.id);
-                    if (details && details.genres) {
-                        genreMap[movie.id] = details.genres;
-                    }
-                } catch (err) {
-                    console.warn('[StatsView] Failed to fetch genres for:', movie.id);
-                }
+            // Transform cache format to what the view expects (retaining just genres for now)
+            const genresOnly = {};
+            Object.keys(cache).forEach(id => {
+                genresOnly[id] = cache[id].genres;
             });
 
-            await Promise.all(promises);
-            setMovieGenres(genreMap);
+            setMovieGenres(genresOnly);
         };
 
-        if (watched.length > 0) {
-            fetchGenres();
-        }
-    }, [watched.length]); // Re-fetch when watched count changes
+        fetchAllGenres();
+    }, [watched]); // Removed .length to detect deep changes if needed, but array ref change is enough
 
     // 1. Calculate Telemetry (Total Runtime)
     const runtimes = useMemo(() => {
@@ -145,8 +140,12 @@ const StatsView = () => {
         watched.forEach(movie => {
             const genres = movieGenres[movie.id];
             if (genres && genres.length > 0) {
+                // ALIGNMENT: Use weighted score (Rating) just like DNA recommendations
+                // High rated movies impact the radar more
+                const weight = (movie.rating && movie.rating > 0) ? movie.rating : 5; // Default neutral
+
                 genres.forEach(genre => {
-                    counts[genre.name] = (counts[genre.name] || 0) + 1;
+                    counts[genre.name] = (counts[genre.name] || 0) + weight;
                 });
             }
         });
@@ -155,7 +154,7 @@ const StatsView = () => {
         const sorted = Object.keys(counts)
             .map(key => ({
                 subject: key,
-                A: counts[key],
+                A: Math.round(counts[key]), // Round visualization
                 fullMark: Math.max(...Object.values(counts))
             }))
             .sort((a, b) => b.A - a.A)
