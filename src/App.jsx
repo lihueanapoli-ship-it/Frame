@@ -1,26 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { HomeIcon, MagnifyingGlassIcon, RectangleStackIcon, ChartBarIcon, ChatBubbleLeftRightIcon, ArrowLeftOnRectangleIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, MagnifyingGlassIcon, RectangleStackIcon, ChartBarIcon, ChatBubbleLeftRightIcon, ArrowLeftOnRectangleIcon, UserIcon } from '@heroicons/react/24/outline';
 import { HomeIcon as HomeIconSolid, MagnifyingGlassIcon as SearchIconSolid, RectangleStackIcon as LibraryIconSolid, ChartBarIcon as ChartBarIconSolid } from '@heroicons/react/24/solid';
 import { BrowserRouter, Routes, Route, useNavigate, Navigate, NavLink } from 'react-router-dom';
 import { MovieProvider } from './contexts/MovieContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SoundProvider } from './contexts/SoundContext';
+import { UserProfileProvider, useUserProfile } from './contexts/UserProfileContext';
+import { ListProvider } from './contexts/ListContext';
+import { LanguageProvider } from './contexts/LanguageContext';
+
 import DiscoverView from './views/DiscoverView';
 import LibraryView from './views/LibraryView';
 import WelcomeView from './views/WelcomeView';
 import CategoryView from './views/CategoryView';
 import SearchView from './views/SearchView';
+import StatsView from './views/StatsView';
+import PublicProfileView from './views/PublicProfileView';
+import ListView from './views/ListView';
+
 import BottomNav from './components/navigation/BottomNav';
 import MovieDetail from './components/MovieDetail';
 import DynamicLogo from './components/ui/DynamicLogo';
-import StatsView from './views/StatsView';
 import SpotlightCursor from './components/ui/SpotlightCursor';
 import PageTransitionOverlay from './components/ui/PageTransitionOverlay';
 import FeedbackModal from './components/ui/FeedbackModal';
 
-import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
-import { UserProfileProvider, useUserProfile } from './contexts/UserProfileContext';
 
 // Wrapper component to use Hooks like useNavigate
 const AppContent = () => {
@@ -39,8 +44,7 @@ const AppContent = () => {
 
     // Auth Hooks
     const { user, loading, logout } = useAuth();
-    // Removed useLanguage usage for UI toggle, keeping provider for potential internal logic if needed,
-    // but effectively disabling user switching as requested.
+    // Removed useLanguage usage for UI toggle
     const { profile, loading: profileLoading } = useUserProfile();
     const navigate = useNavigate();
 
@@ -100,7 +104,25 @@ const AppContent = () => {
                                         <p className="text-xs text-gray-400 truncate font-mono mt-1">{user.email}</p>
                                     </div>
                                     <div className="p-2 space-y-1">
-                                        {/* Feedback Button (New Premium Feature) */}
+
+                                        {/* Public Profile Link (New Phase 5) */}
+                                        <button
+                                            onClick={() => {
+                                                setIsMenuOpen(false);
+                                                navigate('/u/me');
+                                            }}
+                                            className="w-full text-left flex items-center gap-3 px-3 py-2.5 text-sm text-gray-200 hover:text-white hover:bg-white/10 rounded-lg transition-all group"
+                                        >
+                                            <div className="p-1.5 bg-blue-500/10 rounded-md group-hover:bg-blue-500/20 transition-colors">
+                                                <UserIcon className="w-4 h-4 text-blue-400" />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="font-medium">Mi Perfil Público</span>
+                                                <span className="text-[10px] text-gray-500">Como te ven otros</span>
+                                            </div>
+                                        </button>
+
+                                        {/* Feedback Button */}
                                         <button
                                             onClick={() => {
                                                 setIsMenuOpen(false);
@@ -217,6 +239,8 @@ const AppContent = () => {
                         <Route path="/search" element={<SearchView onSelectMovie={setSelectedMovie} />} />
                         <Route path="/library" element={<LibraryView onSelectMovie={setSelectedMovie} />} />
                         <Route path="/dashboard" element={<StatsView />} />
+                        <Route path="/u/:username" element={<PublicProfileView onSelectMovie={setSelectedMovie} />} />
+                        <Route path="/lists/:id" element={<ListView onSelectMovie={setSelectedMovie} />} />
                         <Route path="/category/:id" element={<CategoryView onSelectMovie={setSelectedMovie} />} />
                         <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>
@@ -266,11 +290,13 @@ function App() {
             <AuthProvider>
                 <LanguageProvider>
                     <UserProfileProvider>
-                        <MovieProvider>
-                            <SoundProvider>
-                                <AppContent />
-                            </SoundProvider>
-                        </MovieProvider>
+                        <ListProvider>
+                            <MovieProvider>
+                                <SoundProvider>
+                                    <AppContent />
+                                </SoundProvider>
+                            </MovieProvider>
+                        </ListProvider>
                     </UserProfileProvider>
                 </LanguageProvider>
             </AuthProvider>

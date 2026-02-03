@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { XMarkIcon, CalendarIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, CalendarIcon, ClockIcon, ListBulletIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid, PlusIcon, CheckIcon, StarIcon, PlayIcon } from '@heroicons/react/24/solid';
 import { getBackdropUrl, getPosterUrl, getMovieDetails, getMovieVideos } from '../api/tmdb';
 import { useMovies } from '../contexts/MovieContext';
@@ -8,9 +8,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { useSound } from '../contexts/SoundContext';
 import { cn } from '../lib/utils';
 import { triggerConfetti, triggerSmallConfetti } from '../lib/confetti';
+import AddToListModal from './ui/AddToListModal';
 
 const MovieDetail = ({ movie: initialMovie, onClose }) => {
     const [movie, setMovie] = useState(initialMovie);
+    const [showListModal, setShowListModal] = useState(false);
     const [videoKey, setVideoKey] = useState(null);
     const [showVideo, setShowVideo] = useState(false);
     const [isFullVideoOpen, setIsFullVideoOpen] = useState(false);
@@ -261,6 +263,17 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                     <CheckIcon className="w-5 h-5" />
                                     <span className="tracking-wide">Ya la vi</span>
                                 </button>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (!user) { loginWithGoogle(); return; }
+                                        setShowListModal(true);
+                                    }}
+                                    className="px-4 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border border-white/10 transition-all flex items-center justify-center"
+                                    title="Guardar en lista..."
+                                >
+                                    <ListBulletIcon className="w-6 h-6" />
+                                </button>
                             </div>
                         )}
 
@@ -414,6 +427,13 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* ADD TO LIST MODAL */}
+            <AddToListModal
+                isOpen={showListModal}
+                onClose={() => setShowListModal(false)}
+                movie={movie}
+            />
         </div>
     );
 };

@@ -77,6 +77,20 @@ export const UserProfileProvider = ({ children }) => {
                             theme: 'dark',
                             language: 'es-MX',
                             reducedMotion: false
+                        },
+                        // Fase 5: Social & Monetization Foundation
+                        username: user.displayName
+                            ? user.displayName.replace(/\s+/g, '').toLowerCase() + Math.floor(Math.random() * 1000)
+                            : `user${Math.floor(Math.random() * 10000)}`,
+                        isPro: false,
+                        privacySettings: {
+                            profileVisibility: 'public', // public, friends, private
+                            showActivity: true
+                        },
+                        customLists: [],
+                        social: {
+                            followersCount: 0,
+                            followingCount: 0
                         }
                     };
 
@@ -241,6 +255,48 @@ export const UserProfileProvider = ({ children }) => {
         }
     };
 
+    // ========================================
+    // FASE 5: SOCIAL & PRO UTILS
+    // ========================================
+
+    // Toggle PRO status (Dev/Mock)
+    const toggleProStatus = async () => {
+        if (!user || !profile) return;
+        const newStatus = !profile.isPro;
+        try {
+            await updateDoc(doc(db, 'userProfiles', user.uid), { isPro: newStatus });
+            setProfile(prev => ({ ...prev, isPro: newStatus }));
+            console.log(`👑 User is now ${newStatus ? 'PRO' : 'Basic'}`);
+        } catch (e) {
+            console.error('Error toggling PRO:', e);
+            // Fallback local update if DB fails or using simple Mock
+            setProfile(prev => ({ ...prev, isPro: newStatus }));
+        }
+    };
+
+    // Update Privacy
+    const updatePrivacy = async (key, value) => {
+        if (!user || !profile) return;
+        const newSettings = { ...profile.privacySettings, [key]: value };
+        try {
+            await updateDoc(doc(db, 'userProfiles', user.uid), { privacySettings: newSettings });
+            setProfile(prev => ({ ...prev, privacySettings: newSettings }));
+        } catch (e) {
+            console.error('Error updating privacy:', e);
+        }
+    };
+
+    // Check Paywall Access
+    const checkAccess = (feature) => {
+        // Feature Flags Map
+        const PRO_FEATURES = ['audio_feedback', 'advanced_stats', 'unlimited_lists'];
+        if (PRO_FEATURES.includes(feature) && !profile?.isPro) {
+            return false;
+        }
+        return true;
+    };
+
+
     const value = {
         profile,
         expertiseLevel,
@@ -252,7 +308,12 @@ export const UserProfileProvider = ({ children }) => {
         trackBehavior,
         updateMovieData,
         completeOnboarding,
-        updatePreferences
+        updatePreferences,
+
+        // Social & Pro
+        toggleProStatus,
+        updatePrivacy,
+        checkAccess
     };
 
     return (
