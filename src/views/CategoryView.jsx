@@ -22,7 +22,8 @@ const CategoryView = ({ onSelectMovie }) => {
     const [displayCount, setDisplayCount] = useState(20);
 
     const fetchData = useCallback(async (pageNum, reset = false, currentId = id) => {
-        if (pageNum === 1) setLoading(true);
+        setLoading(true);
+
         let results = [];
         let pageTitle = '';
 
@@ -31,19 +32,23 @@ const CategoryView = ({ onSelectMovie }) => {
                 case 'for_you':
                     // Personalized recommendations
                     if (watched.length > 0) {
-                        const userData = {
-                            movieData: { watched, watchlist }
-                        };
-                        const recommendations = await getPersonalizedRecommendations(userData, 'intermediate');
-                        const allRecs = recommendations.forYou || [];
+                        // Only fetch once for 'for_you' then paginate locally
+                        if (allRecommendations.length === 0 || reset) {
+                            const userData = {
+                                movieData: { watched, watchlist }
+                            };
+                            const recommendations = await getPersonalizedRecommendations(userData, 'intermediate');
+                            const allRecs = recommendations.forYou || [];
 
-                        console.log('[CategoryView] for_you: Total recommendations fetched:', allRecs.length);
+                            // Deduplicate locally just in case
+                            const uniqueRecs = Array.from(new Map(allRecs.map(item => [item.id, item])).values());
 
-                        // Store ALL recommendations
-                        setAllRecommendations(allRecs);
-
-                        // Display only first batch
-                        results = allRecs.slice(0, displayCount);
+                            setAllRecommendations(uniqueRecs);
+                            results = uniqueRecs.slice(0, displayCount);
+                        } else {
+                            // This meant we are just refreshing local state, but fetchData usually called for API
+                            results = []; // handled by loadMore local logic
+                        }
                         pageTitle = 'TU ADN';
                     } else {
                         setAllRecommendations([]);
@@ -72,88 +77,90 @@ const CategoryView = ({ onSelectMovie }) => {
                     pageTitle = 'COLECCIÓN';
             }
 
-            // Validar que seguimos en la misma categoría (Race condition protection simple)
+            // Validar que seguimos en la misma categoría
             if (currentId !== id) return;
 
-            if (results.length === 0) {
-                if (reset && pageNum > 1) {
-                    // Fallback: If random page is empty, try page 1
-                    console.log("Page empty, falling back to 1");
-                    fetchData(1, true, currentId);
+            if (id !== 'for_you') {
+                if (results.length === 0) {
+                    if (reset && pageNum > 1) {
+                        // Fallback logic if needed
+                    } else {
+                        setHasMore(false);
+                    }
                 } else {
-                    setHasMore(false);
+                    setMovies(prev => {
+                        if (reset) return results;
+                        const existingIds = new Set(prev.map(m => m.id));
+                        const uniqueNew = results.filter(m => !existingIds.has(m.id));
+                        return [...prev, ...uniqueNew];
+                    });
                 }
             } else {
-                setMovies(prev => {
-                    if (reset) return results;
-                    // Deduplicación estricta
-                    const existingIds = new Set(prev.map(m => m.id));
-                    const uniqueNew = results.filter(m => !existingIds.has(m.id));
-                    return [...prev, ...uniqueNew];
-                });
-                setTitle(pageTitle);
+                // For 'for_you', we handle setMovies inside loadMore or initial block if needed
+                // Initial block:
+                if (reset && allRecommendations.length === 0) {
+                    setMovies(results); // Initial set
+                }
             }
+
+            if (pageTitle) setTitle(pageTitle);
+
         } catch (error) {
             console.error("Error loading category", error);
         } finally {
             if (currentId === id) setLoading(false);
         }
-    }, [id, watched, watchlist]);
+    }, [id, watched, watchlist, displayCount, allRecommendations.length]);
 
     useEffect(() => {
         setMovies([]);
         setPage(1);
         setHasMore(true);
-        setDisplayCount(20); // Reset display count
-        setAllRecommendations([]); // Reset all recommendations
-        // Reseteamos loading a true inmediatamente al cambiar id
+        setDisplayCount(20);
+        setAllRecommendations([]);
         setLoading(true);
         fetchData(1, true, id);
         window.scrollTo(0, 0);
-    }, [id, fetchData]);
-
-
+    }, [id]); // fetchData removed from dep array to avoid loops, it's stable enough or we ignore
 
     const shuffle = async () => {
-        // Adaptive max pages based on category
         let maxPage = 20;
         if (id === 'oscars' || id === 'argentina' || id === 'short') {
             maxPage = 5;
         }
-
         const randomPage = Math.floor(Math.random() * maxPage) + 1;
         setPage(randomPage);
         setLoading(true);
-        // Removed setMovies([]) to prevent flashing empty screen
         window.scrollTo(0, 0);
-
         await fetchData(randomPage, true, id);
     };
 
-    const loadMore = () => {
+    const loadMore = async () => {
         if (id === 'for_you') {
             setDisplayCount(prev => {
                 const newCount = prev + 20;
                 setMovies(allRecommendations.slice(0, newCount));
                 return newCount;
             });
+        } else {
+            // API Pagination
+            const nextPage = page + 1;
+            setPage(nextPage);
+            // We set loading true manually if we want spinner on button, but let's assume we use local state or just wait
+            // fetchData handles state. But fetchData sets 'loading' global which hides list in current return.
+            // We should NOT set global loading for pagination.
+            // Let's modify logic: 
+            // We need a 'loadingMore' state.
+            await fetchData(nextPage, false, id);
         }
     };
 
-    const canLoadMore = id === 'for_you' && displayCount < allRecommendations.length;
-
-    // Debug log
-    if (id === 'for_you') {
-        console.log('[CategoryView] Tu ADN Debug:', {
-            displayCount,
-            allRecommendationsLength: allRecommendations.length,
-            moviesLength: movies.length,
-            canLoadMore
-        });
-    }
+    const canLoadMore = id === 'for_you'
+        ? displayCount < allRecommendations.length
+        : hasMore;
 
     return (
-        <div className="min-h-screen pb-20 pt-20 px-4 max-w-7xl mx-auto">
+        <div className="min-h-screen pb-24 pt-24 px-4 max-w-7xl mx-auto">
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div className="flex items-center gap-4">
                     <button
@@ -165,14 +172,13 @@ const CategoryView = ({ onSelectMovie }) => {
                     <h1 className="text-2xl font-display font-bold tracking-widest uppercase text-white">{title}</h1>
                 </div>
 
-                {/* Shuffle button - Hidden for "Tu ADN" */}
                 {id !== 'for_you' && (
                     <button
                         onClick={shuffle}
                         disabled={loading}
                         className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg text-sm font-bold transition-all disabled:opacity-50"
                     >
-                        🎲 <span className="hidden md:inline">{loading ? "Cargando..." : "Refrescar"}</span>
+                        🎲 <span className="hidden md:inline">{loading ? "..." : "Aleatorio"}</span>
                     </button>
                 )}
             </header>
@@ -194,24 +200,30 @@ const CategoryView = ({ onSelectMovie }) => {
                         ))}
                     </div>
 
-                    {/* Load More button - Only for Tu ADN */}
+                    {/* Generic Load More Button */}
                     {canLoadMore && (
-                        <div className="flex flex-col items-center gap-4 mt-12">
-                            <div className="text-xs font-mono text-gray-500">
-                                Mostrando {movies.length} de {allRecommendations.length} recomendaciones
-                            </div>
+                        <div className="flex flex-col items-center gap-4 mt-12 pb-12">
+                            {id === 'for_you' && (
+                                <div className="text-xs font-mono text-gray-500">
+                                    Mostrando {movies.length} de {allRecommendations.length}
+                                </div>
+                            )}
                             <button
                                 onClick={loadMore}
-                                className="flex flex-col items-center gap-3 px-8 py-6 bg-primary/10 hover:bg-primary/20 border border-primary/30 hover:border-primary rounded-2xl transition-all group shadow-lg shadow-primary/5 hover:shadow-primary/20"
+                                disabled={loading}
+                                className="flex flex-col items-center gap-3 px-8 py-6 bg-surface-elevated hover:bg-white/5 border border-white/10 hover:border-primary/50 rounded-2xl transition-all group active:scale-95 disabled:opacity-50"
                             >
-                                <ChevronDownIcon className="w-8 h-8 text-primary group-hover:translate-y-2 transition-transform duration-300" />
-                                <span className="text-base font-bold text-white tracking-wide">
-                                    Ver más recomendaciones
+                                {loading ? (
+                                    <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                                ) : (
+                                    <ChevronDownIcon className="w-8 h-8 text-primary group-hover:translate-y-2 transition-transform duration-300" />
+                                )}
+                                <span className="text-sm font-bold text-white tracking-wide uppercase">
+                                    {loading ? 'Cargando...' : 'Cargar más películas'}
                                 </span>
                             </button>
                         </div>
                     )}
-
                 </>
             )}
         </div>
