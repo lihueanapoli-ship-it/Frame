@@ -2,20 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserCircleIcon, LockClosedIcon, UserPlusIcon, EllipsisHorizontalIcon, TrophyIcon, FireIcon, ShareIcon } from '@heroicons/react/24/outline';
-import { StarIcon } from '@heroicons/react/24/solid'; // Solid for rating
+import { StarIcon } from '@heroicons/react/24/solid';
 import MovieCard from '../components/MovieCard';
 import ShareModal from '../components/ui/ShareModal';
 import { useAuth } from '../contexts/AuthContext';
-import { useUserProfile } from '../contexts/UserProfileContext'; // Import Context
+import { useUserProfile } from '../contexts/UserProfileContext';
 import { db } from '../api/firebase';
 import { collection, query, where, getDocs, limit, doc, getDoc } from 'firebase/firestore';
 import { cn } from '../lib/utils';
-import { getMovieDetails } from '../api/tmdb'; // For enriching movie data if needed
 
 const PublicProfileView = ({ onSelectMovie }) => {
     const { username } = useParams();
     const { user: currentUser } = useAuth();
-    const { followUser, unfollowUser, isUserFollowing } = useUserProfile(); // Social Actions
+    const { followUser, unfollowUser, isUserFollowing } = useUserProfile();
     const navigate = useNavigate();
 
     const [profile, setProfile] = useState(null);
@@ -27,6 +26,10 @@ const PublicProfileView = ({ onSelectMovie }) => {
     const [isFollowing, setIsFollowing] = useState(false);
     const [isShareOpen, setIsShareOpen] = useState(false);
     const [followLoading, setFollowLoading] = useState(false);
+
+    // New Tabs State
+    const [activeTab, setActiveTab] = useState('lists');
+    const [publicLists, setPublicLists] = useState([]);
 
     useEffect(() => {
         const fetchPublicProfile = async () => {
@@ -41,7 +44,6 @@ const PublicProfileView = ({ onSelectMovie }) => {
                 } else if (currentUser && username === currentUser.displayName?.replace(/\s+/g, '').toLowerCase()) {
                     targetUid = currentUser.uid;
                 } else {
-                    // Try finding by username field query
                     const q = query(collection(db, 'userProfiles'), where('username', '==', username), limit(1));
                     const querySnapshot = await getDocs(q);
 
@@ -50,7 +52,6 @@ const PublicProfileView = ({ onSelectMovie }) => {
                         targetUid = userDoc.id;
                         profileData = userDoc.data();
                     } else {
-                        // Fallback: Assume username MIGHT be the UID (for direct links)
                         const docRef = doc(db, 'userProfiles', username);
                         const docSnap = await getDoc(docRef);
                         if (docSnap.exists()) {
@@ -61,14 +62,13 @@ const PublicProfileView = ({ onSelectMovie }) => {
                 }
 
                 if (!targetUid && !profileData && username !== 'me') {
-                    // MOCK FALLBACK FOR DEMO if user not in DB yet
-                    // We will simulate a user so the UI is testable
+                    // MOCK FALLBACK
                     setProfile({
                         uid: 'mock-user-123',
                         displayName: username,
                         username: username,
                         photoURL: null,
-                        bio: "Usuario simulado para demostración.",
+                        bio: "Usuario simulado.",
                         stats: { watched: 0, followers: 0 },
                         privacy: 'public'
                     });
@@ -77,7 +77,6 @@ const PublicProfileView = ({ onSelectMovie }) => {
                     return;
                 }
 
-                // 2. Fetch Profile Data (if not already fetched by query)
                 if (targetUid && !profileData) {
                     const docRef = doc(db, 'userProfiles', targetUid);
                     const docSnap = await getDoc(docRef);
@@ -87,18 +86,29 @@ const PublicProfileView = ({ onSelectMovie }) => {
                 }
 
                 if (profileData) {
-                    setProfile({ ...profileData, uid: targetUid }); // Ensure UID is attached
+                    setProfile({ ...profileData, uid: targetUid });
 
-                    // 3. Fetch Movies (Favorites or Last Watched)
-                    // Currently using a mock list for public display, in real app we query 'watched' subcollection
-                    // const watchedRef = collection(db, 'userProfiles', targetUid, 'watched'); ...
-                    // For now, let's use the profile's stats or just empty if no subcollection query ready
-                    setMovies([]);
+                    // Fetch Lists
+                    if (targetUid) {
+                        try {
+                            const listsQuery = query(
+                                collection(db, 'lists'),
+                                where('ownerId', '==', targetUid),
+                                where('privacy', '==', 'public')
+                            );
+                            const listSnap = await getDocs(listsQuery);
+                            const realLists = listSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                            setPublicLists(realLists);
+                        } catch (listErr) {
+                            console.warn("⚠️ Could not fetch user lists. Check Firestore Rules.", listErr);
+                            // Don't crash the whole profile, just show empty lists
+                            setPublicLists([]);
+                        }
+                    }
                 } else {
                     setError("Usuario no encontrado.");
                 }
 
-                // 4. Check Follow Status
                 if (currentUser && targetUid && currentUser.uid !== targetUid) {
                     const following = await isUserFollowing(targetUid);
                     setIsFollowing(following);
@@ -122,7 +132,6 @@ const PublicProfileView = ({ onSelectMovie }) => {
             if (isFollowing) {
                 await unfollowUser(profile.uid);
                 setIsFollowing(false);
-                // Optimistic update for stats
                 setProfile(prev => ({
                     ...prev,
                     social: { ...prev.social, followersCount: (prev.social?.followersCount || 1) - 1 }
@@ -164,8 +173,8 @@ const PublicProfileView = ({ onSelectMovie }) => {
             {/* 1. HERO COVER */}
             <div className="relative h-64 md:h-80 w-full overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#050505]/50 to-[#050505]" />
-                {movies[0] ? (
-                    <img src={`https://image.tmdb.org/t/p/original${movies[0].poster_path}`} alt="Cover" className="w-full h-full object-cover opacity-40 blur-sm scale-105" />
+                {publicLists[0]?.movies?.[0] ? (
+                    <img src={`https://image.tmdb.org/t/p/original${publicLists[0].movies[0].poster_path}`} alt="Cover" className="w-full h-full object-cover opacity-40 blur-sm scale-105" />
                 ) : (
                     <div className="w-full h-full bg-gradient-to-br from-gray-900 to-black" />
                 )}
@@ -175,14 +184,14 @@ const PublicProfileView = ({ onSelectMovie }) => {
             <div className="max-w-5xl mx-auto px-4 md:px-8 -mt-24 relative z-10">
                 <div className="flex flex-col md:flex-row items-end md:items-end gap-6 mb-8">
                     {/* Avatar */}
-                    <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative group">
+                    <div className="relative group">
                         <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-[#050505] bg-surface-elevated overflow-hidden shadow-2xl">
                             <img src={profile.photoURL || "/logo.png"} alt={profile.displayName} className="w-full h-full object-cover" />
                         </div>
                         {profile.isPro && (
                             <div className="absolute bottom-2 right-2 bg-gradient-to-r from-yellow-500 to-amber-600 text-black text-[10px] font-bold px-2 py-0.5 rounded-full border border-white/20 shadow-lg">PRO</div>
                         )}
-                    </motion.div>
+                    </div>
 
                     {/* Text Info */}
                     <div className="flex-1 mb-2 text-center md:text-left">
@@ -191,8 +200,8 @@ const PublicProfileView = ({ onSelectMovie }) => {
 
                         <div className="flex items-center justify-center md:justify-start gap-6 text-sm">
                             <div className="text-center md:text-left">
-                                <span className="block font-bold text-white text-lg">{profile.stats?.moviesWatched || 0}</span>
-                                <span className="text-gray-500 text-xs uppercase tracking-wider">Vistas</span>
+                                <span className="block font-bold text-white text-lg">{publicLists.length}</span>
+                                <span className="text-gray-500 text-xs uppercase tracking-wider">Listas</span>
                             </div>
                             <div className="text-center md:text-left">
                                 <span className="block font-bold text-white text-lg">{profile.social?.followersCount || 0}</span>
@@ -230,22 +239,65 @@ const PublicProfileView = ({ onSelectMovie }) => {
                     </div>
                 </div>
 
-                {/* Bio (Mocked Bio if missing or real) */}
                 <div className="max-w-2xl bg-white/5 rounded-2xl p-6 border border-white/5 mb-10 backdrop-blur-sm">
                     <p className="text-gray-300 leading-relaxed italic">"{profile.bio || "Este usuario prefiere mantener el misterio sobre sus gustos..."}"</p>
                 </div>
 
-                {/* Grid */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    {movies.length > 0 ? movies.map((movie) => (
-                        <div key={movie.id}><MovieCard movie={movie} onClick={onSelectMovie} /></div>
-                    )) : (
-                        <div className="col-span-full py-20 text-center text-gray-500">
-                            <LockClosedIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                            Este usuario no tiene actividad pública reciente.
-                        </div>
-                    )}
+                {/* 3. CONTENT TABS */}
+                <div className="border-b border-white/10 mb-6 flex gap-6">
+                    <button
+                        onClick={() => setActiveTab('lists')}
+                        className={cn("pb-4 font-bold transition-colors border-b-2", activeTab === 'lists' ? "text-white border-primary" : "text-gray-500 border-transparent hover:text-gray-300")}
+                    >
+                        Listas ({publicLists.length})
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('favorites')}
+                        className={cn("pb-4 font-bold transition-colors border-b-2", activeTab === 'favorites' ? "text-white border-primary" : "text-gray-500 border-transparent hover:text-gray-300")}
+                    >
+                        Favoritos
+                    </button>
                 </div>
+
+                {/* CONTENT GRID */}
+                {activeTab === 'lists' ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {publicLists.length > 0 ? publicLists.map(list => (
+                            <div
+                                key={list.id}
+                                onClick={() => navigate(`/lists/${list.id}`)}
+                                className="group bg-surface-elevated border border-white/5 rounded-xl overflow-hidden hover:border-primary/50 transition-all cursor-pointer"
+                            >
+                                <div className="h-32 grid grid-cols-4 bg-black/50 overflow-hidden relative">
+                                    {list.movies?.slice(0, 4).map(m => (
+                                        <img key={m.id} src={`https://image.tmdb.org/t/p/w200${m.poster_path}`} className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity" alt="" />
+                                    ))}
+                                    {(!list.movies || list.movies.length === 0) && (
+                                        <div className="col-span-4 flex items-center justify-center text-gray-700 bg-black/40 h-full">Vacía</div>
+                                    )}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-surface-elevated to-transparent" />
+                                </div>
+                                <div className="p-4">
+                                    <p className="font-bold text-white text-lg leading-tight mb-1 group-hover:text-primary transition-colors truncate">{list.name}</p>
+                                    <span className="text-xs text-gray-400">{list.movieCount || list.movies?.length || 0} Películas</span>
+                                </div>
+                            </div>
+                        )) : (
+                            <div className="col-span-full py-10 text-center text-gray-500 italic">Este usuario no tiene listas públicas.</div>
+                        )}
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        {movies.length > 0 ? movies.map((movie) => (
+                            <div key={movie.id}><MovieCard movie={movie} onClick={onSelectMovie} /></div>
+                        )) : (
+                            <div className="col-span-full py-10 text-center text-gray-500">
+                                <LockClosedIcon className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                                No hay favoritos visibles.
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             <AnimatePresence>
@@ -256,7 +308,7 @@ const PublicProfileView = ({ onSelectMovie }) => {
                         data={{
                             title: profile.displayName,
                             subtitle: `@${profile.username} • Cinéfilo en FRAME`,
-                            movies: movies,
+                            movies: activeTab === 'lists' ? [] : movies, // If sharing lists view, maybe share profile summary
                             type: 'profile'
                         }}
                     />
