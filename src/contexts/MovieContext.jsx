@@ -246,6 +246,40 @@ export const MovieProvider = ({ children }) => {
     };
 
     // ========================================
+    // UPDATE METADATA (Repairs missing fields)
+    // ========================================
+    const updateMovieMetadata = (movieId, newData) => {
+        let updated = false;
+
+        // Helper to update list if item exists
+        const updateList = (list) => {
+            return list.map(m => {
+                if (m.id === movieId) {
+                    updated = true;
+                    // Merge existing data with new data, ensuring we don't overwrite user data with partials if not intended
+                    return { ...m, ...newData };
+                }
+                return m;
+            });
+        };
+
+        const newWatchlist = updateList(watchlist);
+        const newWatched = updateList(watched);
+
+        if (updated) {
+            console.log(`[MovieContext] 🛠️ Repaired metadata for movie ${movieId}`);
+            if (isCloud) {
+                setCloudWatchlist(newWatchlist);
+                setCloudWatched(newWatched);
+                syncToCloud(newWatchlist, newWatched).catch(err => console.error(err));
+            } else {
+                setLocalWatchlist(newWatchlist);
+                setLocalWatched(newWatched);
+            }
+        }
+    };
+
+    // ========================================
     // REMOVE MOVIE
     // ========================================
     const removeMovie = (movieId) => {
@@ -293,6 +327,7 @@ export const MovieProvider = ({ children }) => {
             addToWatched,
             moveFromWatchlistToWatched,
             removeMovie,
+            updateMovieMetadata,
             isWatched,
             isInWatchlist
         }}>

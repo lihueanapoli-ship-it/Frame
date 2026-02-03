@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useMovies } from '../contexts/MovieContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useMovieFilter } from '../hooks/useMovieFilter';
+import { getMovieDetails } from '../api/tmdb';
 import MovieCard from '../components/MovieCard';
 import BottomSheet from '../components/ui/BottomSheet';
 import { FilterChip } from '../components/ui/FilterChip';
@@ -48,8 +49,47 @@ const LibraryView = ({ onSelectMovie }) => {
     const [yearRange, setYearRange] = useState({ min: 1900, max: new Date().getFullYear() + 5 });
 
     // Data
-    const { watchlist, watched } = useMovies();
+    const { watchlist, watched, updateMovieMetadata } = useMovies();
     const { user, loginWithGoogle } = useAuth();
+
+    // Auto-Repair: Fix older movies missing runtime/votes for filters
+    useEffect(() => {
+        if (!user) return;
+
+        const repairMovies = async () => {
+            const allMovies = [...watchlist, ...watched];
+            // Identify invalid data (missing runtime is the main blocker for filters)
+            const candidates = allMovies.filter(m =>
+                (m.runtime === undefined || m.runtime === 0) ||
+                (m.vote_average === undefined)
+            );
+
+            if (candidates.length === 0) return;
+
+            // Debounce/Limit to avoid spamming on every render if update is slow
+            // Only take first 5 to repair per mount/update cycle to be safe
+            const batch = candidates.slice(0, 5);
+            console.log(`[LibraryView] 🔧 Repairing metadata for ${batch.length} movies...`);
+
+            await Promise.all(batch.map(async (movie) => {
+                try {
+                    const details = await getMovieDetails(movie.id);
+                    if (details) {
+                        updateMovieMetadata(movie.id, {
+                            runtime: details.runtime,
+                            vote_average: details.vote_average,
+                            genre_ids: details.genres?.map(g => g.id) || []
+                        });
+                    }
+                } catch (e) {
+                    console.error("Error repairing movie", movie.title, e);
+                }
+            }));
+        };
+
+        const timeout = setTimeout(repairMovies, 2000); // Delay start to let UI load
+        return () => clearTimeout(timeout);
+    }, [watchlist.length, watched.length]); // Dependencies: if list size changes, check again.
 
     // Derived Settings based on Tab
     const ratingSource = activeTab === 'watchlist' ? 'tmdb' : 'user';
