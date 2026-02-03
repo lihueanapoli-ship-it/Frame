@@ -47,66 +47,78 @@ const AppContent = () => {
 
     // 3. Authenticated App UI
     const UserMenu = () => {
+        const firstName = user.displayName?.split(' ')[0] || 'Cinéfilo';
+
         return (
-            <div className="relative">
-                <button
-                    onClick={() => setIsMenuOpen(!isMenuOpen)}
-                    className="relative group focus:outline-none"
-                >
-                    <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-purple-600 rounded-full opacity-75 group-hover:opacity-100 blur transition duration-200" />
-                    <img
-                        src={user?.photoURL || "/logo.png"}
-                        alt={user?.displayName}
-                        className="relative w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-black object-cover"
-                        title={user?.displayName}
-                    />
-                </button>
+            <div className="flex items-center gap-4">
+                {/* Creative Greeting - Hidden on mobile */}
+                <div className="hidden md:flex flex-col items-end animate-fade-in">
+                    <span className="text-[9px] font-mono text-primary uppercase tracking-[0.2em] mb-0.5">En Escena</span>
+                    <span className="text-sm font-display font-bold text-white tracking-wide leading-none">
+                        {firstName.toUpperCase()}
+                    </span>
+                </div>
 
-                <AnimatePresence>
-                    {isMenuOpen && (
-                        <>
-                            {/* Backdrop to close */}
-                            <div className="fixed inset-0 z-40" onClick={() => setIsMenuOpen(false)} />
+                <div className="relative">
+                    <button
+                        onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        className="relative group focus:outline-none"
+                    >
+                        <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-purple-600 rounded-full opacity-75 group-hover:opacity-100 blur transition duration-200" />
+                        <img
+                            src={user?.photoURL || "/logo.png"}
+                            alt={user?.displayName}
+                            className="relative w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-black object-cover"
+                            title={user?.displayName}
+                        />
+                    </button>
 
-                            {/* Dropdown */}
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                className="absolute right-0 mt-2 w-56 rounded-xl bg-surface border border-white/10 shadow-2xl z-50 overflow-hidden"
-                            >
-                                <div className="px-4 py-3 border-b border-white/5 bg-white/5">
-                                    <p className="text-sm text-white font-semibold truncate">{user.displayName}</p>
-                                    <p className="text-xs text-gray-400 truncate">{user.email}</p>
-                                </div>
-                                <div className="p-1">
-                                    <button
-                                        onClick={() => {
-                                            toggleLanguage();
-                                            // Optional: close menu or keep open to see change? Close is better UX.
-                                            // But wait, changing language might require reload or re-fetch. 
-                                            // Our Context handles API param, but View components need to re-fetch?
-                                            // A simple page reload might be safest for now to refresh all data:
-                                            setTimeout(() => window.location.reload(), 300);
-                                        }}
-                                        className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-white/10 rounded-lg transition-colors"
-                                    >
-                                        🌐 {language === 'es-MX' ? 'Cambiar a Inglés' : 'Change to Spanish'}
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            logout();
-                                            setIsMenuOpen(false);
-                                        }}
-                                        className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                                    >
-                                        🚪 {language === 'es-MX' ? 'Cerrar Sesión' : 'Sign Out'}
-                                    </button>
-                                </div>
-                            </motion.div>
-                        </>
-                    )}
-                </AnimatePresence>
+                    <AnimatePresence>
+                        {isMenuOpen && (
+                            <>
+                                {/* Backdrop to close */}
+                                <div className="fixed inset-0 z-40" onClick={() => setIsMenuOpen(false)} />
+
+                                {/* Dropdown */}
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                                    className="absolute right-0 mt-2 w-56 rounded-xl bg-surface border border-white/10 shadow-2xl z-50 overflow-hidden"
+                                >
+                                    <div className="px-4 py-3 border-b border-white/5 bg-white/5">
+                                        <p className="text-sm text-white font-semibold truncate">{user.displayName}</p>
+                                        <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                                    </div>
+                                    <div className="p-1">
+                                        <button
+                                            onClick={() => {
+                                                toggleLanguage();
+                                                // Optional: close menu or keep open to see change? Close is better UX.
+                                                // But wait, changing language might require reload or re-fetch. 
+                                                // Our Context handles API param, but View components need to re-fetch?
+                                                // A simple page reload might be safest for now to refresh all data:
+                                                setTimeout(() => window.location.reload(), 300);
+                                            }}
+                                            className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-white/10 rounded-lg transition-colors"
+                                        >
+                                            🌐 {language === 'es-MX' ? 'Cambiar a Inglés' : 'Change to Spanish'}
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                logout();
+                                                setIsMenuOpen(false);
+                                            }}
+                                            className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                                        >
+                                            🚪 {language === 'es-MX' ? 'Cerrar Sesión' : 'Sign Out'}
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            </>
+                        )}
+                    </AnimatePresence>
+                </div>
             </div>
         );
     };
@@ -159,6 +171,21 @@ const AppContent = () => {
                 </AnimatePresence>
             </main>
 
+            <footer className="fixed bottom-24 md:bottom-6 right-6 z-0 pointer-events-none opacity-20 hover:opacity-100 transition-opacity duration-700 hidden md:block">
+                <div className="flex flex-col items-end gap-1 group">
+                    <span className="font-mono text-[8px] uppercase tracking-[0.3em] text-white/50 group-hover:tracking-[0.5em] transition-all duration-700">Directed By</span>
+                    <span className="font-display font-bold text-[10px] tracking-widest text-white group-hover:text-primary transition-colors duration-500">LIHUE NAPOLI</span>
+                </div>
+            </footer>
+
+            {/* Mobile Footer Signature */}
+            <div className="md:hidden pb-32 flex justify-center opacity-30 mt-8">
+                <div className="flex flex-col items-center gap-1">
+                    <span className="font-mono text-[8px] uppercase tracking-[0.3em] text-white/50">Created By</span>
+                    <span className="font-display font-bold text-[10px] tracking-widest text-white">LIHUE NAPOLI</span>
+                </div>
+            </div>
+
             <BottomNav />
 
             <AnimatePresence>
@@ -170,7 +197,7 @@ const AppContent = () => {
                     />
                 )}
             </AnimatePresence>
-        </div>
+        </div >
     );
 }
 
