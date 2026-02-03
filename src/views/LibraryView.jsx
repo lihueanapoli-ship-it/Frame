@@ -6,8 +6,8 @@ import MovieCard from '../components/MovieCard';
 import BottomSheet from '../components/ui/BottomSheet';
 import { FilterChip } from '../components/ui/FilterChip';
 import { createPortal } from 'react-dom';
-import { AdjustmentsHorizontalIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import { FilmIcon, CheckBadgeIcon } from '@heroicons/react/24/solid';
+import { AdjustmentsHorizontalIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { FilmIcon, CheckBadgeIcon, StarIcon, ClockIcon, CalendarIcon } from '@heroicons/react/24/solid';
 import { cn } from '../lib/utils';
 import { motion } from 'framer-motion';
 
@@ -31,6 +31,9 @@ const LibraryView = ({ onSelectMovie }) => {
     // Filter States
     const [selectedGenres, setSelectedGenres] = useState([]);
     const [sortOption, setSortOption] = useState('date_added'); // 'date_added', 'rating', 'year'
+    const [minRating, setMinRating] = useState(0);
+    const [runtimeFilter, setRuntimeFilter] = useState('any'); // 'any', 'short', 'medium', 'long'
+    const [yearRange, setYearRange] = useState({ min: 1970, max: new Date().getFullYear() });
 
     // Data
     const { watchlist, watched } = useMovies();
@@ -42,7 +45,10 @@ const LibraryView = ({ onSelectMovie }) => {
         search: localSearch,
         status: 'all',
         sort: sortOption,
-        genres: selectedGenres
+        genres: selectedGenres,
+        minRating,
+        runtime: runtimeFilter,
+        yearRange
     });
 
     if (!user) {
@@ -74,7 +80,12 @@ const LibraryView = ({ onSelectMovie }) => {
     const clearFilters = () => {
         setSelectedGenres([]);
         setSortOption('date_added');
+        setMinRating(0);
+        setRuntimeFilter('any');
+        setYearRange({ min: 1970, max: new Date().getFullYear() });
     };
+
+    const activeFilterCount = (selectedGenres.length > 0 ? 1 : 0) + (minRating > 0 ? 1 : 0) + (runtimeFilter !== 'any' ? 1 : 0) + (sortOption !== 'date_added' ? 1 : 0);
 
     return (
         <div className="min-h-screen pb-24 px-4 pt-4">
@@ -125,28 +136,42 @@ const LibraryView = ({ onSelectMovie }) => {
                     <button
                         onClick={() => setIsFilterOpen(true)}
                         className={cn(
-                            "flex items-center justify-center w-12 h-12 rounded-xl border border-white/10 transition-colors",
-                            (selectedGenres.length > 0 || sortOption !== 'date_added')
+                            "flex items-center justify-center w-12 h-12 rounded-xl border border-white/10 transition-colors relative",
+                            activeFilterCount > 0
                                 ? "bg-primary text-white border-primary"
                                 : "bg-surface-elevated text-gray-400 hover:text-white"
                         )}
                     >
                         <AdjustmentsHorizontalIcon className="w-5 h-5" />
+                        {activeFilterCount > 0 && (
+                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center font-bold text-white border border-[#121212]">
+                                {activeFilterCount}
+                            </span>
+                        )}
                     </button>
                 </div>
             </div>
 
-            {/* Movie Grid */}
+            {/* Movie Grid Header */}
             <div className="space-y-4">
                 <div className="text-xs text-gray-500 font-medium uppercase tracking-wider flex justify-between items-center">
                     <span>{totalCount} Películas</span>
-                    {(selectedGenres.length > 0) && <span className="text-primary truncate max-w-[150px]">Filtros activos</span>}
+                    {activeFilterCount > 0 && (
+                        <button onClick={clearFilters} className="text-primary flex items-center gap-1 hover:underline">
+                            <XMarkIcon className="w-3 h-3" /> Limpiar filtros
+                        </button>
+                    )}
                 </div>
 
                 {totalCount === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20 opacity-50">
                         <FilmIcon className="w-16 h-16 text-gray-700 mb-4" />
                         <p className="text-gray-400">No se encontraron películas</p>
+                        {activeFilterCount > 0 && (
+                            <button onClick={clearFilters} className="mt-4 text-primary text-sm font-bold">
+                                Limpiar filtros
+                            </button>
+                        )}
                     </div>
                 ) : (
                     <motion.div
@@ -177,31 +202,32 @@ const LibraryView = ({ onSelectMovie }) => {
                 )}
             </div>
 
-            {/* Filter Bottom Sheet */}
+            {/* Filter Bottom Sheet (Redesigned) */}
             {createPortal(
                 <BottomSheet
                     isOpen={isFilterOpen}
                     onClose={() => setIsFilterOpen(false)}
-                    title="Filtrar y Ordenar"
+                    title="Filtros Avanzados"
                 >
-                    <div className="space-y-8">
-                        {/* Sort Section */}
+                    <div className="space-y-8 pb-8">
+                        {/* 1. Sort Section */}
                         <div>
-                            <h4 className="text-sm font-medium text-gray-400 mb-3 uppercase tracking-wider">Ordenar Por</h4>
+                            <h4 className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-widest">Ordenar Por</h4>
                             <div className="grid grid-cols-2 gap-3">
                                 {[
-                                    { id: 'date_added', label: 'Agregadas recientemente' },
-                                    { id: 'year', label: 'Año de lanzamiento' },
-                                    { id: 'rating', label: 'Mejor calificadas' },
+                                    { id: 'date_added', label: 'Recientes' },
+                                    { id: 'year', label: 'Año' },
+                                    { id: 'rating', label: 'Valoración' },
+                                    { id: 'runtime', label: 'Duración' },
                                 ].map(opt => (
                                     <button
                                         key={opt.id}
                                         onClick={() => setSortOption(opt.id)}
                                         className={cn(
-                                            "p-3 rounded-xl text-sm font-medium border border-white/5 text-left transition-all",
+                                            "p-3 rounded-xl text-sm font-medium border text-center transition-all",
                                             sortOption === opt.id
-                                                ? "bg-white text-black ring-2 ring-white"
-                                                : "bg-surface hover:bg-white/5 text-gray-300"
+                                                ? "bg-white text-black border-white ring-2 ring-white/20"
+                                                : "bg-surface border-white/5 text-gray-400 hover:text-white hover:bg-white/5"
                                         )}
                                     >
                                         {opt.label}
@@ -210,9 +236,93 @@ const LibraryView = ({ onSelectMovie }) => {
                             </div>
                         </div>
 
-                        {/* Genre Section */}
+                        {/* 2. Rating Filter */}
                         <div>
-                            <h4 className="text-sm font-medium text-gray-400 mb-3 uppercase tracking-wider">Géneros</h4>
+                            <div className="flex justify-between items-center mb-3">
+                                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Calificación Mínima</h4>
+                                <span className="text-xs font-mono text-primary">{minRating > 0 ? `${minRating}+ Estrellas` : 'Cualquiera'}</span>
+                            </div>
+                            <div className="flex gap-2 justify-between bg-surface-elevated p-3 rounded-xl border border-white/5">
+                                {[1, 2, 3, 4, 5].map(star => (
+                                    <button
+                                        key={star}
+                                        onClick={() => setMinRating(minRating === star ? 0 : star)}
+                                        className="transition-transform active:scale-90"
+                                    >
+                                        <StarIcon className={cn("w-8 h-8 transition-colors", star <= minRating ? "text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]" : "text-gray-700")} />
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* 3. Runtime Filter */}
+                        <div>
+                            <h4 className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-widest">Duración</h4>
+                            <div className="grid grid-cols-3 gap-2">
+                                {[
+                                    { id: 'short', label: 'Corta', sub: '< 90m' },
+                                    { id: 'medium', label: 'Media', sub: '90-120m' },
+                                    { id: 'long', label: 'Larga', sub: '> 120m' },
+                                ].map(r => (
+                                    <button
+                                        key={r.id}
+                                        onClick={() => setRuntimeFilter(runtimeFilter === r.id ? 'any' : r.id)}
+                                        className={cn(
+                                            "flex flex-col items-center justify-center p-3 rounded-xl border transition-all",
+                                            runtimeFilter === r.id
+                                                ? "bg-primary/20 border-primary text-primary"
+                                                : "bg-surface border-white/5 text-gray-400 hover:bg-white/5"
+                                        )}
+                                    >
+                                        <ClockIcon className="w-5 h-5 mb-1" />
+                                        <span className="text-xs font-bold">{r.label}</span>
+                                        <span className="text-[10px] opacity-60 font-mono">{r.sub}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* 4. Years (Simpler Decades for Mobile intuitive) */}
+                        <div>
+                            <h4 className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-widest">Década</h4>
+                            <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
+                                <button
+                                    onClick={() => setYearRange({ min: 1900, max: 2050 })}
+                                    className={cn(
+                                        "px-4 py-2 rounded-full text-xs font-bold border whitespace-nowrap",
+                                        yearRange.min === 1900
+                                            ? "bg-white text-black border-white"
+                                            : "bg-surface border-white/10 text-gray-400"
+                                    )}
+                                >
+                                    Todas
+                                </button>
+                                {[2020, 2010, 2000, 1990, 1980, 1970].map(decade => {
+                                    const isSelected = yearRange.min === decade && yearRange.max === decade + 9;
+                                    return (
+                                        <button
+                                            key={decade}
+                                            onClick={() => setYearRange(isSelected ? { min: 1900, max: 2050 } : { min: decade, max: decade + 9 })}
+                                            className={cn(
+                                                "px-4 py-2 rounded-full text-xs font-bold border whitespace-nowrap",
+                                                isSelected
+                                                    ? "bg-primary text-black border-primary"
+                                                    : "bg-surface border-white/10 text-gray-400 hover:text-white"
+                                            )}
+                                        >
+                                            {decade}s
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* 5. Genres */}
+                        <div>
+                            <div className="flex justify-between items-center mb-3">
+                                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Géneros</h4>
+                                {selectedGenres.length > 0 && <span className="text-xs text-primary">{selectedGenres.length} seleccionados</span>}
+                            </div>
                             <div className="flex flex-wrap gap-2">
                                 {GENRES.map(g => (
                                     <FilterChip
@@ -229,15 +339,15 @@ const LibraryView = ({ onSelectMovie }) => {
                         <div className="pt-4 flex gap-3">
                             <button
                                 onClick={clearFilters}
-                                className="flex-1 py-3.5 rounded-xl font-semibold text-gray-400 hover:text-white transition-colors"
+                                className="flex-1 py-3.5 rounded-xl font-semibold text-gray-400 hover:text-white transition-colors border border-white/10"
                             >
                                 Limpiar todo
                             </button>
                             <button
                                 onClick={() => setIsFilterOpen(false)}
-                                className="flex-[2] py-3.5 bg-primary text-white rounded-xl font-bold shadow-lg shadow-primary/25 active:scale-95 transition-all"
+                                className="flex-[2] py-3.5 bg-primary text-black rounded-xl font-bold shadow-lg shadow-primary/25 active:scale-95 transition-all"
                             >
-                                Aplicar Filtros
+                                Ver {filteredMovies.length} Películas
                             </button>
                         </div>
                     </div>
