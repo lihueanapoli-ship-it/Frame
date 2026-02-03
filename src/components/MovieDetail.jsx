@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { XMarkIcon, CalendarIcon, ClockIcon } from '@heroicons/react/24/outline';
-import { StarIcon as StarIconSolid, PlusIcon, CheckIcon, StarIcon } from '@heroicons/react/24/solid';
+import { StarIcon as StarIconSolid, PlusIcon, CheckIcon, StarIcon, PlayIcon } from '@heroicons/react/24/solid';
 import { getBackdropUrl, getPosterUrl, getMovieDetails, getMovieVideos } from '../api/tmdb';
 import { useMovies } from '../contexts/MovieContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -13,6 +13,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
     const [movie, setMovie] = useState(initialMovie);
     const [videoKey, setVideoKey] = useState(null);
     const [showVideo, setShowVideo] = useState(false);
+    const [isFullVideoOpen, setIsFullVideoOpen] = useState(false);
     const [hoverRating, setHoverRating] = useState(0);
 
     // Contexts
@@ -93,14 +94,23 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                 {/* Close Button */}
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 z-50 p-2 bg-black/40 hover:bg-black/60 backdrop-blur-md rounded-full text-white transition-colors"
+                    className="absolute top-4 right-4 z-50 p-2 bg-black/40 hover:bg-black/60 backdrop-blur-md rounded-full text-white transition-colors cursor-pointer"
                 >
                     <XMarkIcon className="w-6 h-6" />
                 </button>
 
-                {/* Cinematic Header */}
-                <div className="relative h-[40vh] sm:h-[50vh] w-full bg-black overflow-hidden group">
-
+                {/* Cinematic Header (Clickable for Full Video) */}
+                <div
+                    className={cn(
+                        "relative h-[40vh] sm:h-[50vh] w-full bg-black overflow-hidden group",
+                        videoKey && showVideo ? "cursor-pointer" : ""
+                    )}
+                    onClick={() => {
+                        if (videoKey && showVideo) {
+                            setIsFullVideoOpen(true);
+                        }
+                    }}
+                >
                     {/* 1. Backdrop Image (Always present as base) */}
                     <div className={cn(
                         "absolute inset-0 transition-opacity duration-1000",
@@ -113,27 +123,37 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                         />
                     </div>
 
-                    {/* 2. Youtube Trailer (Fade in) */}
+                    {/* 2. Youtube Trailer Background (Muted, Loop, No Controls) */}
                     {videoKey && (
                         <div className={cn(
-                            "absolute inset-0 transition-opacity duration-1000 pointer-events-none", // pointer-events-none to prevent stealing clicks/scroll
+                            "absolute inset-0 transition-opacity duration-1000 pointer-events-none",
                             showVideo ? "opacity-100" : "opacity-0"
                         )}>
                             <iframe
-                                title="Trailer"
+                                title="Trailer Background"
                                 src={`https://www.youtube.com/embed/${videoKey}?autoplay=1&mute=1&controls=0&modestbranding=1&loop=1&playlist=${videoKey}&start=10`}
-                                className="w-full h-[140%] -mt-[10%] scale-125 opacity-60" // Zoom & Scale to fill and look strictly cinematic
+                                className="w-full h-[140%] -mt-[10%] scale-125 opacity-60"
                                 frameBorder="0"
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             />
                         </div>
                     )}
 
-                    {/* 3. Gradient Overlay (For text readability) */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
+                    {/* 3. Play Button Overlay (Visible on Hover if video is ready) */}
+                    {videoKey && showVideo && (
+                        <div className="absolute inset-0 flex items-center justify-center z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <div className="bg-white/20 backdrop-blur-md border border-white/30 p-5 rounded-full shadow-2xl transform group-hover:scale-110 transition-transform">
+                                <PlayIcon className="w-10 h-10 text-white fill-white" />
+                            </div>
+                            <span className="absolute mt-24 text-white font-medium text-sm tracking-wider opacity-90 drop-shadow-md">VER TRAILER</span>
+                        </div>
+                    )}
+
+                    {/* 4. Gradient Overlay (For text readability) */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent pointer-events-none" />
 
                     {/* Title & Stats */}
-                    <div className="absolute bottom-0 left-0 p-6 sm:p-8 w-full z-10">
+                    <div className="absolute bottom-0 left-0 p-6 sm:p-8 w-full z-10 pointer-events-none">
                         <motion.h2
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -206,7 +226,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
 
                     {/* Actions Sticky Footer */}
                     <div className="sticky bottom-0 left-0 right-0 p-4 bg-surface-elevated border-t border-white/5 pb-[env(safe-area-inset-bottom)] z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
-                        {/* Not Watched / Not in List */}
+                        {/* Logic for buttons */}
                         {!watchedState && !watchlistState && (
                             <div className="flex gap-3">
                                 <button
@@ -242,7 +262,6 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                             </div>
                         )}
 
-                        {/* In Watchlist */}
                         {watchlistState && (
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between px-1">
@@ -273,7 +292,6 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                             </div>
                         )}
 
-                        {/* Watched (Star Rating) */}
                         {watchedState && (
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between">
@@ -290,7 +308,11 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                     </button>
                                 </div>
 
-                                <div className="flex justify-between items-center px-1" onMouseLeave={() => setHoverRating(0)}>
+                                {/* Star Rating Row */}
+                                <div
+                                    className="flex justify-between items-center px-1"
+                                    onMouseLeave={() => setHoverRating(0)}
+                                >
                                     {Array.from({ length: 10 }, (_, i) => i + 1).map(star => {
                                         const isActive = (hoverRating || userRating) >= star;
                                         return (
@@ -306,12 +328,16 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                                 }}
                                                 className="group p-1 sm:p-1.5 transition-transform hover:scale-125 focus:outline-none"
                                             >
-                                                <StarIcon className={cn(
-                                                    "w-6 h-6 sm:w-8 sm:h-8 transition-colors duration-200",
-                                                    isActive
-                                                        ? (star <= 4 ? "text-red-500" : star <= 7 ? "text-yellow-500" : "text-primary drop-shadow-[0_0_8px_rgba(0,240,255,0.6)]")
-                                                        : "text-gray-700 group-hover:text-gray-500"
-                                                )} />
+                                                {isActive ? (
+                                                    <StarIconSolid className={cn(
+                                                        "w-6 h-6 sm:w-8 sm:h-8 transition-colors duration-200",
+                                                        star <= 4 ? "text-red-500" :
+                                                            star <= 7 ? "text-yellow-500" :
+                                                                "text-primary drop-shadow-[0_0_8px_rgba(0,240,255,0.6)]"
+                                                    )} />
+                                                ) : (
+                                                    <StarIcon className="w-6 h-6 sm:w-8 sm:h-8 text-gray-700 group-hover:text-gray-500 transition-colors" />
+                                                )}
                                             </button>
                                         );
                                     })}
@@ -319,14 +345,32 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
 
                                 <div className="h-8 flex flex-col items-center justify-center">
                                     {(hoverRating || userRating) > 0 && (
-                                        <span className={cn(
-                                            "font-display text-lg font-bold tracking-wide",
-                                            (hoverRating || userRating) <= 4 ? "text-red-400" :
-                                                (hoverRating || userRating) <= 7 ? "text-yellow-400" :
-                                                    "text-primary"
-                                        )}>
-                                            {(hoverRating || userRating)}/10
-                                        </span>
+                                        <motion.div
+                                            key={hoverRating || userRating}
+                                            initial={{ opacity: 0, y: 5 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="text-center"
+                                        >
+                                            <span className={cn(
+                                                "font-display text-lg font-bold tracking-wide",
+                                                (hoverRating || userRating) <= 4 ? "text-red-400" :
+                                                    (hoverRating || userRating) <= 7 ? "text-yellow-400" :
+                                                        "text-primary"
+                                            )}>
+                                                {(hoverRating || userRating)}/10 • {
+                                                    (hoverRating || userRating) === 1 ? "Horrible" :
+                                                        (hoverRating || userRating) === 2 ? "Muy mala" :
+                                                            (hoverRating || userRating) === 3 ? "Mala" :
+                                                                (hoverRating || userRating) === 4 ? "Por debajo del promedio" :
+                                                                    (hoverRating || userRating) === 5 ? "Regular" :
+                                                                        (hoverRating || userRating) === 6 ? "Decente" :
+                                                                            (hoverRating || userRating) === 7 ? "Buena" :
+                                                                                (hoverRating || userRating) === 8 ? "Muy buena" :
+                                                                                    (hoverRating || userRating) === 9 ? "Excelente" :
+                                                                                        "Obra maestra"
+                                                }
+                                            </span>
+                                        </motion.div>
                                     )}
                                 </div>
                             </div>
@@ -334,6 +378,36 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                     </div>
                 </div>
             </motion.div>
+
+            {/* FULL SCREEN VIDEO MODAL */}
+            <AnimatePresence>
+                {isFullVideoOpen && videoKey && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] bg-black flex flex-col justify-center items-center"
+                    >
+                        <button
+                            onClick={() => setIsFullVideoOpen(false)}
+                            className="absolute top-6 right-6 z-50 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-md transition-all transform hover:scale-110"
+                        >
+                            <XMarkIcon className="w-8 h-8" />
+                        </button>
+
+                        <div className="w-full h-full max-w-7xl max-h-screen aspect-video relative">
+                            <iframe
+                                title="Trailer Fullscreen"
+                                src={`https://www.youtube.com/embed/${videoKey}?autoplay=1&mute=0&controls=1&modestbranding=1&rel=0&showinfo=0`}
+                                className="w-full h-full"
+                                frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                                allowFullScreen
+                            />
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
