@@ -27,6 +27,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
 
     // Fetch Details & Video
     useEffect(() => {
+        let timer;
         const loadData = async () => {
             if (initialMovie.id) {
                 // 1. Full Details
@@ -42,7 +43,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                 if (trailer) {
                     setVideoKey(trailer.key);
                     // Delay video appearance for smooth entry
-                    setTimeout(() => setShowVideo(true), 2000);
+                    timer = setTimeout(() => setShowVideo(true), 2000);
                 }
             }
         };
@@ -52,6 +53,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
         document.body.style.overflow = 'hidden';
         return () => {
             document.body.style.overflow = '';
+            if (timer) clearTimeout(timer);
         };
     }, [initialMovie.id]);
 
@@ -344,7 +346,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                 </div>
 
                                 <div className="h-8 flex flex-col items-center justify-center">
-                                    {(hoverRating || userRating) > 0 && (
+                                    {(hoverRating || userRating) > 0 ? (
                                         <motion.div
                                             key={hoverRating || userRating}
                                             initial={{ opacity: 0, y: 5 }}
@@ -371,6 +373,10 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                                 }
                                             </span>
                                         </motion.div>
+                                    ) : (
+                                        <span className="text-xs text-gray-600 font-mono">
+                                            Toca las estrellas para calificar
+                                        </span>
                                     )}
                                 </div>
                             </div>

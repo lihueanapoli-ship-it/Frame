@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { HomeIcon, MagnifyingGlassIcon, RectangleStackIcon, ChartBarIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, MagnifyingGlassIcon, RectangleStackIcon, ChartBarIcon, ChatBubbleLeftRightIcon, ArrowLeftOnRectangleIcon } from '@heroicons/react/24/outline';
 import { HomeIcon as HomeIconSolid, MagnifyingGlassIcon as SearchIconSolid, RectangleStackIcon as LibraryIconSolid, ChartBarIcon as ChartBarIconSolid } from '@heroicons/react/24/solid';
 import { BrowserRouter, Routes, Route, useNavigate, Navigate, NavLink } from 'react-router-dom';
 import { MovieProvider } from './contexts/MovieContext';
@@ -10,24 +10,24 @@ import DiscoverView from './views/DiscoverView';
 import LibraryView from './views/LibraryView';
 import WelcomeView from './views/WelcomeView';
 import CategoryView from './views/CategoryView';
-import SearchView from './views/SearchView'; // Import SearchView
+import SearchView from './views/SearchView';
 import BottomNav from './components/navigation/BottomNav';
 import MovieDetail from './components/MovieDetail';
 import DynamicLogo from './components/ui/DynamicLogo';
 import StatsView from './views/StatsView';
 import SpotlightCursor from './components/ui/SpotlightCursor';
 import PageTransitionOverlay from './components/ui/PageTransitionOverlay';
+import FeedbackModal from './components/ui/FeedbackModal';
 
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { UserProfileProvider, useUserProfile } from './contexts/UserProfileContext';
-
-// ... (previous imports)
 
 // Wrapper component to use Hooks like useNavigate
 const AppContent = () => {
     // Global movie selection state for the Detail Modal
     const [selectedMovie, setSelectedMovie] = useState(null);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isFeedbackOpen, setIsFeedbackOpen] = useState(false); // Feedback Modal State
     const [logoKey, setLogoKey] = useState(0); // Key to restart animation
 
     const navItems = [
@@ -39,13 +39,14 @@ const AppContent = () => {
 
     // Auth Hooks
     const { user, loading, logout } = useAuth();
-    const { language, toggleLanguage } = useLanguage();
+    // Removed useLanguage usage for UI toggle, keeping provider for potential internal logic if needed,
+    // but effectively disabling user switching as requested.
     const { profile, loading: profileLoading } = useUserProfile();
     const navigate = useNavigate();
 
     // 1. Loading Guard
     if (loading) {
-        return <div className="min-h-screen bg-black" />; // Or a spinner
+        return <div className="min-h-screen bg-black" />;
     }
 
     // 2. Login Wall Guard
@@ -92,34 +93,44 @@ const AppContent = () => {
                                     initial={{ opacity: 0, scale: 0.95, y: -10 }}
                                     animate={{ opacity: 1, scale: 1, y: 0 }}
                                     exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                    className="absolute right-0 mt-2 w-56 rounded-xl bg-surface border border-white/10 shadow-2xl z-50 overflow-hidden"
+                                    className="absolute right-0 mt-2 w-64 rounded-xl bg-surface border border-white/10 shadow-2xl z-50 overflow-hidden"
                                 >
-                                    <div className="px-4 py-3 border-b border-white/5 bg-white/5">
+                                    <div className="px-4 py-4 border-b border-white/5 bg-white/5">
                                         <p className="text-sm text-white font-semibold truncate">{user.displayName}</p>
-                                        <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                                        <p className="text-xs text-gray-400 truncate font-mono mt-1">{user.email}</p>
                                     </div>
-                                    <div className="p-1">
+                                    <div className="p-2 space-y-1">
+                                        {/* Feedback Button (New Premium Feature) */}
                                         <button
                                             onClick={() => {
-                                                toggleLanguage();
-                                                // Optional: close menu or keep open to see change? Close is better UX.
-                                                // But wait, changing language might require reload or re-fetch. 
-                                                // Our Context handles API param, but View components need to re-fetch?
-                                                // A simple page reload might be safest for now to refresh all data:
-                                                setTimeout(() => window.location.reload(), 300);
+                                                setIsMenuOpen(false);
+                                                setIsFeedbackOpen(true);
                                             }}
-                                            className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-white/10 rounded-lg transition-colors"
+                                            className="w-full text-left flex items-center gap-3 px-3 py-2.5 text-sm text-gray-200 hover:text-white hover:bg-white/10 rounded-lg transition-all group"
                                         >
-                                            🌐 {language === 'es-MX' ? 'Cambiar a Inglés' : 'Change to Spanish'}
+                                            <div className="p-1.5 bg-primary/10 rounded-md group-hover:bg-primary/20 transition-colors">
+                                                <ChatBubbleLeftRightIcon className="w-4 h-4 text-primary" />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="font-medium">Danos tu opinión</span>
+                                                <span className="text-[10px] text-gray-500">Ayúdanos a mejorar</span>
+                                            </div>
                                         </button>
+
+                                        <div className="h-px bg-white/5 my-1" />
+
+                                        {/* Logout Button */}
                                         <button
                                             onClick={() => {
                                                 logout();
                                                 setIsMenuOpen(false);
                                             }}
-                                            className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                                            className="w-full text-left flex items-center gap-3 px-3 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors group"
                                         >
-                                            🚪 {language === 'es-MX' ? 'Cerrar Sesión' : 'Sign Out'}
+                                            <div className="p-1.5 bg-red-500/10 rounded-md group-hover:bg-red-500/20 transition-colors">
+                                                <ArrowLeftOnRectangleIcon className="w-4 h-4 text-red-400" />
+                                            </div>
+                                            <span className="font-medium">Cerrar Sesión</span>
                                         </button>
                                     </div>
                                 </motion.div>
@@ -147,7 +158,7 @@ const AppContent = () => {
                             key={logoKey}
                             className="flex items-center gap-3"
                             initial={{ x: 0 }}
-                            animate={{ x: 0 }} // We use the key change to trigger children animations if any, or we can animate this div
+                            animate={{ x: 0 }}
                             whileTap={{ scale: 0.95 }}
                         >
                             <motion.div
@@ -229,6 +240,7 @@ const AppContent = () => {
 
             <BottomNav />
 
+            {/* Modals */}
             <AnimatePresence>
                 {selectedMovie && (
                     <MovieDetail
@@ -238,6 +250,12 @@ const AppContent = () => {
                     />
                 )}
             </AnimatePresence>
+
+            <FeedbackModal
+                isOpen={isFeedbackOpen}
+                onClose={() => setIsFeedbackOpen(false)}
+            />
+
         </div >
     );
 }
