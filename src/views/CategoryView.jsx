@@ -178,7 +178,7 @@ const CategoryView = ({ onSelectMovie }) => {
                         disabled={loading}
                         className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg text-sm font-bold transition-all disabled:opacity-50"
                     >
-                        🎲 <span className="hidden md:inline">{loading ? "..." : "Aleatorio"}</span>
+                        <span className="font-bold text-sm">{loading ? "..." : "Aleatorio"}</span>
                     </button>
                 )}
             </header>

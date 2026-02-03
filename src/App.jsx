@@ -60,7 +60,7 @@ const AppContent = () => {
         return (
             <div className="flex items-center gap-4">
                 {/* Creative Greeting - Hidden on mobile */}
-                <div className="hidden md:flex flex-col items-end animate-fade-in">
+                <div className="flex flex-col items-end animate-fade-in">
                     <span className="text-[9px] font-mono text-primary uppercase tracking-[0.2em] mb-0.5">En Escena</span>
                     <span className="text-sm font-display font-bold text-white tracking-wide leading-none">
                         {firstName.toUpperCase()}
