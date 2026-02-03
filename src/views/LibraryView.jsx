@@ -3,6 +3,7 @@ import { useMovies } from '../contexts/MovieContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useMovieFilter } from '../hooks/useMovieFilter';
 import { getMovieDetails } from '../api/tmdb';
+import { getCachedGenres } from '../utils/genreCache';
 import MovieCard from '../components/MovieCard';
 import BottomSheet from '../components/ui/BottomSheet';
 import { FilterChip } from '../components/ui/FilterChip';
@@ -90,7 +91,7 @@ const LibraryView = ({ onSelectMovie }) => {
         // Short debounce to allow UI updates between batches
         const timeout = setTimeout(repairMovies, 500);
         return () => clearTimeout(timeout);
-    }, [watchlist, watched]); // Depend on content changes to loop correctly until done
+    }, [watchlist, watched]);
 
     // Derived Settings based on Tab
     const ratingSource = activeTab === 'watchlist' ? 'tmdb' : 'user';
@@ -109,10 +110,25 @@ const LibraryView = ({ onSelectMovie }) => {
         }
 
         const counts = {};
+        const cache = getCachedGenres(); // Check centralized cache for better accuracy
+
         watched.forEach(m => {
-            // Extract IDs
-            const ids = m.genre_ids || m.genres?.map(g => g.id) || [];
-            ids.forEach(id => { counts[id] = (counts[id] || 0) + 1; });
+            // Priority: 1. Movie Data props (if repaired), 2. Cache, 3. Old genres prop
+            let ids = m.genre_ids;
+
+            if (!ids || ids.length === 0) {
+                // Try cache
+                if (cache[m.id] && cache[m.id].genres) {
+                    ids = cache[m.id].genres.map(g => g.id);
+                } else {
+                    // Try direct prop as fallback
+                    ids = m.genres?.map(g => g.id);
+                }
+            }
+
+            if (ids) {
+                ids.forEach(id => { counts[id] = (counts[id] || 0) + 1; });
+            }
         });
 
         // Sort by frequency
