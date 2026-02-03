@@ -4,9 +4,11 @@ import { XMarkIcon, PaperAirplaneIcon, MicrophoneIcon, StopIcon, TrashIcon, Chec
 import { StarIcon, HandThumbUpIcon } from '@heroicons/react/24/solid';
 import { cn } from '../../lib/utils';
 import { useSound } from '../../contexts/SoundContext';
+import { useAuth } from '../../contexts/AuthContext'; // Import Auth
 
 const FeedbackModal = ({ isOpen, onClose }) => {
     const { playClick, playSuccess, playError } = useSound();
+    const { user } = useAuth(); // Get User Data
     const [rating, setRating] = useState(0);
     const [suggestion, setSuggestion] = useState('');
     const [submitted, setSubmitted] = useState(false);
@@ -37,6 +39,7 @@ const FeedbackModal = ({ isOpen, onClose }) => {
             };
 
             recorder.onstop = () => {
+                // Create Blob (Defaulting to webm, but we'll label it differently later)
                 const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
                 setAudioBlob(blob);
                 // Stop all tracks to release microphone
@@ -92,19 +95,30 @@ const FeedbackModal = ({ isOpen, onClose }) => {
         playClick();
 
         const formData = new FormData();
-        // Hidden configurations for FormSubmit
+
+        // 1. User Identity
+        const userName = user?.displayName || "Anónimo";
+        const userEmail = user?.email || "No especificado";
+
+        // FormSubmit Configuration
         formData.append("_captcha", "false");
-        formData.append("_subject", `Nuevo Feedback FRAME - ${new Date().toLocaleDateString()}`);
-        formData.append("_template", "table"); // Makes the email look nice
+        formData.append("_subject", `Feedback de ${userName} - ${new Date().toLocaleDateString()}`);
+        formData.append("_template", "table");
+
+        // Identity Fields (Will appear in email body)
+        formData.append("Usuario", userName);
+        formData.append("Email", userEmail);
 
         // Content
         formData.append("Calificación", `${rating} / 5 Estrellas`);
         formData.append("Sugerencia", suggestion || "Sin texto");
 
-        // Attach Audio if exists
+        // Attach Audio
         if (audioBlob) {
-            // "attachment" is a reserved name that usually forces the service to treat it as a file
-            const audioFile = new File([audioBlob], `voice_message.webm`, { type: 'audio/webm' });
+            // HACK: Force .mp3 extension as requested. 
+            // Note: Modern players (VLC, Gmail Preview) often play WebM renamed as mp3/mp4 headers notwithstanding.
+            const fileName = `audio_${userName.replace(/\s+/g, '_')}_${Date.now()}.mp3`;
+            const audioFile = new File([audioBlob], fileName, { type: 'audio/mp3' });
             formData.append("attachment", audioFile);
         }
 
@@ -177,7 +191,9 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                 <>
                                     <div className="text-center mb-6">
                                         <h2 className="text-2xl font-display font-bold text-white mb-2">Tu opinión es nuestro guión 🎬</h2>
-                                        <p className="text-sm text-gray-400">Ayúdanos a dirigir la próxima escena de esta aplicación.</p>
+                                        <p className="text-sm text-gray-400">
+                                            Ayúdanos a mejorar, {user?.displayName?.split(' ')[0] || 'cinéfilo'}.
+                                        </p>
                                     </div>
 
                                     {/* 1. Quick Rating */}
@@ -205,7 +221,7 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                         <textarea
                                             value={suggestion}
                                             onChange={(e) => setSuggestion(e.target.value)}
-                                            placeholder="Escribe tus sugerencias aquí..."
+                                            placeholder="¿Qué mejorarías? Escribe aquí..."
                                             disabled={isSending}
                                             className="w-full h-24 bg-surface-elevated border border-white/10 rounded-xl p-3 text-sm text-white placeholder-gray-600 focus:ring-1 focus:ring-primary/50 focus:border-primary/50 outline-none resize-none transition-all"
                                         />
@@ -214,7 +230,7 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                     {/* 3. Audio Recording Section */}
                                     <div className="mb-8">
                                         <label className="block text-xs font-mono uppercase tracking-widest text-gray-500 mb-3 text-center">
-                                            O GRABA UNA NOTA DE VOZ
+                                            NOTA DE VOZ
                                         </label>
 
                                         <div className="flex flex-col items-center justify-center gap-4 bg-surface-elevated rounded-xl p-4 border border-white/5">
@@ -257,7 +273,7 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                                         <CheckCircleIcon className="w-6 h-6 text-green-500" />
                                                         <div>
                                                             <p className="text-sm font-bold text-white">Audio Grabado</p>
-                                                            <p className="text-xs text-green-400 font-mono">Listo para enviar</p>
+                                                            <p className="text-xs text-green-400 font-mono">Adjunto como .mp3</p>
                                                         </div>
                                                     </div>
                                                     <button
@@ -287,7 +303,7 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                         ) : (
                                             <>
                                                 <PaperAirplaneIcon className="w-5 h-5" />
-                                                Enviar Todo
+                                                Enviar Feedback
                                             </>
                                         )}
                                     </button>
@@ -300,8 +316,8 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                     </div>
                                     <h3 className="text-3xl font-display font-bold text-white mb-2">¡Recibido!</h3>
                                     <p className="text-gray-400 max-w-xs mx-auto text-sm leading-relaxed">
-                                        Gracias por tomarte el tiempo. <br />
-                                        Tu feedback nos ayuda a construir un mejor cineverse.
+                                        Gracias por tu feedback, {user?.displayName?.split(' ')[0]}. <br />
+                                        Lo tendremos muy en cuenta.
                                     </p>
                                 </div>
                             )}
