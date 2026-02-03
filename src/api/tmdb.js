@@ -244,3 +244,20 @@ export const getBackdropUrl = (path, size = 'w1280') => {
     if (!path) return null;
     return `https://image.tmdb.org/t/p/${size}${path}`;
 }
+
+export const getMovieVideos = async (id) => {
+    try {
+        // Try default language (es-MX)
+        const response = await tmdbClient.get(`/movie/${id}/videos`);
+        let results = response.data.results;
+
+        // If no results or only featurettes (no trailer), try English fallback
+        // Note: TMDB API behavior depends on params. To get fallback, one might need separate call or use 'include_video_language'
+        // For simplicity, if empty, we might try querying without lang param or en-US, 
+        // but let's stick to default for now to match UI language context.
+        return results;
+    } catch (error) {
+        console.error(`Error getting videos for ${id}:`, error);
+        return [];
+    }
+};

@@ -9,6 +9,7 @@ import BottomSheet from '../components/ui/BottomSheet';
 import { cn } from '../lib/utils';
 import { StarIcon, ClockIcon } from '@heroicons/react/24/solid';
 import { AdjustmentsHorizontalIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import MovieCardSkeleton from '../components/ui/MovieCardSkeleton';
 
 const GENRES = [
     { id: 28, name: "Acción", emoji: "💥" },
@@ -88,39 +89,26 @@ const SearchView = ({ onSelectMovie }) => {
             const filterParams = getFilterParams();
 
             if (searchQuery) {
-                // 1. Text Search Mode (Filters applied client-side typically, but let's try mostly raw search first)
-                // Note: TMDB search API doesn't strictly support all discovery filters. 
-                // We will rely on searchMovies simply, and maybe filter locally if absolutely needed, 
-                // but user complained about 0 results. Let's return query results raw for now or handle duplication.
+                // 1. Text Search Mode
                 data = await searchMovies(searchQuery);
-                // Pagination for search isn't implemented in wrapper properly (returns page 1 always or raw list). 
-                // Ignoring pagination for text search for simplicity unless wrapper updated.
-                // If filters are active, we might want to filter locally data?
                 if (minRating > 0) data = data.filter(m => m.vote_average >= minRating);
-                // ... simplistic local filter for search query results to respect UI.
             }
             else if (isOscars) {
-                // 2. Oscars Mode (Static List)
+                // 2. Oscars Mode 
                 data = await getOscarWinners();
                 if (minRating > 0) data = data.filter(m => m.vote_average >= minRating);
             }
             else if (selectedGenre) {
-                // 3. Genre Mode (API Discovery with Genre)
+                // 3. Genre Mode 
                 data = await getMoviesByGenre(selectedGenre, filterParams, pageNum);
             }
             else {
-                // 4. General Discovery / Trending Mode
-                // If no filters active, maybe show trending?
-                // logic: if activeFilterCount > 0 OR page > 1, use discover. Else use trending for page 1?
-                // Actually discoverMovies with popularity sort IS trending basically.
-                // But getTrendingMovies uses weak/day endpoint.
-
+                // 4. General Discovery
                 const hasFilters = minRating > 0 || runtimeFilter !== 'any' || yearRange.min > 1900 || sortOption !== 'popularity.desc';
 
                 if (hasFilters) {
                     data = await discoverMovies({ ...filterParams, page: pageNum });
                 } else {
-                    // Default state: Trending
                     data = await getTrendingMovies(pageNum);
                 }
             }
@@ -140,8 +128,7 @@ const SearchView = ({ onSelectMovie }) => {
                     });
                     return Array.from(uniqueMap.values());
                 });
-                // Ensure we assume more if we got full page (20 usually)
-                if (data.length < 20 && !isOscars) setHasMore(false); // Oscars/Search might behave diff
+                if (data.length < 20 && !isOscars) setHasMore(false);
                 else setHasMore(true);
             }
 
@@ -154,17 +141,14 @@ const SearchView = ({ onSelectMovie }) => {
 
     // Trigger Fetch on State Change
     useEffect(() => {
-        // Reset and fetch
         setPage(1);
         setHasMore(true);
-        // Slight debounce could be nice but immediate response is snappier
         fetchContent(1, true);
     }, [searchQuery, selectedGenre, isOscars, minRating, runtimeFilter, yearRange, sortOption]);
 
 
     const handleSearch = (query) => {
         setSearchQuery(query);
-        // others reset by UI logic if needed, but useEffect handles fetch
         if (query) {
             setSelectedGenre(null);
             setIsOscars(false);
@@ -294,8 +278,10 @@ const SearchView = ({ onSelectMovie }) => {
             </div>
 
             {loading && results.length === 0 ? (
-                <div className="flex justify-center py-20">
-                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    {[...Array(10)].map((_, i) => (
+                        <MovieCardSkeleton key={i} />
+                    ))}
                 </div>
             ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">

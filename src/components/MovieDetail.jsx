@@ -5,19 +5,21 @@ import { StarIcon as StarIconSolid, PlusIcon, CheckIcon, TrashIcon } from '@hero
 import { getBackdropUrl, getPosterUrl, getMovieDetails } from '../api/tmdb';
 import { useMovies } from '../contexts/MovieContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useSound } from '../contexts/SoundContext';
 import { cn } from '../lib/utils';
+import { triggerConfetti, triggerSmallConfetti } from '../lib/confetti';
 
 const MovieDetail = ({ movie: initialMovie, onClose }) => {
     const [movie, setMovie] = useState(initialMovie);
     const [hoverRating, setHoverRating] = useState(0);
     const { addToWatchlist, addToWatched, removeMovie, isWatched, isInWatchlist, moveFromWatchlistToWatched, watched } = useMovies();
     const { user, loginWithGoogle } = useAuth();
+    const { playSuccess, playClick } = useSound();
 
     // Get live rating from context
     const userMovie = watched.find(m => m.id === movie.id);
     const userRating = userMovie?.rating || 0;
 
-    // Fetch complete details including cast
     // Fetch complete details including cast
     useEffect(() => {
         const fetchFullDetails = async () => {
@@ -160,6 +162,13 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         if (!user) { loginWithGoogle(); return; }
+                                        // Confetti + Sound
+                                        playClick();
+                                        const rect = e.target.getBoundingClientRect();
+                                        triggerSmallConfetti(
+                                            (rect.left + rect.width / 2) / window.innerWidth,
+                                            (rect.top + rect.height / 2) / window.innerHeight
+                                        );
                                         addToWatchlist(movie);
                                     }}
                                     className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-semibold transition-all border border-white/10 backdrop-blur-md cursor-pointer active:scale-95 group"
@@ -171,6 +180,8 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         if (!user) { loginWithGoogle(); return; }
+                                        triggerConfetti();
+                                        playSuccess();
                                         addToWatched(movie, 0);
                                     }}
                                     className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gradient-to-r from-white to-gray-200 hover:to-gray-100 text-black font-bold transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_25px_rgba(255,255,255,0.2)] cursor-pointer active:scale-95"
@@ -199,6 +210,8 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
+                                        triggerConfetti();
+                                        playSuccess();
                                         moveFromWatchlistToWatched(movie.id);
                                     }}
                                     className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gradient-to-r from-primary to-purple-600 text-white font-bold transition-all shadow-lg shadow-primary/20 hover:shadow-primary/40 cursor-pointer active:scale-95"
@@ -239,6 +252,8 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     if (!user) { loginWithGoogle(); return; }
+                                                    triggerConfetti();
+                                                    playSuccess();
                                                     addToWatched(movie, star);
                                                 }}
                                                 className="group p-1 sm:p-1.5 transition-transform hover:scale-125 focus:outline-none"
@@ -257,8 +272,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                         );
                                     })}
                                 </div>
-
-                                {/* Friendly Label / Feedback */}
+                                {/* ... rest of the file ... */}
                                 <div className="h-8 flex flex-col items-center justify-center">
                                     {(hoverRating || userRating) > 0 ? (
                                         <motion.div
