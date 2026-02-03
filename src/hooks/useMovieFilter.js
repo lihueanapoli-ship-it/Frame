@@ -41,8 +41,13 @@ export const useMovieFilter = (movies, {
 
             // 4. Rating Filter (Only relevant if movie is rated or we only show rated ones?)
             // If minRating > 0, exclude unrated or low rated.
-            const r = movie.rating || 0;
-            if (minRating > 0 && r < minRating) return false;
+            // 4. Rating Filter (Scale 0-10)
+            // Consider both TMDB rating and User rating (scaled to 10)
+            const tmdbRating = movie.vote_average || 0;
+            const userRating = (movie.rating || 0) * 2;
+            const searchRating = Math.max(tmdbRating, userRating);
+
+            if (minRating > 0 && searchRating < minRating) return false;
 
             // 5. Runtime Filter
             const mins = movie.runtime || 0;

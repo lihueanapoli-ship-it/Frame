@@ -236,20 +236,25 @@ const LibraryView = ({ onSelectMovie }) => {
                             </div>
                         </div>
 
-                        {/* 2. Rating Filter */}
+                        {/* 2. Rating Filter (2-9 range) */}
                         <div>
                             <div className="flex justify-between items-center mb-3">
                                 <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Calificación Mínima</h4>
-                                <span className="text-xs font-mono text-primary">{minRating > 0 ? `${minRating}+ Estrellas` : 'Cualquiera'}</span>
+                                <span className="text-xs font-mono text-primary">{minRating > 0 ? `${minRating}+ Puntos` : 'Cualquiera'}</span>
                             </div>
-                            <div className="flex gap-2 justify-between bg-surface-elevated p-3 rounded-xl border border-white/5">
-                                {[1, 2, 3, 4, 5].map(star => (
+                            <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 bg-surface-elevated p-3 rounded-xl border border-white/5">
+                                {[2, 3, 4, 5, 6, 7, 8, 9].map(score => (
                                     <button
-                                        key={star}
-                                        onClick={() => setMinRating(minRating === star ? 0 : star)}
-                                        className="transition-transform active:scale-90"
+                                        key={score}
+                                        onClick={() => setMinRating(minRating === score ? 0 : score)}
+                                        className={cn(
+                                            "aspect-square rounded-lg flex items-center justify-center text-sm font-bold transition-all border",
+                                            minRating === score
+                                                ? "bg-primary text-black border-primary shadow-[0_0_10px_rgba(250,204,21,0.3)]"
+                                                : "bg-transparent border-white/5 text-gray-400 hover:bg-white/10 hover:text-white"
+                                        )}
                                     >
-                                        <StarIcon className={cn("w-8 h-8 transition-colors", star <= minRating ? "text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]" : "text-gray-700")} />
+                                        {score}
                                     </button>
                                 ))}
                             </div>

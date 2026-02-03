@@ -147,6 +147,7 @@ export const MovieProvider = ({ children }) => {
             title: movie.title,
             poster_path: movie.poster_path || null,
             release_date: movie.release_date || null,
+            vote_average: movie.vote_average || 0,
             // Keep these if they exist
             ...(movie.rating !== undefined && { rating: movie.rating }),
             ...(movie.addedAt && { addedAt: movie.addedAt }),
