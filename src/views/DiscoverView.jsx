@@ -7,8 +7,9 @@ import { getPersonalizedRecommendations } from '../utils/recommendations';
 import { useMovieFilter } from '../hooks/useMovieFilter';
 import HeroCarousel from '../components/domain/HeroCarousel';
 import BottomSheet from '../components/ui/BottomSheet';
-import { Loader2, ChevronRight, Sparkles, AdjustmentsHorizontalIcon, XMarkIcon } from 'lucide-react'; // Lucide icons used here
-import { StarIcon, ClockIcon, CalendarIcon } from '@heroicons/react/24/solid'; // Heroicons solid for filter UI consistency
+import { Loader2, ChevronRight, Sparkles } from 'lucide-react';
+import { StarIcon, ClockIcon, CalendarIcon } from '@heroicons/react/24/solid';
+import { AdjustmentsHorizontalIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { cn } from '../lib/utils';
 import { Link } from 'react-router-dom';
 import MovieCard from '../components/MovieCard';
