@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { XMarkIcon, StarIcon, CalendarIcon, ClockIcon } from '@heroicons/react/24/outline';
-import { StarIcon as StarIconSolid, PlusIcon, CheckIcon, TrashIcon } from '@heroicons/react/24/solid';
-import { getBackdropUrl, getPosterUrl, getMovieDetails } from '../api/tmdb';
+import { motion, AnimatePresence } from 'framer-motion';
+import { XMarkIcon, CalendarIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { StarIcon as StarIconSolid, PlusIcon, CheckIcon, StarIcon } from '@heroicons/react/24/solid';
+import { getBackdropUrl, getPosterUrl, getMovieDetails, getMovieVideos } from '../api/tmdb';
 import { useMovies } from '../contexts/MovieContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useSound } from '../contexts/SoundContext';
@@ -11,7 +11,11 @@ import { triggerConfetti, triggerSmallConfetti } from '../lib/confetti';
 
 const MovieDetail = ({ movie: initialMovie, onClose }) => {
     const [movie, setMovie] = useState(initialMovie);
+    const [videoKey, setVideoKey] = useState(null);
+    const [showVideo, setShowVideo] = useState(false);
     const [hoverRating, setHoverRating] = useState(0);
+
+    // Contexts
     const { addToWatchlist, addToWatched, removeMovie, isWatched, isInWatchlist, moveFromWatchlistToWatched, watched } = useMovies();
     const { user, loginWithGoogle } = useAuth();
     const { playSuccess, playClick } = useSound();
@@ -20,17 +24,30 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
     const userMovie = watched.find(m => m.id === movie.id);
     const userRating = userMovie?.rating || 0;
 
-    // Fetch complete details including cast
+    // Fetch Details & Video
     useEffect(() => {
-        const fetchFullDetails = async () => {
+        const loadData = async () => {
             if (initialMovie.id) {
+                // 1. Full Details
                 const data = await getMovieDetails(initialMovie.id);
                 if (data) setMovie(data);
+
+                // 2. Video
+                const videos = await getMovieVideos(initialMovie.id);
+                // Prioritize Trailer, then Teaser
+                const trailer = videos.find(v => v.site === 'YouTube' && v.type === 'Trailer') ||
+                    videos.find(v => v.site === 'YouTube' && v.type === 'Teaser');
+
+                if (trailer) {
+                    setVideoKey(trailer.key);
+                    // Delay video appearance for smooth entry
+                    setTimeout(() => setShowVideo(true), 2000);
+                }
             }
         };
-        fetchFullDetails();
+        loadData();
 
-        // Lock body scroll to prevent background bounce
+        // Lock body scroll
         document.body.style.overflow = 'hidden';
         return () => {
             document.body.style.overflow = '';
@@ -40,7 +57,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
     const watchedState = isWatched(movie.id);
     const watchlistState = isInWatchlist(movie.id);
 
-    // Animation Variants
+    // Variants
     const overlayVariants = {
         hidden: { opacity: 0 },
         visible: { opacity: 1 },
@@ -65,7 +82,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                 className="absolute inset-0 bg-black/80 backdrop-blur-sm"
             />
 
-            {/* Sheet / Modal */}
+            {/* Modal */}
             <motion.div
                 variants={sheetVariants}
                 initial="hidden"
@@ -76,41 +93,76 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                 {/* Close Button */}
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 z-20 p-2 bg-black/40 hover:bg-black/60 backdrop-blur-md rounded-full text-white transition-colors"
+                    className="absolute top-4 right-4 z-50 p-2 bg-black/40 hover:bg-black/60 backdrop-blur-md rounded-full text-white transition-colors"
                 >
                     <XMarkIcon className="w-6 h-6" />
                 </button>
 
-                {/* Hero Header */}
-                <div className="relative h-[40vh] sm:h-[50vh] w-full">
-                    <img
-                        src={getBackdropUrl(movie.backdrop_path) || getPosterUrl(movie.poster_path)}
-                        alt={movie.title}
-                        className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+                {/* Cinematic Header */}
+                <div className="relative h-[40vh] sm:h-[50vh] w-full bg-black overflow-hidden group">
 
-                    <div className="absolute bottom-0 left-0 p-6 sm:p-8 w-full">
-                        <h2 className="text-3xl sm:text-5xl font-bold text-white mb-2 leading-tight drop-shadow-lg">
+                    {/* 1. Backdrop Image (Always present as base) */}
+                    <div className={cn(
+                        "absolute inset-0 transition-opacity duration-1000",
+                        showVideo ? "opacity-0" : "opacity-100"
+                    )}>
+                        <img
+                            src={getBackdropUrl(movie.backdrop_path) || getPosterUrl(movie.poster_path)}
+                            alt={movie.title}
+                            className="w-full h-full object-cover"
+                        />
+                    </div>
+
+                    {/* 2. Youtube Trailer (Fade in) */}
+                    {videoKey && (
+                        <div className={cn(
+                            "absolute inset-0 transition-opacity duration-1000 pointer-events-none", // pointer-events-none to prevent stealing clicks/scroll
+                            showVideo ? "opacity-100" : "opacity-0"
+                        )}>
+                            <iframe
+                                title="Trailer"
+                                src={`https://www.youtube.com/embed/${videoKey}?autoplay=1&mute=1&controls=0&modestbranding=1&loop=1&playlist=${videoKey}&start=10`}
+                                className="w-full h-[140%] -mt-[10%] scale-125 opacity-60" // Zoom & Scale to fill and look strictly cinematic
+                                frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            />
+                        </div>
+                    )}
+
+                    {/* 3. Gradient Overlay (For text readability) */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
+
+                    {/* Title & Stats */}
+                    <div className="absolute bottom-0 left-0 p-6 sm:p-8 w-full z-10">
+                        <motion.h2
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2 }}
+                            className="text-3xl sm:text-5xl font-bold text-white mb-2 leading-tight drop-shadow-xl"
+                        >
                             {movie.title}
-                        </h2>
-                        <div className="flex flex-wrap gap-4 text-sm font-medium text-gray-300">
+                        </motion.h2>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.4 }}
+                            className="flex flex-wrap gap-4 text-sm font-medium text-gray-200"
+                        >
                             {movie.release_date && (
-                                <span className="flex items-center gap-1.5"><CalendarIcon className="w-4 h-4" /> {movie.release_date.split('-')[0]}</span>
+                                <span className="flex items-center gap-1.5 backdrop-blur-sm bg-black/20 px-2 py-1 rounded"><CalendarIcon className="w-4 h-4" /> {movie.release_date.split('-')[0]}</span>
                             )}
                             {movie.runtime > 0 && (
-                                <span className="flex items-center gap-1.5"><ClockIcon className="w-4 h-4" /> {Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m</span>
+                                <span className="flex items-center gap-1.5 backdrop-blur-sm bg-black/20 px-2 py-1 rounded"><ClockIcon className="w-4 h-4" /> {Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m</span>
                             )}
                             {movie.vote_average > 0 && (
-                                <span className="flex items-center gap-1.5 text-yellow-500"><StarIconSolid className="w-4 h-4" /> {movie.vote_average.toFixed(1)}</span>
+                                <span className="flex items-center gap-1.5 text-yellow-500 backdrop-blur-sm bg-black/20 px-2 py-1 rounded"><StarIconSolid className="w-4 h-4" /> {movie.vote_average.toFixed(1)}</span>
                             )}
-                        </div>
+                        </motion.div>
                     </div>
                 </div>
 
-                {/* Content */}
+                {/* Content Body */}
                 <div className="flex flex-col pb-safe">
-                    {/* Main Info */}
                     <div className="p-6 sm:p-8 space-y-6">
                         <div>
                             <h3 className="text-lg font-bold text-white mb-2">Sinopsis</h3>
@@ -119,7 +171,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                             </p>
                         </div>
 
-                        {/* Genes */}
+                        {/* Genres */}
                         {movie.genres && (
                             <div className="flex flex-wrap gap-2">
                                 {movie.genres.map(g => (
@@ -130,7 +182,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                             </div>
                         )}
 
-                        {/* Cast Scroll */}
+                        {/* Cast */}
                         {movie.credits?.cast?.length > 0 && (
                             <div>
                                 <h3 className="text-lg font-bold text-white mb-3">Elenco</h3>
@@ -145,7 +197,6 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                                 )}
                                             </div>
                                             <p className="text-xs text-white font-medium truncate">{actor.name}</p>
-                                            <p className="text-[10px] text-gray-500 truncate">{actor.character}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -155,14 +206,13 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
 
                     {/* Actions Sticky Footer */}
                     <div className="sticky bottom-0 left-0 right-0 p-4 bg-surface-elevated border-t border-white/5 pb-[env(safe-area-inset-bottom)] z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
-                        {/* Logic for buttons */}
+                        {/* Not Watched / Not in List */}
                         {!watchedState && !watchlistState && (
                             <div className="flex gap-3">
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         if (!user) { loginWithGoogle(); return; }
-                                        // Confetti + Sound
                                         playClick();
                                         const rect = e.target.getBoundingClientRect();
                                         triggerSmallConfetti(
@@ -192,6 +242,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                             </div>
                         )}
 
+                        {/* In Watchlist */}
                         {watchlistState && (
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between px-1">
@@ -222,6 +273,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                             </div>
                         )}
 
+                        {/* Watched (Star Rating) */}
                         {watchedState && (
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between">
@@ -238,11 +290,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                     </button>
                                 </div>
 
-                                {/* Star Rating Row */}
-                                <div
-                                    className="flex justify-between items-center px-1"
-                                    onMouseLeave={() => setHoverRating(0)}
-                                >
+                                <div className="flex justify-between items-center px-1" onMouseLeave={() => setHoverRating(0)}>
                                     {Array.from({ length: 10 }, (_, i) => i + 1).map(star => {
                                         const isActive = (hoverRating || userRating) >= star;
                                         return (
@@ -258,52 +306,26 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                                 }}
                                                 className="group p-1 sm:p-1.5 transition-transform hover:scale-125 focus:outline-none"
                                             >
-                                                {isActive ? (
-                                                    <StarIconSolid className={cn(
-                                                        "w-6 h-6 sm:w-8 sm:h-8 transition-colors duration-200",
-                                                        star <= 4 ? "text-red-500" :
-                                                            star <= 7 ? "text-yellow-500" :
-                                                                "text-primary drop-shadow-[0_0_8px_rgba(0,240,255,0.6)]"
-                                                    )} />
-                                                ) : (
-                                                    <StarIcon className="w-6 h-6 sm:w-8 sm:h-8 text-gray-700 group-hover:text-gray-500 transition-colors" />
-                                                )}
+                                                <StarIcon className={cn(
+                                                    "w-6 h-6 sm:w-8 sm:h-8 transition-colors duration-200",
+                                                    isActive
+                                                        ? (star <= 4 ? "text-red-500" : star <= 7 ? "text-yellow-500" : "text-primary drop-shadow-[0_0_8px_rgba(0,240,255,0.6)]")
+                                                        : "text-gray-700 group-hover:text-gray-500"
+                                                )} />
                                             </button>
                                         );
                                     })}
                                 </div>
-                                {/* ... rest of the file ... */}
+
                                 <div className="h-8 flex flex-col items-center justify-center">
-                                    {(hoverRating || userRating) > 0 ? (
-                                        <motion.div
-                                            key={hoverRating || userRating}
-                                            initial={{ opacity: 0, y: 5 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            className="text-center"
-                                        >
-                                            <span className={cn(
-                                                "font-display text-lg font-bold tracking-wide",
-                                                (hoverRating || userRating) <= 4 ? "text-red-400" :
-                                                    (hoverRating || userRating) <= 7 ? "text-yellow-400" :
-                                                        "text-primary"
-                                            )}>
-                                                {(hoverRating || userRating)}/10 • {
-                                                    (hoverRating || userRating) === 1 ? "Horrible" :
-                                                        (hoverRating || userRating) === 2 ? "Muy mala" :
-                                                            (hoverRating || userRating) === 3 ? "Mala" :
-                                                                (hoverRating || userRating) === 4 ? "Por debajo del promedio" :
-                                                                    (hoverRating || userRating) === 5 ? "Regular" :
-                                                                        (hoverRating || userRating) === 6 ? "Decente" :
-                                                                            (hoverRating || userRating) === 7 ? "Buena" :
-                                                                                (hoverRating || userRating) === 8 ? "Muy buena" :
-                                                                                    (hoverRating || userRating) === 9 ? "Excelente" :
-                                                                                        "Obra maestra"
-                                                }
-                                            </span>
-                                        </motion.div>
-                                    ) : (
-                                        <span className="text-xs text-gray-600 font-mono">
-                                            Toca las estrellas para calificar
+                                    {(hoverRating || userRating) > 0 && (
+                                        <span className={cn(
+                                            "font-display text-lg font-bold tracking-wide",
+                                            (hoverRating || userRating) <= 4 ? "text-red-400" :
+                                                (hoverRating || userRating) <= 7 ? "text-yellow-400" :
+                                                    "text-primary"
+                                        )}>
+                                            {(hoverRating || userRating)}/10
                                         </span>
                                     )}
                                 </div>
