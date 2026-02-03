@@ -67,9 +67,9 @@ const LibraryView = ({ onSelectMovie }) => {
             if (candidates.length === 0) return;
 
             // Debounce/Limit to avoid spamming on every render if update is slow
-            // Only take first 5 to repair per mount/update cycle to be safe
-            const batch = candidates.slice(0, 5);
-            console.log(`[LibraryView] 🔧 Repairing metadata for ${batch.length} movies...`);
+            // Increase batch size to speed up initial sync
+            const batch = candidates.slice(0, 10);
+            console.log(`[LibraryView] 🔧 Repairing metadata for ${batch.length} movies... (remaining: ${candidates.length})`);
 
             await Promise.all(batch.map(async (movie) => {
                 try {
@@ -87,9 +87,10 @@ const LibraryView = ({ onSelectMovie }) => {
             }));
         };
 
-        const timeout = setTimeout(repairMovies, 2000); // Delay start to let UI load
+        // Short debounce to allow UI updates between batches
+        const timeout = setTimeout(repairMovies, 500);
         return () => clearTimeout(timeout);
-    }, [watchlist.length, watched.length]); // Dependencies: if list size changes, check again.
+    }, [watchlist, watched]); // Depend on content changes to loop correctly until done
 
     // Derived Settings based on Tab
     const ratingSource = activeTab === 'watchlist' ? 'tmdb' : 'user';
