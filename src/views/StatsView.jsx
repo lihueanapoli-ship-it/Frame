@@ -3,11 +3,12 @@ import { useMovies } from '../contexts/MovieContext';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, animate } from 'framer-motion';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
-import { ClockIcon, StarIcon, TrophyIcon, FireIcon } from '@heroicons/react/24/solid';
+import { ClockIcon, StarIcon, TrophyIcon, FireIcon, FilmIcon, BookmarkIcon } from '@heroicons/react/24/solid';
 import DynamicLogo from '../components/ui/DynamicLogo';
 import { cn } from '../lib/utils';
 import { getMovieDetails } from '../api/tmdb';
 import { getGenresForMovies } from '../utils/genreCache';
+import { OSCAR_BEST_PICTURE_WINNERS } from '../constants/oscarWinners';
 
 // Helper: Convert mins to days/hours/min
 const formatRuntime = (mins) => {
@@ -85,12 +86,34 @@ const StatCard = ({ label, value, subtext, icon: Icon, delay = 0 }) => (
     </motion.div>
 );
 
+const AchievementBadge = ({ icon, title, desc, unlocked }) => (
+    <div className={cn(
+        "min-w-[140px] h-36 bg-surface border flex flex-col items-center justify-center p-4 transition-all duration-300 relative group overflow-hidden",
+        unlocked
+            ? "border-primary/30 bg-primary/5 hover:border-primary/60 hover:shadow-[0_0_15px_rgba(0,240,255,0.2)]"
+            : "border-white/5 opacity-40 grayscale"
+    )}>
+        {unlocked && <div className="absolute top-0 right-0 w-8 h-8 bg-primary/20 blur-xl rounded-full" />}
+        <div className={cn(
+            "w-12 h-12 rounded-full flex items-center justify-center mb-3 transition-transform group-hover:scale-110",
+            unlocked ? "bg-primary/20 text-primary" : "bg-white/5 text-gray-500"
+        )}>
+            <span className="text-2xl">{icon}</span>
+        </div>
+        <span className={cn("font-display font-bold text-xs text-center mb-1", unlocked ? "text-white" : "text-gray-500")}>{title}</span>
+        <span className="font-mono text-[9px] text-center text-gray-500 leading-tight">{desc}</span>
+    </div>
+);
+
 const StatsView = () => {
     const { watched, watchlist } = useMovies();
     const { user } = useAuth();
 
     // State for fetched genres
     const [movieGenres, setMovieGenres] = useState({});
+
+    // UI State
+    const [radarMode, setRadarMode] = useState('consumption'); // 'consumption' | 'quality'
 
     // Fetch movie details to get genres (since we strip them when saving)
     // Fetch movie details to get genres (since we strip them when saving)
@@ -116,7 +139,6 @@ const StatsView = () => {
 
     // 1. Calculate Telemetry (Total Runtime)
     const runtimes = useMemo(() => {
-        // Assuming 'runtime' exists in movie object. If not, we estimate 120min.
         const totalMinutes = watched.reduce((acc, m) => acc + (m.runtime || 110), 0);
         return totalMinutes;
     }, [watched]);
@@ -124,80 +146,94 @@ const StatsView = () => {
     // 2. Rank Logic
     const rank = useMemo(() => {
         const count = watched.length;
-        if (count > 50) return "Director de Culto";
-        if (count > 15) return "Editor Jefe";
+        if (count > 200) return "Director de Culto";
+        if (count > 100) return "Productor Ejecutivo";
+        if (count > 50) return "Editor Jefe";
+        if (count > 20) return "Asistente de Dirección";
         if (count > 5) return "Asistente de Cámara";
         return "Claquetista";
     }, [watched]);
 
     const rankProgress = Math.min((watched.length / 50) * 100, 100);
 
-    // 3. Genre Radar Data - Using fetched genres
-    const genreData = useMemo(() => {
-        const counts = {};
+    // 3. Oscar Progress
+    const oscarStats = useMemo(() => {
+        let count = 0;
+        watched.forEach(m => {
+            if (OSCAR_BEST_PICTURE_WINNERS.has(m.id)) count++;
+        });
+        return { count, total: OSCAR_BEST_PICTURE_WINNERS.size };
+    }, [watched]);
 
-        // Count genres from fetched data
+    // 4. Genre Radar Data (Split Logic)
+    const radarData = useMemo(() => {
+        const consumption = {}; // Count
+        const quality = {};     // Sum Ratings
+        const qualityCounts = {}; // Count of rated movies per genre
+
         watched.forEach(movie => {
             const genres = movieGenres[movie.id];
             if (genres && genres.length > 0) {
-                // ALIGNMENT: Use weighted score (Rating) just like DNA recommendations
-                // High rated movies impact the radar more
-                const weight = (movie.rating && movie.rating > 0) ? movie.rating : 5; // Default neutral
+                genres.forEach(g => {
+                    // Consumption: Simple Frequency
+                    consumption[g.name] = (consumption[g.name] || 0) + 1;
 
-                genres.forEach(genre => {
-                    counts[genre.name] = (counts[genre.name] || 0) + weight;
+                    // Quality: Only user-rated movies
+                    if (movie.rating && movie.rating > 0) {
+                        quality[g.name] = (quality[g.name] || 0) + movie.rating;
+                        qualityCounts[g.name] = (qualityCounts[g.name] || 0) + 1;
+                    }
                 });
             }
         });
 
-        // Transform to Array, Sort by Count, Take top 5
-        const sorted = Object.keys(counts)
-            .map(key => ({
-                subject: key,
-                A: Math.round(counts[key]), // Round visualization
-                fullMark: Math.max(...Object.values(counts))
-            }))
-            .sort((a, b) => b.A - a.A)
-            .slice(0, 5); // Top 5 géneros
+        // Helper to format for Recharts
+        const formatForRadar = (dataObj, isAverage = false) => {
+            return Object.keys(dataObj)
+                .map(k => ({
+                    subject: k,
+                    A: isAverage ? Math.round((dataObj[k] / qualityCounts[k]) * 10) / 10 : dataObj[k],
+                    fullMark: isAverage ? 10 : Math.max(...Object.values(dataObj))
+                }))
+                .sort((a, b) => parseFloat(b.A) - parseFloat(a.A))
+                .slice(0, 6); // Top 6
+        };
 
-        // If no data yet, return placeholder
-        if (sorted.length === 0) {
-            return [
-                { subject: 'Cargando...', A: 0, fullMark: 1 }
-            ];
-        }
-
-        return sorted;
+        return {
+            consumption: formatForRadar(consumption, false),
+            quality: formatForRadar(quality, true)
+        };
     }, [watched, movieGenres]);
 
-    // 4. Rating Distribution (Histogram)
+    const currentRadarData = radarMode === 'consumption' ? radarData.consumption : radarData.quality;
+
+    // 5. Rating Distribution (Histogram)
     const ratingDistribution = useMemo(() => {
         const dist = Array.from({ length: 11 }, (_, i) => ({ rating: i, count: 0 })); // 0-10
         watched.forEach(m => {
             const r = m.rating || 0;
             if (dist[r]) dist[r].count++;
         });
-        return dist.filter(d => d.rating > 0); // Don't show unrated (0)
+        return dist.filter(d => d.rating > 0);
     }, [watched]);
 
-    // 5. Heatmap Data (Last 52 weeks)
+    // 6. Heatmap Data
     const heatmapData = useMemo(() => {
         const weeks = [];
         const today = new Date();
-        // Go back 52 weeks * 7 days
-        // We want 52 columns (weeks), 7 rows (days)
         const startDate = new Date(today);
-        startDate.setDate(today.getDate() - (52 * 7) + 1); // Approx start
+        startDate.setDate(today.getDate() - (52 * 7) + 1);
 
-        // Helper to formatting YYYY-MM-DD
         const formatDate = (d) => d.toISOString().split('T')[0];
 
-        // Map watched dates
         const watchedMap = {};
+        let maxInDay = 0;
+
         watched.forEach(m => {
             if (m.watchedAt) {
                 const d = m.watchedAt.split('T')[0];
                 watchedMap[d] = (watchedMap[d] || 0) + 1;
+                if (watchedMap[d] > maxInDay) maxInDay = watchedMap[d];
             }
         });
 
@@ -214,8 +250,54 @@ const StatsView = () => {
             }
             weeks.push(week);
         }
-        return weeks;
+        return { weeks, maxInDay };
     }, [watched]);
+
+    // 7. Dynamic Achievements
+    const achievements = [
+        {
+            id: 'initiate',
+            title: 'INICIADO',
+            desc: 'Viste tu primera película',
+            icon: '🎬',
+            unlocked: watched.length > 0
+        },
+        {
+            id: 'critic',
+            title: 'CRÍTICO',
+            desc: 'Puntuaste 10 películas',
+            icon: '⭐',
+            unlocked: watched.filter(m => m.rating > 0).length >= 10
+        },
+        {
+            id: 'explorer',
+            title: 'EXPLORADOR',
+            desc: 'Probaste 5 géneros distintos',
+            icon: '🔭',
+            unlocked: currentRadarData.length >= 5
+        },
+        {
+            id: 'oscar_hunter',
+            title: 'CAZADOR DE ORO',
+            desc: 'Viste 5 ganadoras del Oscar',
+            icon: '🏆',
+            unlocked: oscarStats.count >= 5
+        },
+        {
+            id: 'marathon',
+            title: 'MARATONISTA',
+            desc: '3 películas en un día',
+            icon: '🔥',
+            unlocked: heatmapData.maxInDay >= 3
+        },
+        {
+            id: 'cinephile',
+            title: 'CINÉFILO',
+            desc: 'Alcanzaste 50 películas',
+            icon: '📽️',
+            unlocked: watched.length >= 50
+        }
+    ];
 
     if (!user) {
         return (
@@ -244,7 +326,7 @@ const StatsView = () => {
             </header>
 
             {/* Grid Layout - Modular */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-1"> {/* 1px gap for grid aesthetic? No, let's use standard gap-4 but mimic grid lines if possible. For now gap-4 is fine */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 
                 {/* 1. Rank & Progress - Spans 2 cols */}
                 <div className="col-span-1 md:col-span-2 row-span-1 bg-surface border border-white/5 p-6 relative overflow-hidden group">
@@ -261,8 +343,13 @@ const StatsView = () => {
                             <span className="text-sm text-gray-500 block">PELÍCULAS</span>
                         </div>
                     </div>
-                    {/* Progress Bar Timeline */}
-                    <div className="relative h-2 bg-gray-800 w-full rounded-full overflow-hidden">
+
+                    {/* Level Progress */}
+                    <div className="mb-2 flex justify-between font-mono text-[10px] text-gray-500">
+                        <span>XP NIVEL</span>
+                        <span>{Math.round(rankProgress)}%</span>
+                    </div>
+                    <div className="relative h-1.5 bg-gray-800 w-full rounded-full overflow-hidden mb-6">
                         <motion.div
                             className="absolute top-0 bottom-0 left-0 bg-primary"
                             initial={{ width: 0 }}
@@ -270,65 +357,115 @@ const StatsView = () => {
                             transition={{ duration: 1.5, ease: "circOut" }}
                         />
                     </div>
-                    <div className="mt-2 flex justify-between font-mono text-[10px] text-gray-500">
-                        <span>CLAQUETISTA</span>
-                        <span>DIRECTOR DE CULTO</span>
+
+                    {/* Oscar Progress (New Feature) */}
+                    <div className="flex justify-between items-end mb-2">
+                        <div className="flex items-center gap-2">
+                            <span className="text-lg">🏆</span>
+                            <span className="font-bold text-white text-sm">Progreso Oscars</span>
+                        </div>
+                        <span className="font-mono text-xs text-yellow-500">{oscarStats.count} / {oscarStats.total}</span>
                     </div>
+                    <div className="relative h-2 bg-gray-800 w-full rounded-full overflow-hidden border border-white/5">
+                        <motion.div
+                            className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-yellow-700 to-yellow-400"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${(oscarStats.count / oscarStats.total) * 100}%` }}
+                            transition={{ duration: 1.5, ease: "circOut", delay: 0.2 }}
+                        />
+                    </div>
+                    <p className="mt-2 text-[10px] text-gray-400 font-mono">
+                        Has visto el {Math.round((oscarStats.count / oscarStats.total) * 100)}% de las ganadoras a Mejor Película.
+                    </p>
                 </div>
 
                 {/* 2. Telemetry */}
-                <div className="col-span-1 md:col-span-1">
-                    <StatCard
-                        label="TIEMPO EN VUELO"
-                        value={formatRuntime(runtimes)}
-                        subtext={formatHumanRuntime(runtimes)}
-                        icon={ClockIcon}
-                        delay={0.1}
-                    />
+                <div className="col-span-1 md:col-span-1 bg-surface border border-white/5 p-6 flex flex-col justify-center">
+                    <div className="flex items-center gap-3 mb-2 text-gray-400">
+                        <ClockIcon className="w-5 h-5" />
+                        <span className="font-mono text-xs uppercase">TIEMPO EN VUELO</span>
+                    </div>
+                    <div className="font-display text-2xl text-white">{formatRuntime(runtimes)}</div>
+                    <div className="text-[10px] text-gray-500 mt-1">{formatHumanRuntime(runtimes)}</div>
                 </div>
 
                 {/* 3. Watchlist Count */}
-                <div className="col-span-1 md:col-span-1">
-                    <StatCard
-                        label="EN COLA"
-                        value={watchlist.length}
-                        subtext="Objetivos pendientes"
-                        icon={StarIcon}
-                        delay={0.2}
-                    />
+                <div className="col-span-1 md:col-span-1 bg-surface border border-white/5 p-6 flex flex-col justify-center">
+                    <div className="flex items-center gap-3 mb-2 text-gray-400">
+                        <BookmarkIcon className="w-5 h-5" />
+                        <span className="font-mono text-xs uppercase">EN COLA</span>
+                    </div>
+                    <div className="font-display text-2xl text-white">{watchlist.length}</div>
+                    <div className="text-[10px] text-gray-500 mt-1">Objetivos pendientes</div>
                 </div>
 
-                {/* 4. Radar Chart - Spans 2 cols */}
-                <div className="col-span-1 md:col-span-2 bg-surface border border-white/5 p-6 flex flex-col min-h-[300px]">
-                    <h3 className="font-mono text-xs text-gray-500 uppercase tracking-widest mb-4">RADAR DE GÉNEROS</h3>
-                    <div className="w-full h-[300px]">
-                        <ResponsiveContainer width="100%" height={300} minWidth={300} minHeight={300}>
-                            <RadarChart cx="50%" cy="50%" outerRadius="70%" data={genreData}>
-                                <PolarGrid stroke="#333" />
-                                <PolarAngleAxis dataKey="subject" tick={{ fill: '#9CA3AF', fontSize: 10, fontFamily: 'monospace' }} />
-                                <PolarRadiusAxis angle={30} domain={[0, 'auto']} tick={false} axisLine={false} />
-                                <Radar
-                                    name="Géneros"
-                                    dataKey="A"
-                                    stroke="#00F0FF"
-                                    strokeWidth={2}
-                                    fill="#00F0FF"
-                                    fillOpacity={0.2}
-                                />
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: '#121212', borderColor: '#333', color: '#fff' }}
-                                    itemStyle={{ color: '#00F0FF', fontFamily: 'monospace' }}
-                                />
-                            </RadarChart>
-                        </ResponsiveContainer>
+                {/* 4. Radar Chart - Dual Mode */}
+                <div className="col-span-1 md:col-span-2 bg-surface border border-white/5 p-6 flex flex-col min-h-[350px]">
+                    <div className="flex justify-between items-start mb-6">
+                        <h3 className="font-mono text-xs text-gray-500 uppercase tracking-widest">RADAR DE GÉNEROS</h3>
+
+                        {/* Mode Switcher */}
+                        <div className="flex bg-black/40 rounded-lg p-1 border border-white/5">
+                            <button
+                                onClick={() => setRadarMode('consumption')}
+                                className={cn(
+                                    "px-3 py-1 rounded-md text-[10px] font-mono transition-all",
+                                    radarMode === 'consumption' ? "bg-primary/20 text-primary border border-primary/20" : "text-gray-500 hover:text-white"
+                                )}
+                            >
+                                MÁS VISTOS
+                            </button>
+                            <button
+                                onClick={() => setRadarMode('quality')}
+                                className={cn(
+                                    "px-3 py-1 rounded-md text-[10px] font-mono transition-all",
+                                    radarMode === 'quality' ? "bg-pink-500/20 text-pink-500 border border-pink-500/20" : "text-gray-500 hover:text-white"
+                                )}
+                            >
+                                MEJOR PUNTUADOS
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="w-full h-[250px] relative">
+                        {currentRadarData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height={250}>
+                                <RadarChart cx="50%" cy="50%" outerRadius="70%" data={currentRadarData}>
+                                    <PolarGrid stroke="#333" />
+                                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#9CA3AF', fontSize: 10, fontFamily: 'monospace' }} />
+                                    <PolarRadiusAxis angle={30} domain={[0, 'auto']} tick={false} axisLine={false} />
+                                    <Radar
+                                        name={radarMode === 'consumption' ? "Vistos" : "Rating Promedio"}
+                                        dataKey="A"
+                                        stroke={radarMode === 'consumption' ? "#00F0FF" : "#EC4899"}
+                                        strokeWidth={2}
+                                        fill={radarMode === 'consumption' ? "#00F0FF" : "#EC4899"}
+                                        fillOpacity={0.2}
+                                    />
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: '#121212', borderColor: '#333', color: '#fff' }}
+                                        itemStyle={{ color: radarMode === 'consumption' ? '#00F0FF' : '#EC4899', fontFamily: 'monospace' }}
+                                    />
+                                </RadarChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="flex items-center justify-center h-full text-gray-600 font-mono text-xs">
+                                Insuficientes datos para generar radar
+                            </div>
+                        )}
+
+                        {/* Legend Overlay */}
+                        <div className="absolute bottom-0 right-0 text-[10px] font-mono text-gray-500 text-right">
+                            {radarMode === 'consumption' ? 'Basado en frecuencia' : 'Basado en promedio (1-10)'}
+                        </div>
                     </div>
                 </div>
 
                 {/* 5. Rating Histogram - Spans 2 cols */}
-                <div className="col-span-1 md:col-span-2 bg-surface border border-white/5 p-6 flex flex-col min-h-[300px]">
+                <div className="col-span-1 md:col-span-2 bg-surface border border-white/5 p-6 flex flex-col min-h-[350px]">
                     <h3 className="font-mono text-xs text-gray-500 uppercase tracking-widest mb-4">CURVA DE EXIGENCIA</h3>
-                    <div className="w-full h-[300px]">
-                        <ResponsiveContainer width="100%" height={300} minWidth={300} minHeight={300}>
+                    <div className="w-full h-[250px]">
+                        <ResponsiveContainer width="100%" height={250}>
                             <BarChart data={ratingDistribution}>
                                 <XAxis dataKey="rating" stroke="#333" tick={{ fill: '#6B7280', fontSize: 10, fontFamily: 'monospace' }} />
                                 <Tooltip
@@ -342,10 +479,10 @@ const StatsView = () => {
                     </div>
                 </div>
 
-                {/* 6. Activity Heatmap - Spans Full Width (4 cols) on large screens */}
+                {/* 6. Activity Heatmap - Spans Full Width */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-4 bg-surface border border-white/5 p-6 overflow-x-auto">
                     <div className="flex items-center justify-between mb-6">
-                        <h3 className="font-mono text-xs text-gray-500 uppercase tracking-widest">PULSO CINÉFILO (ÚlTIMOS 365 DÍAS)</h3>
+                        <h3 className="font-mono text-xs text-gray-500 uppercase tracking-widest">PULSO CINÉFILO (ÚLTIMOS 365 DÍAS)</h3>
                         <div className="flex items-center gap-2 text-[10px] text-gray-500 font-mono">
                             <span>MENOS</span>
                             <div className="flex gap-1">
@@ -359,9 +496,8 @@ const StatsView = () => {
                         </div>
                     </div>
 
-                    {/* Github Style Grid */}
                     <div className="flex gap-1 min-w-[800px]">
-                        {heatmapData.map((week, wIndex) => (
+                        {heatmapData.weeks.map((week, wIndex) => (
                             <div key={wIndex} className="flex flex-col gap-1">
                                 {week.map((day, dIndex) => (
                                     <div
@@ -384,23 +520,17 @@ const StatsView = () => {
 
             </div>
 
-            {/* Achievement Badges (Simple Row) */}
+            {/* Achievement Badges (Enhanced) */}
             <div className="mt-8">
-                <h3 className="font-mono text-xs text-gray-500 uppercase mb-4">LOGROS TÉCNICOS</h3>
-                <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar">
-                    {/* Badge 1 */}
-                    <div className="min-w-[120px] h-32 bg-surface border border-white/5 flex flex-col items-center justify-center p-3 opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all cursor-pointer">
-                        <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mb-3">
-                            <span className="text-xl">☀️</span>
-                        </div>
-                        <span className="font-mono text-[10px] text-center text-gray-400">EMBAJADOR LOCAL</span>
-                    </div>
-                    <div className="min-w-[120px] h-32 bg-surface border border-white/5 flex flex-col items-center justify-center p-3 border-primary/50 bg-primary/5">
-                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mb-3">
-                            <span className="text-xl">🎬</span>
-                        </div>
-                        <span className="font-mono text-[10px] text-center text-white">INICIADO</span>
-                    </div>
+                <div className="flex items-center justify-between mb-6">
+                    <h3 className="font-mono text-xs text-gray-500 uppercase">LOGROS TÉCNICOS</h3>
+                    <span className="font-mono text-xs text-primary">{achievements.filter(a => a.unlocked).length} / {achievements.length} DESBLOQUEADOS</span>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    {achievements.map(badge => (
+                        <AchievementBadge key={badge.id} {...badge} />
+                    ))}
                 </div>
             </div>
         </div>
