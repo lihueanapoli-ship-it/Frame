@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { getTrendingMovies, getMoviesByGenre, searchMovies } from '../api/tmdb';
+import { getTrendingMovies, getMoviesByGenre, searchMovies, discoverMovies } from '../api/tmdb';
 import { getOscarWinners } from '../api/oscarApi';
 import SearchBar from '../components/SearchBar';
 import MovieCard from '../components/MovieCard';
 import { Loader2, Sparkles } from 'lucide-react';
-import { useMovieFilter } from '../hooks/useMovieFilter';
 import BottomSheet from '../components/ui/BottomSheet';
 import { cn } from '../lib/utils';
 import { StarIcon, ClockIcon } from '@heroicons/react/24/solid';
@@ -33,133 +32,178 @@ const GENRES = [
 ];
 
 const SearchView = ({ onSelectMovie }) => {
-    const [results, setResults] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [initialMovies, setInitialMovies] = useState([]);
+    // Mode State
+    const [searchQuery, setSearchQuery] = useState('');
     const [selectedGenre, setSelectedGenre] = useState(null);
     const [isOscars, setIsOscars] = useState(false);
+
+    // Data State
+    const [results, setResults] = useState([]);
+    const [loading, setLoading] = useState(false);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
 
     // Filter UI State
     const [isFilterOpen, setIsFilterOpen] = useState(false);
-    const [sortOption, setSortOption] = useState('rating');
-    const [minRating, setMinRating] = useState(0);
+    const [sortOption, setSortOption] = useState('popularity.desc');
+    const [minRating, setMinRating] = useState(0); // 0 means any. Values 2-9.
     const [runtimeFilter, setRuntimeFilter] = useState('any');
-    const [yearRange, setYearRange] = useState({ min: 1900, max: new Date().getFullYear() + 5 });
+    const [yearRange, setYearRange] = useState({ min: 1900, max: 2050 });
 
-    // Initial Load: Show some trending searches/movies
-    useEffect(() => {
-        const loadInitial = async () => {
-            setLoading(true);
-            const trending = await getTrendingMovies();
-            setInitialMovies(trending.slice(0, 10)); // Top 10 trending
-            setLoading(false);
-        };
-        loadInitial();
-    }, []);
+    // Initial load tracking
+    const mounted = useRef(false);
 
-    const handleSearch = useCallback(async (query) => {
-        if (!query) {
-            setSelectedGenre(prevGenre => {
-                if (!prevGenre && !isOscars) setResults([]);
-                return prevGenre;
-            });
-            return;
+    // Helper: Build API parameters from state
+    const getFilterParams = () => {
+        const params = {};
+
+        // Sort
+        params['sort_by'] = sortOption;
+
+        // Rating
+        if (minRating > 0) {
+            params['vote_average.gte'] = minRating;
+            params['vote_count.gte'] = 50; // Filter trash
         }
 
-        setSelectedGenre(null);
-        setIsOscars(false);
-        setPage(1);
-        setHasMore(false);
-        setLoading(true);
-        try {
-            const data = await searchMovies(query);
-            setResults(data);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLoading(false);
-        }
-    }, [isOscars]);
+        // Runtime
+        if (runtimeFilter === 'short') params['with_runtime.lte'] = 90;
+        else if (runtimeFilter === 'medium') { params['with_runtime.gte'] = 90; params['with_runtime.lte'] = 120; }
+        else if (runtimeFilter === 'long') params['with_runtime.gte'] = 120;
 
-    const handleGenreClick = async (genreId) => {
-        setSelectedGenre(genreId);
-        setIsOscars(false);
-        setPage(1);
-        setHasMore(true);
-        setLoading(true);
-        try {
-            const data = await getMoviesByGenre(genreId, 1);
-            setResults(data);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLoading(false);
+        // Years
+        if (yearRange.min > 1900 || yearRange.max < 2050) {
+            params['primary_release_date.gte'] = `${yearRange.min}-01-01`;
+            params['primary_release_date.lte'] = `${yearRange.max}-12-31`; // Approx max
         }
+
+        return params;
     };
 
-    const handleOscarClick = async () => {
-        setIsOscars(true);
-        setSelectedGenre(null);
-        setPage(1);
-        setHasMore(false);
+    // Main Fetch Function
+    const fetchContent = useCallback(async (pageNum, reset = false) => {
         setLoading(true);
         try {
-            const data = await getOscarWinners();
-            setResults(data);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLoading(false);
-        }
-    };
+            let data = [];
+            const filterParams = getFilterParams();
 
-    const loadMore = async () => {
-        if (!selectedGenre) return;
-        const nextPage = page + 1;
-        setPage(nextPage);
-        setLoading(true);
-        try {
-            const data = await getMoviesByGenre(selectedGenre, nextPage);
-            if (data.length === 0) {
+            if (searchQuery) {
+                // 1. Text Search Mode (Filters applied client-side typically, but let's try mostly raw search first)
+                // Note: TMDB search API doesn't strictly support all discovery filters. 
+                // We will rely on searchMovies simply, and maybe filter locally if absolutely needed, 
+                // but user complained about 0 results. Let's return query results raw for now or handle duplication.
+                data = await searchMovies(searchQuery);
+                // Pagination for search isn't implemented in wrapper properly (returns page 1 always or raw list). 
+                // Ignoring pagination for text search for simplicity unless wrapper updated.
+                // If filters are active, we might want to filter locally data?
+                if (minRating > 0) data = data.filter(m => m.vote_average >= minRating);
+                // ... simplistic local filter for search query results to respect UI.
+            }
+            else if (isOscars) {
+                // 2. Oscars Mode (Static List)
+                data = await getOscarWinners();
+                if (minRating > 0) data = data.filter(m => m.vote_average >= minRating);
+            }
+            else if (selectedGenre) {
+                // 3. Genre Mode (API Discovery with Genre)
+                data = await getMoviesByGenre(selectedGenre, filterParams, pageNum);
+            }
+            else {
+                // 4. General Discovery / Trending Mode
+                // If no filters active, maybe show trending?
+                // logic: if activeFilterCount > 0 OR page > 1, use discover. Else use trending for page 1?
+                // Actually discoverMovies with popularity sort IS trending basically.
+                // But getTrendingMovies uses weak/day endpoint.
+
+                const hasFilters = minRating > 0 || runtimeFilter !== 'any' || yearRange.min > 1900 || sortOption !== 'popularity.desc';
+
+                if (hasFilters) {
+                    data = await discoverMovies({ ...filterParams, page: pageNum });
+                } else {
+                    // Default state: Trending
+                    data = await getTrendingMovies(pageNum);
+                }
+            }
+
+            if (data.length === 0 && pageNum > 1) {
                 setHasMore(false);
             } else {
-                setResults(prev => [...prev, ...data]);
+                setResults(prev => {
+                    const base = reset ? [] : prev;
+                    if (data.length === 0) return base;
+
+                    // Deduplication Logic
+                    const combined = [...base, ...data];
+                    const uniqueMap = new Map();
+                    combined.forEach(item => {
+                        if (item.id) uniqueMap.set(item.id, item);
+                    });
+                    return Array.from(uniqueMap.values());
+                });
+                // Ensure we assume more if we got full page (20 usually)
+                if (data.length < 20 && !isOscars) setHasMore(false); // Oscars/Search might behave diff
+                else setHasMore(true);
             }
-        } catch (e) {
-            console.error(e);
+
+        } catch (error) {
+            console.error("Error fetching content:", error);
         } finally {
             setLoading(false);
         }
+    }, [searchQuery, selectedGenre, isOscars, minRating, runtimeFilter, yearRange, sortOption]);
+
+    // Trigger Fetch on State Change
+    useEffect(() => {
+        // Reset and fetch
+        setPage(1);
+        setHasMore(true);
+        // Slight debounce could be nice but immediate response is snappier
+        fetchContent(1, true);
+    }, [searchQuery, selectedGenre, isOscars, minRating, runtimeFilter, yearRange, sortOption]);
+
+
+    const handleSearch = (query) => {
+        setSearchQuery(query);
+        // others reset by UI logic if needed, but useEffect handles fetch
+        if (query) {
+            setSelectedGenre(null);
+            setIsOscars(false);
+        }
     };
 
-    // Determine base movies
-    const isSearchingOrFiltered = results.length > 0 || loading || selectedGenre || isOscars;
-    const baseMovies = isSearchingOrFiltered ? results : initialMovies;
+    const handleGenreClick = (id) => {
+        if (selectedGenre === id) setSelectedGenre(null);
+        else setSelectedGenre(id);
 
-    // Apply client-side filters using hook
-    const { filteredMovies } = useMovieFilter(baseMovies, {
-        sort: sortOption,
-        minRating,
-        runtime: runtimeFilter,
-        yearRange,
-        genres: []
-    });
+        setIsOscars(false);
+        setSearchQuery('');
+    };
 
-    const activeFilterCount = (minRating > 0 ? 1 : 0) + (runtimeFilter !== 'any' ? 1 : 0) + (yearRange.min > 1900 ? 1 : 0);
+    const handleOscarClick = () => {
+        setIsOscars(!isOscars);
+        setSelectedGenre(null);
+        setSearchQuery('');
+    };
+
+    const loadMore = () => {
+        const nextPage = page + 1;
+        setPage(nextPage);
+        fetchContent(nextPage, false);
+    };
 
     const clearFilters = () => {
         setMinRating(0);
         setRuntimeFilter('any');
-        setYearRange({ min: 1900, max: new Date().getFullYear() + 5 });
-        setSortOption('rating');
+        setYearRange({ min: 1900, max: 2050 });
+        setSortOption('popularity.desc');
     };
+
+    const activeFilterCount = (minRating > 0 ? 1 : 0) + (runtimeFilter !== 'any' ? 1 : 0) + (yearRange.min > 1900 ? 1 : 0) + (sortOption !== 'popularity.desc' ? 1 : 0);
 
     return (
         <div className="p-4 pt-20 pb-24 min-h-screen max-w-7xl mx-auto relative">
 
-            {/* Filter Toggle - Sticky Top Right */}
+            {/* Filter Toggle */}
             <div className="sticky top-24 z-30 flex justify-end mb-4 pointer-events-none">
                 <button
                     onClick={() => setIsFilterOpen(true)}
@@ -186,13 +230,18 @@ const SearchView = ({ onSelectMovie }) => {
             </div>
 
             {/* Quick Categories */}
-            {!selectedGenre && !isOscars && results.length === 0 && (
+            {!searchQuery && (
                 <div className="mb-10 animate-fade-in">
                     <h2 className="text-lg font-semibold text-gray-400 mb-4">Categorías</h2>
                     <div className="flex flex-wrap gap-3">
                         <button
                             onClick={handleOscarClick}
-                            className="px-4 py-2 bg-gradient-to-r from-yellow-600/20 to-orange-600/20 hover:from-yellow-600/30 hover:to-orange-600/30 border border-yellow-500/30 rounded-full text-sm font-medium text-yellow-400 transition-all transform active:scale-95 hover:border-yellow-400/50 flex items-center gap-2"
+                            className={cn(
+                                "px-4 py-2 border rounded-full text-sm font-medium transition-all transform active:scale-95 flex items-center gap-2",
+                                isOscars
+                                    ? "bg-yellow-500/20 border-yellow-500 text-yellow-400"
+                                    : "bg-gradient-to-r from-yellow-600/20 to-orange-600/20 border-yellow-500/30 text-yellow-500 hover:border-yellow-400/50"
+                            )}
                         >
                             <span>🏆</span> Oscars
                         </button>
@@ -201,7 +250,12 @@ const SearchView = ({ onSelectMovie }) => {
                             <button
                                 key={genre.id}
                                 onClick={() => handleGenreClick(genre.id)}
-                                className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/5 rounded-full text-sm font-medium text-white transition-all transform active:scale-95 hover:border-primary/50 flex items-center gap-2"
+                                className={cn(
+                                    "px-4 py-2 border rounded-full text-sm font-medium transition-all transform active:scale-95 flex items-center gap-2",
+                                    selectedGenre === genre.id
+                                        ? "bg-primary text-black border-primary"
+                                        : "bg-white/5 hover:bg-white/10 border-white/5 text-white hover:border-primary/50"
+                                )}
                             >
                                 <span>{genre.emoji}</span> {genre.name}
                             </button>
@@ -215,16 +269,22 @@ const SearchView = ({ onSelectMovie }) => {
                 <h2 className="text-xl font-bold text-white">
                     {isOscars ? "🏆 Ganadoras del Oscar" :
                         selectedGenre ? `Películas de ${GENRES.find(g => g.id === selectedGenre)?.name}` :
-                            results.length > 0 ? "Resultados" : "Tendencias"}
+                            searchQuery ? `Buscando "${searchQuery}"` :
+                                activeFilterCount > 0 ? "Resultados Filtrados" : "Tendencias"}
                 </h2>
 
                 <div className="flex items-center gap-3">
-                    {activeFilterCount > 0 && (
-                        <span className="text-xs text-primary font-bold">{filteredMovies.length} filtrados</span>
+                    {activeFilterCount > 0 && results.length > 0 && (
+                        <span className="text-xs text-primary font-bold">{results.length} resultados</span>
                     )}
-                    {(selectedGenre || isOscars || activeFilterCount > 0) && (
+                    {(selectedGenre || isOscars || activeFilterCount > 0 || searchQuery) && (
                         <button
-                            onClick={() => { setSelectedGenre(null); setIsOscars(false); setResults([]); clearFilters(); }}
+                            onClick={() => {
+                                setSelectedGenre(null);
+                                setIsOscars(false);
+                                setSearchQuery('');
+                                clearFilters();
+                            }}
                             className="text-xs text-gray-400 hover:text-white transition-colors flex items-center gap-1"
                         >
                             <XMarkIcon className="w-3 h-3" /> Limpiar todo
@@ -239,19 +299,19 @@ const SearchView = ({ onSelectMovie }) => {
                 </div>
             ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                    {filteredMovies.map((movie, idx) => (
+                    {results.map((movie, idx) => (
                         <MovieCard
                             key={`${movie.id}-${idx}`}
                             movie={movie}
                             onClick={onSelectMovie}
                         />
                     ))}
-                    {filteredMovies.length === 0 && !loading && (
+                    {results.length === 0 && !loading && (
                         <div className="col-span-full py-20 text-center">
                             <Sparkles className="w-12 h-12 text-gray-700 mx-auto mb-3" />
                             <p className="text-gray-500">
                                 {activeFilterCount > 0
-                                    ? "No hay películas que coincidan con tus filtros."
+                                    ? "No hay películas que coincidan con estos filtros."
                                     : "No se encontraron resultados"}
                             </p>
                             {activeFilterCount > 0 && (
@@ -262,20 +322,23 @@ const SearchView = ({ onSelectMovie }) => {
                         </div>
                     )}
 
-                    {/* Load More Button - Only for Categories for now */}
-                    {selectedGenre && hasMore && results.length > 0 && activeFilterCount === 0 && (
+                    {/* Load More Button */}
+                    {hasMore && results.length > 0 && !loading && (
                         <div className="col-span-full flex justify-center mt-8">
                             <button
                                 onClick={loadMore}
-                                disabled={loading}
-                                className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-full transition-all flex items-center gap-2 disabled:opacity-50"
+                                className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-full transition-all flex items-center gap-2 hover:scale-105 active:scale-95"
                             >
-                                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Más películas"}
+                                Cargar más películas
                             </button>
                         </div>
                     )}
-
-                    {/* Note: If filters are active, we hide load more because pagination logic with client side filters is confusing (new pages might not match filter) */}
+                    {/* Load More Spinner */}
+                    {hasMore && loading && results.length > 0 && (
+                        <div className="col-span-full flex justify-center mt-8">
+                            <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -284,7 +347,7 @@ const SearchView = ({ onSelectMovie }) => {
                 <BottomSheet
                     isOpen={isFilterOpen}
                     onClose={() => setIsFilterOpen(false)}
-                    title="Filtros de Exploración"
+                    title="Filtros Avanzados"
                 >
                     <div className="space-y-8 pb-8">
                         {/* 1. Sort Section */}
@@ -292,10 +355,10 @@ const SearchView = ({ onSelectMovie }) => {
                             <h4 className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-widest">Ordenar Por</h4>
                             <div className="grid grid-cols-2 gap-3">
                                 {[
-                                    { id: 'rating', label: 'Valoración' },
-                                    { id: 'year', label: 'Año' },
-                                    { id: 'runtime', label: 'Duración' },
-                                    { id: 'popularity', label: 'Popularidad' },
+                                    { id: 'popularity.desc', label: 'Popularidad' },
+                                    { id: 'vote_average.desc', label: 'Valoración' },
+                                    { id: 'primary_release_date.desc', label: 'Más Recientes' },
+                                    { id: 'revenue.desc', label: 'Taquilla' },
                                 ].map(opt => (
                                     <button
                                         key={opt.id}
@@ -313,20 +376,25 @@ const SearchView = ({ onSelectMovie }) => {
                             </div>
                         </div>
 
-                        {/* 2. Rating Filter */}
+                        {/* 2. Rating Filter (2-9 range) */}
                         <div>
                             <div className="flex justify-between items-center mb-3">
                                 <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Calificación Mínima</h4>
-                                <span className="text-xs font-mono text-primary">{minRating > 0 ? `${minRating}+ Estrellas` : 'Cualquiera'}</span>
+                                <span className="text-xs font-mono text-primary">{minRating > 0 ? `${minRating}+ Puntos` : 'Cualquiera'}</span>
                             </div>
-                            <div className="flex gap-2 justify-between bg-surface-elevated p-3 rounded-xl border border-white/5">
-                                {[1, 2, 3, 4, 5].map(star => (
+                            <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 bg-surface-elevated p-3 rounded-xl border border-white/5">
+                                {[2, 3, 4, 5, 6, 7, 8, 9].map(score => (
                                     <button
-                                        key={star}
-                                        onClick={() => setMinRating(minRating === star ? 0 : star)}
-                                        className="transition-transform active:scale-90"
+                                        key={score}
+                                        onClick={() => setMinRating(minRating === score ? 0 : score)}
+                                        className={cn(
+                                            "aspect-square rounded-lg flex items-center justify-center text-sm font-bold transition-all border",
+                                            minRating === score
+                                                ? "bg-primary text-black border-primary shadow-[0_0_10px_rgba(250,204,21,0.3)]"
+                                                : "bg-transparent border-white/5 text-gray-400 hover:bg-white/10 hover:text-white"
+                                        )}
                                     >
-                                        <StarIcon className={cn("w-8 h-8 transition-colors", star <= minRating ? "text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]" : "text-gray-700")} />
+                                        {score}
                                     </button>
                                 ))}
                             </div>
@@ -400,13 +468,13 @@ const SearchView = ({ onSelectMovie }) => {
                                 onClick={clearFilters}
                                 className="flex-1 py-3.5 rounded-xl font-semibold text-gray-400 hover:text-white transition-colors border border-white/10"
                             >
-                                Limpiar todo
+                                Limpiar
                             </button>
                             <button
                                 onClick={() => setIsFilterOpen(false)}
                                 className="flex-[2] py-3.5 bg-primary text-black rounded-xl font-bold shadow-lg shadow-primary/25 active:scale-95 transition-all"
                             >
-                                Ver {filteredMovies.length} Películas
+                                Ver Resultados
                             </button>
                         </div>
                     </div>
