@@ -43,23 +43,27 @@ export const ListProvider = ({ children }) => {
 
         const fetchAllLists = async () => {
             setLoading(true);
+
+            // 1. Fetch Owned Lists (Should always work if logged in)
             try {
-                // Fetch Owned Lists
                 const qOwned = query(collection(db, 'lists'), where('ownerId', '==', user.uid));
-
-                // Fetch Collaborating Lists
-                const qCollab = query(collection(db, 'lists'), where('collaborators', 'array-contains', user.uid));
-
-                const [ownedSnap, collabSnap] = await Promise.all([getDocs(qOwned), getDocs(qCollab)]);
-
+                const ownedSnap = await getDocs(qOwned);
                 const ownedData = ownedSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                const collabData = collabSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
                 setMyLists(ownedData);
-                setCollabLists(collabData);
-
             } catch (error) {
-                console.error("Error fetching lists:", error);
+                console.error("Error fetching my lists:", error);
+            }
+
+            // 2. Fetch Collaborating Lists (Might fail if Rules are strict)
+            try {
+                const qCollab = query(collection(db, 'lists'), where('collaborators', 'array-contains', user.uid));
+                const collabSnap = await getDocs(qCollab);
+                const collabData = collabSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                setCollabLists(collabData);
+            } catch (error) {
+                // Silently fail or warn, but don't break the app
+                console.warn("⚠️ Could not fetch collaborative lists (Check Permissions). Ignoring.");
+                setCollabLists([]);
             } finally {
                 setLoading(false);
             }
