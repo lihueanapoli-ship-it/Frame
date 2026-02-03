@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getTrendingMovies, getMoviesByGenre, searchMovies } from '../api/tmdb';
+import { getOscarWinners } from '../api/oscarApi';
 import SearchBar from '../components/SearchBar';
 import MovieCard from '../components/MovieCard';
 import { Loader2 } from 'lucide-react';
@@ -30,6 +31,7 @@ const SearchView = ({ onSelectMovie }) => {
     const [loading, setLoading] = useState(false);
     const [initialMovies, setInitialMovies] = useState([]);
     const [selectedGenre, setSelectedGenre] = useState(null);
+    const [isOscars, setIsOscars] = useState(false);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
 
@@ -47,13 +49,14 @@ const SearchView = ({ onSelectMovie }) => {
     const handleSearch = useCallback(async (query) => {
         if (!query) {
             setSelectedGenre(prevGenre => {
-                if (!prevGenre) setResults([]);
+                if (!prevGenre && !isOscars) setResults([]);
                 return prevGenre;
             });
             return;
         }
 
         setSelectedGenre(null);
+        setIsOscars(false);
         setPage(1); // Reset page
         setHasMore(false); // Search endpoint usually gives best matches first, simple pagination often not needed or handled differently. Let's keep it simple for now or implement generic search pagination if requested.
         // Actually, searchMovies API *does* support page, let's enable valid pagination for search too if possible later, but user asked specifically for 'category' load more.
@@ -67,15 +70,32 @@ const SearchView = ({ onSelectMovie }) => {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [isOscars]);
 
     const handleGenreClick = async (genreId) => {
         setSelectedGenre(genreId);
+        setIsOscars(false);
         setPage(1);
         setHasMore(true);
         setLoading(true);
         try {
             const data = await getMoviesByGenre(genreId, 1);
+            setResults(data);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleOscarClick = async () => {
+        setIsOscars(true);
+        setSelectedGenre(null);
+        setPage(1);
+        setHasMore(false); // Oscars has all movies, no pagination
+        setLoading(true);
+        try {
+            const data = await getOscarWinners();
             setResults(data);
         } catch (e) {
             console.error(e);
@@ -104,7 +124,7 @@ const SearchView = ({ onSelectMovie }) => {
     };
 
     // Determine what to show
-    const isSearchingOrFiltered = results.length > 0 || loading || selectedGenre;
+    const isSearchingOrFiltered = results.length > 0 || loading || selectedGenre || isOscars;
     const moviesToShow = isSearchingOrFiltered ? results : initialMovies;
 
     return (
@@ -116,13 +136,13 @@ const SearchView = ({ onSelectMovie }) => {
             </div>
 
             {/* Quick Categories */}
-            {!selectedGenre && results.length === 0 && (
+            {!selectedGenre && !isOscars && results.length === 0 && (
                 <div className="mb-10 animate-fade-in">
                     <h2 className="text-lg font-semibold text-gray-400 mb-4">Categorías</h2>
                     <div className="flex flex-wrap gap-3">
                         {/* Oscar Winners Special Category */}
                         <button
-                            onClick={() => window.location.href = '/#oscars'}
+                            onClick={handleOscarClick}
                             className="px-4 py-2 bg-gradient-to-r from-yellow-600/20 to-orange-600/20 hover:from-yellow-600/30 hover:to-orange-600/30 border border-yellow-500/30 rounded-full text-sm font-medium text-yellow-400 transition-all transform active:scale-95 hover:border-yellow-400/50 flex items-center gap-2"
                         >
                             <span>🏆</span> Oscars
@@ -144,11 +164,12 @@ const SearchView = ({ onSelectMovie }) => {
             {/* Results Header */}
             <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-xl font-bold text-white">
-                    {selectedGenre ? `Películas de ${GENRES.find(g => g.id === selectedGenre)?.name}` :
-                        results.length > 0 ? "Resultados" : "Tendencias de Búsqueda"}
+                    {isOscars ? "🏆 Ganadoras del Oscar a Mejor Película" :
+                        selectedGenre ? `Películas de ${GENRES.find(g => g.id === selectedGenre)?.name}` :
+                            results.length > 0 ? "Resultados" : "Tendencias de Búsqueda"}
                 </h2>
-                {selectedGenre && (
-                    <button onClick={() => { setSelectedGenre(null); setResults([]); }} className="text-xs text-primary hover:text-white transition-colors">
+                {(selectedGenre || isOscars) && (
+                    <button onClick={() => { setSelectedGenre(null); setIsOscars(false); setResults([]); }} className="text-xs text-primary hover:text-white transition-colors">
                         Limpiar filtro
                     </button>
                 )}

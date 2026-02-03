@@ -3,7 +3,6 @@ import { getTrendingMovies, getTopRatedMovies, getCustomCollection } from '../ap
 import { useUserProfile } from '../contexts/UserProfileContext';
 import { useMovies } from '../contexts/MovieContext';
 import { getPersonalizedRecommendations } from '../utils/recommendations';
-import { getOscarWinners } from '../api/oscarApi';
 import HeroCarousel from '../components/domain/HeroCarousel';
 import { Loader2, ChevronRight, Sparkles } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -138,7 +137,6 @@ const DiscoverView = ({ onSelectMovie }) => {
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState({
         trending: [],
-        oscars: [], // Oscar Best Picture winners
         must_watch: [],
         short: [],
         conversation: [],
@@ -173,7 +171,6 @@ const DiscoverView = ({ onSelectMovie }) => {
         try {
             const [
                 trending,
-                oscars,
                 must_watch,
                 short,
                 conversation,
@@ -186,7 +183,6 @@ const DiscoverView = ({ onSelectMovie }) => {
                 classic_author
             ] = await Promise.all([
                 getTrendingMovies(),
-                getOscarWinners(),
                 getCustomCollection('must_watch'),
                 getCustomCollection('short'),
                 getCustomCollection('conversation'),
@@ -201,7 +197,6 @@ const DiscoverView = ({ onSelectMovie }) => {
 
             setData({
                 trending,
-                oscars,
                 must_watch,
                 short,
                 conversation,
@@ -287,16 +282,6 @@ const DiscoverView = ({ onSelectMovie }) => {
                         emptyMessage="Marcá películas como vistas para descubrir tu perfil cinematográfico único y recibir recomendaciones personalizadas basadas en tus gustos."
                     />
                 )}
-
-                {/* Oscar Best Picture Winners */}
-                <MovieSection
-                    title="🏆 Ganadoras del Oscar"
-                    subtitle="Mejor Película desde 1927"
-                    movies={data.oscars}
-                    onSelectMovie={onSelectMovie}
-                    categoryId="oscars"
-                    showAll={true}
-                />
 
                 {/* Resto de Colecciones (sin "Popular esta semana" ni "Mejor Rankeadas") */}
                 <MovieSection
