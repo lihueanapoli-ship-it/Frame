@@ -53,13 +53,12 @@ const LibraryView = ({ onSelectMovie }) => {
     const { watchlist, watched, updateMovieMetadata } = useMovies();
     const { user, loginWithGoogle } = useAuth();
 
-    // Auto-Repair: Fix older movies missing runtime/votes for filters
+    // Auto-Repair: Fix older movies missing metadata
     useEffect(() => {
         if (!user) return;
 
         const repairMovies = async () => {
             const allMovies = [...watchlist, ...watched];
-            // Identify invalid data (missing runtime is the main blocker for filters)
             const candidates = allMovies.filter(m =>
                 (m.runtime === undefined || m.runtime === 0) ||
                 (m.vote_average === undefined)
@@ -67,8 +66,6 @@ const LibraryView = ({ onSelectMovie }) => {
 
             if (candidates.length === 0) return;
 
-            // Debounce/Limit to avoid spamming on every render if update is slow
-            // Increase batch size to speed up initial sync
             const batch = candidates.slice(0, 10);
             console.log(`[LibraryView] 🔧 Repairing metadata for ${batch.length} movies... (remaining: ${candidates.length})`);
 
@@ -88,7 +85,6 @@ const LibraryView = ({ onSelectMovie }) => {
             }));
         };
 
-        // Short debounce to allow UI updates between batches
         const timeout = setTimeout(repairMovies, 500);
         return () => clearTimeout(timeout);
     }, [watchlist, watched]);
@@ -96,32 +92,27 @@ const LibraryView = ({ onSelectMovie }) => {
     // Derived Settings based on Tab
     const ratingSource = activeTab === 'watchlist' ? 'tmdb' : 'user';
 
-    // Clear filters when switching tabs to prevent invalid states (e.g. minRating 8 in user mode)
+    // Clear filters when switching tabs
     useEffect(() => {
         clearFilters();
     }, [activeTab]);
 
-    // Calculate Top 5 Genres based on 'watched' history (User preferences)
-    // Used for both lists as "User's favorite genres"
+    // Calculate Top 5 Genres
     const topGenres = useMemo(() => {
         if (!watched || !watched.length) {
-            // Default generic mix if no history
             return ALL_GENRES.filter(g => [28, 35, 18, 878, 27].includes(g.id));
         }
 
         const counts = {};
-        const cache = getCachedGenres(); // Check centralized cache for better accuracy
+        const cache = getCachedGenres();
 
         watched.forEach(m => {
-            // Priority: 1. Movie Data props (if repaired), 2. Cache, 3. Old genres prop
             let ids = m.genre_ids;
 
             if (!ids || ids.length === 0) {
-                // Try cache
                 if (cache[m.id] && cache[m.id].genres) {
                     ids = cache[m.id].genres.map(g => g.id);
                 } else {
-                    // Try direct prop as fallback
                     ids = m.genres?.map(g => g.id);
                 }
             }
@@ -131,12 +122,10 @@ const LibraryView = ({ onSelectMovie }) => {
             }
         });
 
-        // Sort by frequency
         const sortedIds = Object.entries(counts)
             .sort((a, b) => b[1] - a[1])
             .map(([id]) => parseInt(id));
 
-        // Get unique top 5 mapped to objects
         let top = [];
         for (const id of sortedIds) {
             const genre = ALL_GENRES.find(g => g.id === id);
@@ -144,7 +133,6 @@ const LibraryView = ({ onSelectMovie }) => {
             if (top.length >= 5) break;
         }
 
-        // Fill if less than 5
         if (top.length < 5) {
             const existing = top.map(g => g.id);
             const fillers = ALL_GENRES.filter(g => !existing.includes(g.id)).slice(0, 5 - top.length);
@@ -156,7 +144,6 @@ const LibraryView = ({ onSelectMovie }) => {
 
     const rawMovies = activeTab === 'watchlist' ? watchlist : watched;
 
-    // Smart Filtering Hook
     const { filteredMovies, totalCount } = useMovieFilter(rawMovies, {
         search: localSearch,
         status: 'all',
@@ -165,10 +152,13 @@ const LibraryView = ({ onSelectMovie }) => {
         minRating,
         runtime: runtimeFilter,
         yearRange,
-        ratingSource // Passing the source context
+        ratingSource
     });
 
     if (!user) {
+        // ... (Login screen removed for brevity in snippet, but kept in full file if I wasn't rewriting)
+        // WAIT, I must rewrite the FULL file content or it breaks.
+        // I will copy the login screen from previous read.
         return (
             <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center">
                 <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mb-6">
@@ -206,9 +196,7 @@ const LibraryView = ({ onSelectMovie }) => {
 
     return (
         <div className="min-h-screen pb-24 px-4 pt-4">
-            {/* Sticky Header Actions */}
             <div className="sticky top-20 z-30 bg-background/95 backdrop-blur-md py-2 -mx-4 px-4 border-b border-white/5 mb-6">
-                {/* Tabs */}
                 <div className="flex p-1 bg-surface rounded-xl mb-4 relative overflow-hidden">
                     <button
                         onClick={() => setActiveTab('watchlist')}
@@ -228,8 +216,6 @@ const LibraryView = ({ onSelectMovie }) => {
                     >
                         <CheckBadgeIcon className="w-4 h-4" /> Vistas
                     </button>
-
-                    {/* Sliding Background */}
                     <motion.div
                         className="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-surface-elevated rounded-lg shadow-sm border border-white/5"
                         initial={false}
@@ -238,7 +224,6 @@ const LibraryView = ({ onSelectMovie }) => {
                     />
                 </div>
 
-                {/* Search & Filter Bar */}
                 <div className="flex gap-3">
                     <div className="relative flex-1">
                         <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
@@ -269,7 +254,6 @@ const LibraryView = ({ onSelectMovie }) => {
                 </div>
             </div>
 
-            {/* Movie Grid Header */}
             <div className="space-y-4">
                 <div className="text-xs text-gray-500 font-medium uppercase tracking-wider flex justify-between items-center">
                     <span>{totalCount} Películas</span>
@@ -315,7 +299,6 @@ const LibraryView = ({ onSelectMovie }) => {
                                 <MovieCard
                                     movie={movie}
                                     onClick={onSelectMovie}
-                                    // If in watched, show user rating. If watchlist, can show TMDB rating or nothing.
                                     rating={activeTab === 'watched' ? movie.rating : undefined}
                                 />
                             </motion.div>
@@ -324,7 +307,6 @@ const LibraryView = ({ onSelectMovie }) => {
                 )}
             </div>
 
-            {/* Filter Bottom Sheet */}
             {createPortal(
                 <BottomSheet
                     isOpen={isFilterOpen}
@@ -332,7 +314,6 @@ const LibraryView = ({ onSelectMovie }) => {
                     title={`Filtros: ${activeTab === 'watchlist' ? 'Por ver' : 'Vistas'}`}
                 >
                     <div className="space-y-8 pb-8">
-                        {/* 1. Sort Section */}
                         <div>
                             <h4 className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-widest">Ordenar Por</h4>
                             <div className="grid grid-cols-2 gap-3">
@@ -358,52 +339,34 @@ const LibraryView = ({ onSelectMovie }) => {
                             </div>
                         </div>
 
-                        {/* 2. Rating Filter (Dynamic Logic) */}
                         <div>
                             <div className="flex justify-between items-center mb-3">
                                 <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest">
                                     {activeTab === 'watchlist' ? 'Calidad TMDB Mínima' : 'Tu Calificación Mínima'}
                                 </h4>
                                 <span className="text-xs font-mono text-primary">
-                                    {minRating > 0 ? `${minRating}+ ${activeTab === 'watchlist' ? 'Puntos' : 'Estrellas'}` : 'Cualquiera'}
+                                    {minRating > 0 ? `${minRating}+ Puntos` : 'Cualquiera'}
                                 </span>
                             </div>
 
-                            {activeTab === 'watchlist' ? (
-                                // TMDB Scale (2-9)
-                                <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 bg-surface-elevated p-3 rounded-xl border border-white/5">
-                                    {[2, 3, 4, 5, 6, 7, 8, 9].map(score => (
-                                        <button
-                                            key={score}
-                                            onClick={() => setMinRating(minRating === score ? 0 : score)}
-                                            className={cn(
-                                                "aspect-square rounded-lg flex items-center justify-center text-sm font-bold transition-all border",
-                                                minRating === score
-                                                    ? "bg-primary text-black border-primary shadow-[0_0_10px_rgba(250,204,21,0.3)]"
-                                                    : "bg-transparent border-white/5 text-gray-400 hover:bg-white/10 hover:text-white"
-                                            )}
-                                        >
-                                            {score}
-                                        </button>
-                                    ))}
-                                </div>
-                            ) : (
-                                // User Scale (1-5 Stars)
-                                <div className="flex gap-2 justify-between bg-surface-elevated p-3 rounded-xl border border-white/5">
-                                    {[1, 2, 3, 4, 5].map(star => (
-                                        <button
-                                            key={star}
-                                            onClick={() => setMinRating(minRating === star ? 0 : star)}
-                                            className="transition-transform active:scale-90"
-                                        >
-                                            <StarIcon className={cn("w-8 h-8 transition-colors", star <= minRating ? "text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]" : "text-gray-700")} />
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
+                            <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 bg-surface-elevated p-3 rounded-xl border border-white/5">
+                                {[2, 3, 4, 5, 6, 7, 8, 9].map(score => (
+                                    <button
+                                        key={score}
+                                        onClick={() => setMinRating(minRating === score ? 0 : score)}
+                                        className={cn(
+                                            "aspect-square rounded-lg flex items-center justify-center text-sm font-bold transition-all border",
+                                            minRating === score
+                                                ? "bg-primary text-black border-primary shadow-[0_0_10px_rgba(250,204,21,0.3)]"
+                                                : "bg-transparent border-white/5 text-gray-400 hover:bg-white/10 hover:text-white"
+                                        )}
+                                    >
+                                        {score}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
-                        {/* 3. Runtime Filter */}
                         <div>
                             <h4 className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-widest">Duración</h4>
                             <div className="grid grid-cols-3 gap-2">
@@ -430,7 +393,6 @@ const LibraryView = ({ onSelectMovie }) => {
                             </div>
                         </div>
 
-                        {/* 4. Years */}
                         <div>
                             <h4 className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-widest">Década</h4>
                             <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
@@ -465,7 +427,6 @@ const LibraryView = ({ onSelectMovie }) => {
                             </div>
                         </div>
 
-                        {/* 5. Genres (Dynamic Top 5) */}
                         <div>
                             <div className="flex justify-between items-center mb-3">
                                 <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Tus Géneros Favoritos</h4>
@@ -483,7 +444,6 @@ const LibraryView = ({ onSelectMovie }) => {
                             </div>
                         </div>
 
-                        {/* Footer Buttons */}
                         <div className="pt-4 flex gap-3">
                             <button
                                 onClick={clearFilters}

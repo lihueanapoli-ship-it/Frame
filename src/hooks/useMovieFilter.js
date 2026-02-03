@@ -10,6 +10,7 @@ export const MOVIE_STATUS = {
  * useMovieFilter Hook
  * Filters and sorts movies.
  * Updated to support ratingSource ('tmdb' or 'user') and proper genre/runtime handling.
+ * Both user and TMDB ratings now use a 0-10 scale.
  */
 export const useMovieFilter = (movies, {
     search = '',
@@ -44,23 +45,19 @@ export const useMovieFilter = (movies, {
             }
 
             // 4. Rating Filter
-            // Differentiate between TMDB Score (0-10) and User Rating (0-5)
+            // Standardized 0-10 scale for both sources
             let r = 0;
             if (ratingSource === 'user') {
-                r = movie.rating || 0; // 0-5
+                r = movie.rating || 0;
             } else {
-                r = movie.vote_average || 0; // 0-10
+                r = movie.vote_average || 0;
             }
 
             if (minRating > 0 && r < minRating) return false;
 
             // 5. Runtime Filter
             const mins = movie.runtime || 0;
-            // Note: If runtime is missing (0), we usually exclude it if a filter is active, or include?
-            // User says "Debes saber la duración...". If 0, we can't really know. 
-            // Lets assume 0 means "unknown" and exclude if strict filter? Or include?
-            // Standard approach: exclude if filter is specific.
-            if (runtime !== 'any' && mins === 0) return false;
+            if (runtime !== 'any' && mins === 0) return false; // Exclude if unknown
 
             if (runtime === 'short' && mins >= 90) return false; // < 90
             if (runtime === 'medium' && (mins < 90 || mins > 120)) return false; // 90-120
