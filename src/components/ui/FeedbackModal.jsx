@@ -103,9 +103,9 @@ const FeedbackModal = ({ isOpen, onClose }) => {
 
         // Attach Audio if exists
         if (audioBlob) {
-            // Note: File input name usually needs to be specific, but 'attachment' works for generic
-            const audioFile = new File([audioBlob], `voice_note_${Date.now()}.webm`, { type: 'audio/webm' });
-            formData.append("Audio_Nota", audioFile);
+            // "attachment" is a reserved name that usually forces the service to treat it as a file
+            const audioFile = new File([audioBlob], `voice_message.webm`, { type: 'audio/webm' });
+            formData.append("attachment", audioFile);
         }
 
         try {
