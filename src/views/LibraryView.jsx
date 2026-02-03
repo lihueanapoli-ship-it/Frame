@@ -53,9 +53,16 @@ const LibraryView = ({ onSelectMovie }) => {
 
     // Data
     const { watchlist, watched, updateMovieMetadata } = useMovies();
-    const { myLists, createList } = useLists(); // Lists Data
+    const { myLists, collabLists } = useLists(); // Fetch both
     const { user, loginWithGoogle } = useAuth();
     const navigate = useNavigate();
+
+    // Combine lists for display
+    const allListsDisplay = useMemo(() => {
+        // Simple merge, could prevent duplicates if backend didn't already separate logic
+        // but current logic creates distinct sets.
+        return [...myLists, ...collabLists];
+    }, [myLists, collabLists]);
 
     // Auto-Repair: Fix older movies missing metadata
     useEffect(() => {
@@ -256,15 +263,15 @@ const LibraryView = ({ onSelectMovie }) => {
                             </button>
                         </div>
 
-                        {myLists.length === 0 ? (
+                        {allListsDisplay.length === 0 ? (
                             <div className="py-20 text-center border border-dashed border-white/10 rounded-2xl bg-white/5">
                                 <ListBulletIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                                <p className="text-gray-400 font-medium">No has creado listas todavía.</p>
-                                <p className="text-xs text-gray-500 mt-1">Organiza tu cine en colecciones temáticas.</p>
+                                <p className="text-gray-400 font-medium">No has creado ni te han invitado a listas.</p>
+                                <p className="text-xs text-gray-500 mt-1">Organiza tu cine en colecciones o colabora con amigos.</p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {myLists.map(list => (
+                                {allListsDisplay.map(list => (
                                     <div
                                         key={list.id}
                                         onClick={() => navigate(`/lists/${list.id}`)}

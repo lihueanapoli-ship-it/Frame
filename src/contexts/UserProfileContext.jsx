@@ -37,7 +37,42 @@ export const UserProfileProvider = ({ children }) => {
                 const docSnap = await getDoc(docRef);
 
                 if (docSnap.exists()) {
-                    setProfile(docSnap.data());
+                    let data = docSnap.data();
+                    let needsUpdate = false;
+
+                    // --- AUTO-MIGRATION / REPAIR ---
+                    // Fix missing Username
+                    if (!data.username) {
+                        const baseName = (user.displayName || user.email?.split('@')[0] || 'user').replace(/\s+/g, '').toLowerCase();
+                        data.username = `${baseName}${Math.floor(Math.random() * 1000)}`;
+                        needsUpdate = true;
+                    }
+                    // Fix missing Social Stats
+                    if (!data.social) {
+                        data.social = { followersCount: 0, followingCount: 0 };
+                        needsUpdate = true;
+                    }
+                    if (!data.stats) {
+                        data.stats = { moviesWatched: 0, minutesWatched: 0, averageRating: 0 };
+                        needsUpdate = true;
+                    }
+                    // Fix missing Privacy
+                    if (!data.privacySettings) {
+                        data.privacySettings = { profile: 'public', lists: 'public' };
+                        needsUpdate = true;
+                    }
+                    // Fix missing Custom Lists
+                    if (!data.customLists) {
+                        data.customLists = [];
+                        needsUpdate = true;
+                    }
+
+                    if (needsUpdate) {
+                        console.log("🔧 Auto-repairing user profile with missing fields...");
+                        await updateDoc(docRef, data);
+                    }
+
+                    setProfile(data);
                 } else {
                     // Create new profile
                     const initialProfile = {

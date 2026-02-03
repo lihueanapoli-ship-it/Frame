@@ -30,26 +30,34 @@ export const ListProvider = ({ children }) => {
     const { trackBehavior } = useUserProfile();
 
     const [myLists, setMyLists] = useState([]);
+    const [collabLists, setCollabLists] = useState([]); // Listas donde soy colaborador
     const [loading, setLoading] = useState(false);
-    const [currentList, setCurrentList] = useState(null); // Para ver una lista específica
 
-    // 1. Fetch User Lists
+    // 1. Fetch User Lists (Owned & Collaborative)
     useEffect(() => {
         if (!user) {
             setMyLists([]);
+            setCollabLists([]);
             return;
         }
 
-        const fetchMyLists = async () => {
+        const fetchAllLists = async () => {
             setLoading(true);
             try {
-                const q = query(
-                    collection(db, 'lists'),
-                    where('ownerId', '==', user.uid)
-                );
-                const snapshot = await getDocs(q);
-                const listsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                setMyLists(listsData);
+                // Fetch Owned Lists
+                const qOwned = query(collection(db, 'lists'), where('ownerId', '==', user.uid));
+
+                // Fetch Collaborating Lists
+                const qCollab = query(collection(db, 'lists'), where('collaborators', 'array-contains', user.uid));
+
+                const [ownedSnap, collabSnap] = await Promise.all([getDocs(qOwned), getDocs(qCollab)]);
+
+                const ownedData = ownedSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const collabData = collabSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                setMyLists(ownedData);
+                setCollabLists(collabData);
+
             } catch (error) {
                 console.error("Error fetching lists:", error);
             } finally {
@@ -57,7 +65,7 @@ export const ListProvider = ({ children }) => {
             }
         };
 
-        fetchMyLists();
+        fetchAllLists();
     }, [user]);
 
     // 2. Create List
@@ -71,12 +79,13 @@ export const ListProvider = ({ children }) => {
                 name,
                 description,
                 privacy, // 'public', 'private', 'friends'
-                movies: [], // Array of { movieId, addedAt, title, poster } - Mini cache
+                collaborators: [], // UIDs de colaboradores
+                movies: [],
                 movieCount: 0,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
                 likes: 0,
-                coverImage: null // Opcional: URL de la imagen de portada
+                coverImage: null
             };
 
             const docRef = await addDoc(collection(db, 'lists'), newList);
@@ -85,7 +94,6 @@ export const ListProvider = ({ children }) => {
             const createdList = { id: docRef.id, ...newList, createdAt: new Date() };
             setMyLists(prev => [createdList, ...prev]);
 
-            // Track behavior
             trackBehavior('listsCreated');
 
             return docRef.id;
@@ -114,29 +122,30 @@ export const ListProvider = ({ children }) => {
                 id: movie.id,
                 title: movie.title,
                 poster_path: movie.poster_path,
-                addedAt: new Date().toISOString()
+                addedAt: new Date().toISOString(),
+                addedBy: user.uid // Track who added it
             };
 
             await updateDoc(listRef, {
                 movies: arrayUnion(moviePreview),
-                movieCount: 42, // Firestore limits increment inside array update mix? No, separate field.
                 updatedAt: serverTimestamp()
             });
 
-            // Hack: increment count separately safely or rely on array length in client
-            // We'll update local state instantly
-            setMyLists(prev => prev.map(list => {
+            // Update local state (check both owned and collab lists)
+            const updateState = (prevLists) => prevLists.map(list => {
                 if (list.id === listId) {
-                    // Avoid duplicates in local state
-                    if (list.movies.some(m => m.id === movie.id)) return list;
+                    if (list.movies?.some(m => m.id === movie.id)) return list;
                     return {
                         ...list,
-                        movies: [...list.movies, moviePreview],
+                        movies: [...(list.movies || []), moviePreview],
                         movieCount: (list.movieCount || 0) + 1
                     };
                 }
                 return list;
-            }));
+            });
+
+            setMyLists(prev => updateState(prev));
+            setCollabLists(prev => updateState(prev));
 
         } catch (error) {
             console.error("Error adding movie to list:", error);
@@ -148,7 +157,10 @@ export const ListProvider = ({ children }) => {
     const removeMovieFromList = async (listId, movieId) => {
         try {
             const listRef = doc(db, 'lists', listId);
-            const listFn = myLists.find(l => l.id === listId);
+
+            // Find list in either collection
+            const allLists = [...myLists, ...collabLists];
+            const listFn = allLists.find(l => l.id === listId);
             if (!listFn) return;
 
             const movieToRemove = listFn.movies.find(m => m.id === movieId);
@@ -159,7 +171,8 @@ export const ListProvider = ({ children }) => {
                 updatedAt: serverTimestamp()
             });
 
-            setMyLists(prev => prev.map(list => {
+            // Update local state
+            const updateState = (prevLists) => prevLists.map(list => {
                 if (list.id === listId) {
                     return {
                         ...list,
@@ -168,7 +181,10 @@ export const ListProvider = ({ children }) => {
                     };
                 }
                 return list;
-            }));
+            });
+
+            setMyLists(prev => updateState(prev));
+            setCollabLists(prev => updateState(prev));
 
         } catch (error) {
             console.error("Error removing movie from list:", error);
@@ -176,13 +192,11 @@ export const ListProvider = ({ children }) => {
         }
     };
 
-    // 6. Get Single List (For View)
+    // 6. Get Single List
     const getListById = async (listId) => {
-        // Check local first
-        const local = myLists.find(l => l.id === listId);
+        const local = [...myLists, ...collabLists].find(l => l.id === listId);
         if (local) return local;
 
-        // Fetch remote
         try {
             const docRef = doc(db, 'lists', listId);
             const snap = await getDoc(docRef);
@@ -191,19 +205,40 @@ export const ListProvider = ({ children }) => {
             }
             return null;
         } catch (error) {
-            console.error("Error fetching list details:", error);
+            console.error("Error fetching list:", error);
             return null;
+        }
+    };
+
+    // 7. Manage Collaborators
+    const addCollaborator = async (listId, collaboratorUid) => {
+        try {
+            const listRef = doc(db, 'lists', listId);
+            await updateDoc(listRef, {
+                collaborators: arrayUnion(collaboratorUid)
+            });
+            // Update local state if I own the list
+            setMyLists(prev => prev.map(l =>
+                l.id === listId
+                    ? { ...l, collaborators: [...(l.collaborators || []), collaboratorUid] }
+                    : l
+            ));
+        } catch (e) {
+            console.error("Error adding collaborator", e);
         }
     };
 
     const value = {
         myLists,
+        collabLists, // Expose collaborative lists
+        allLists: [...myLists, ...collabLists], // Helper
         loading,
         createList,
         deleteList,
         addMovieToList,
         removeMovieFromList,
-        getListById
+        getListById,
+        addCollaborator
     };
 
     return (
