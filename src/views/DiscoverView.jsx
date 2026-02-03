@@ -54,7 +54,7 @@ const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, vari
 
     if (isEmpty && emptyMessage) {
         return (
-            <section className="mb-8">
+            <section className="mb-8" id={categoryId}>
                 {/* Section Header */}
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-2xl md:text-3xl font-display text-white">
@@ -76,6 +76,7 @@ const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, vari
     return (
         <section
             className="mb-8"
+            id={categoryId}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >

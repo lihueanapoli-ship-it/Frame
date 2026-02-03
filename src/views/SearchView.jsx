@@ -118,8 +118,16 @@ const SearchView = ({ onSelectMovie }) => {
             {/* Quick Categories */}
             {!selectedGenre && results.length === 0 && (
                 <div className="mb-10 animate-fade-in">
-                    <h2 className="text-lg font-semibold text-gray-400 mb-4">Categorías Rápidas</h2>
+                    <h2 className="text-lg font-semibold text-gray-400 mb-4">Categorías</h2>
                     <div className="flex flex-wrap gap-3">
+                        {/* Oscar Winners Special Category */}
+                        <button
+                            onClick={() => window.location.href = '/#oscars'}
+                            className="px-4 py-2 bg-gradient-to-r from-yellow-600/20 to-orange-600/20 hover:from-yellow-600/30 hover:to-orange-600/30 border border-yellow-500/30 rounded-full text-sm font-medium text-yellow-400 transition-all transform active:scale-95 hover:border-yellow-400/50 flex items-center gap-2"
+                        >
+                            <span>🏆</span> Oscars
+                        </button>
+
                         {GENRES.map(genre => (
                             <button
                                 key={genre.id}
