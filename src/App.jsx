@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { BrowserRouter, Routes, Route, useNavigate, Navigate } from 'react-router-dom';
+import { HomeIcon, MagnifyingGlassIcon, RectangleStackIcon, ChartBarIcon } from '@heroicons/react/24/outline';
+import { HomeIcon as HomeIconSolid, MagnifyingGlassIcon as SearchIconSolid, RectangleStackIcon as LibraryIconSolid, ChartBarIcon as ChartBarIconSolid } from '@heroicons/react/24/solid';
+import { BrowserRouter, Routes, Route, useNavigate, Navigate, NavLink } from 'react-router-dom';
 import { MovieProvider } from './contexts/MovieContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SoundProvider } from './contexts/SoundContext';
@@ -28,6 +30,12 @@ const AppContent = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [logoKey, setLogoKey] = useState(0); // Key to restart animation
 
+    const navItems = [
+        { name: 'Inicio', path: '/', icon: HomeIcon, activeIcon: HomeIconSolid },
+        { name: 'Explorar', path: '/search', icon: MagnifyingGlassIcon, activeIcon: SearchIconSolid },
+        { name: 'ADN', path: '/dashboard', icon: ChartBarIcon, activeIcon: ChartBarIconSolid },
+        { name: 'Listas', path: '/library', icon: RectangleStackIcon, activeIcon: LibraryIconSolid },
+    ];
 
     // Auth Hooks
     const { user, loading, logout } = useAuth();
@@ -128,13 +136,13 @@ const AppContent = () => {
             <SpotlightCursor />
             <PageTransitionOverlay />
             <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-background/50 border-b border-white/5 transition-all duration-300">
-                <div className="flex h-20 items-center w-full px-4 max-w-7xl mx-auto justify-between">
+                <div className="flex h-20 items-center w-full px-4 max-w-7xl mx-auto justify-between relative">
                     <a href="/" onClick={(e) => {
                         e.preventDefault();
                         navigate('/');
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                         setLogoKey(prev => prev + 1); // Trigger animation
-                    }} className="font-bold text-lg tracking-tight hover:text-primary transition-colors cursor-pointer group">
+                    }} className="font-bold text-lg tracking-tight hover:text-primary transition-colors cursor-pointer group z-10">
                         <motion.div
                             key={logoKey}
                             className="flex items-center gap-3"
@@ -154,7 +162,40 @@ const AppContent = () => {
                             </span>
                         </motion.div>
                     </a>
-                    <UserMenu />
+
+                    {/* Desktop Navigation (Centered) */}
+                    <nav className="hidden md:flex items-center gap-1 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/20 backdrop-blur-md px-2 py-1.5 rounded-full border border-white/5 shadow-2xl z-10">
+                        {navItems.map((item) => (
+                            <NavLink
+                                key={item.path}
+                                to={item.path}
+                                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                                className={({ isActive }) => `
+                                    relative px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 group outline-none focus:ring-1 focus:ring-primary/50
+                                    ${isActive ? 'text-white' : 'text-gray-400 hover:text-white hover:bg-white/5'}
+                                `}
+                            >
+                                {({ isActive }) => (
+                                    <>
+                                        <item.icon className={`w-4 h-4 ${isActive ? "hidden" : "block transition-transform group-hover:scale-110"}`} />
+                                        <item.activeIcon className={`w-4 h-4 text-primary ${isActive ? "block scale-110" : "hidden"}`} />
+                                        <span className={isActive ? "font-bold text-white shadow-primary/20 drop-shadow-md" : ""}>{item.name}</span>
+                                        {isActive && (
+                                            <motion.div
+                                                layoutId="desktop-nav-active"
+                                                className="absolute inset-0 rounded-full bg-white/10 border border-white/5 -z-10"
+                                                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                            />
+                                        )}
+                                    </>
+                                )}
+                            </NavLink>
+                        ))}
+                    </nav>
+
+                    <div className="z-10">
+                        <UserMenu />
+                    </div>
                 </div>
             </header>
 
