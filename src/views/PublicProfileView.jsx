@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserCircleIcon, LockClosedIcon, ShareIcon } from '@heroicons/react/24/outline';
+import { ShareIcon, PencilIcon, UserPlusIcon } from '@heroicons/react/24/outline';
 import MovieCard from '../components/MovieCard';
 import ShareModal from '../components/ui/ShareModal';
 import { useAuth } from '../contexts/AuthContext';
@@ -9,6 +9,7 @@ import { useUserProfile } from '../contexts/UserProfileContext';
 import { db } from '../api/firebase';
 import { collection, query, where, getDocs, limit, doc, getDoc } from 'firebase/firestore';
 import { cn } from '../lib/utils';
+import { UserCircleIcon, LockClosedIcon } from '@heroicons/react/24/solid';
 
 const PublicProfileView = ({ onSelectMovie }) => {
     const { username } = useParams();
@@ -19,7 +20,7 @@ const PublicProfileView = ({ onSelectMovie }) => {
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [movies, setMovies] = useState([]);
+    const [movies, setMovies] = useState([]); // Favorites
 
     const [isFollowing, setIsFollowing] = useState(false);
     const [isShareOpen, setIsShareOpen] = useState(false);
@@ -61,7 +62,7 @@ const PublicProfileView = ({ onSelectMovie }) => {
                             }
                         }
                     } catch (e) {
-                        console.warn("User fetch failed (likely permissions or index)", e);
+                        console.warn("User fetch failed", e);
                     }
                 }
 
@@ -78,7 +79,7 @@ const PublicProfileView = ({ onSelectMovie }) => {
                 if (profileData) {
                     setProfile({ ...profileData, uid: targetUid || profileData.uid });
 
-                    // Fetch Lists (Protected)
+                    // Fetch Lists
                     if (targetUid) {
                         try {
                             const listsQuery = query(
@@ -89,28 +90,23 @@ const PublicProfileView = ({ onSelectMovie }) => {
                             const listSnap = await getDocs(listsQuery);
                             const realLists = listSnap.docs.map(d => ({ id: d.id, ...d.data() }));
                             setPublicLists(realLists);
-                        } catch (listErr) {
-                            console.warn("⚠️ Could not fetch user lists.", listErr);
-                            setPublicLists([]);
-                        }
+                        } catch (listErr) { setPublicLists([]); }
                     }
                 } else {
-                    // FALLBACK: Auth Context Reconstruction
+                    // FALLBACK
                     if (currentUser && (username === 'me' || targetUid === currentUser.uid)) {
-                        console.log("⚠️ Using Auth Fallback for Profile");
                         setProfile({
                             uid: currentUser.uid,
                             displayName: currentUser.displayName || 'Usuario',
                             username: 'me',
                             photoURL: currentUser.photoURL,
-                            bio: 'Bienvenido a tu perfil.',
+                            bio: '',
                             social: { followersCount: 0, followingCount: 0 },
                             stats: { moviesWatched: 0 },
                             isPro: false
                         });
                         setPublicLists([]);
                     } else if (username !== 'me') {
-                        // Mock for demo if not found
                         setError("Usuario no encontrado.");
                     }
                 }
@@ -120,9 +116,7 @@ const PublicProfileView = ({ onSelectMovie }) => {
                     try {
                         const following = await isUserFollowing(targetUid);
                         setIsFollowing(following);
-                    } catch (e) {
-                        console.warn("Follow check failed", e);
-                    }
+                    } catch (e) { }
                 }
 
             } catch (err) {
@@ -166,149 +160,179 @@ const PublicProfileView = ({ onSelectMovie }) => {
         }
     };
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" /></div>;
+    if (loading) return <div className="min-h-screen bg-background" />;
 
     if (error || !profile) return (
         <div className="min-h-screen flex flex-col items-center justify-center text-center p-8">
-            <UserCircleIcon className="w-20 h-20 text-gray-600 mb-4" />
-            <h2 className="text-2xl font-display font-bold text-white mb-2">Perfil inaccesible</h2>
-            <p className="text-gray-400 mb-6">{error || "Este usuario no existe o es privado."}</p>
-            <button onClick={() => navigate('/')} className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors">Volver al Inicio</button>
+            <UserCircleIcon className="w-16 h-16 text-gray-700 mb-4" />
+            <h2 className="text-xl font-bold text-white mb-2">Perfil no disponible</h2>
+            <button onClick={() => navigate('/')} className="text-primary hover:underline">Volver al Inicio</button>
         </div>
     );
 
     const isOwnProfile = currentUser && (profile.uid === currentUser.uid);
 
     return (
-        <div className="min-h-screen pb-20">
-            {/* 1. HERO COVER */}
-            <div className="relative h-64 md:h-80 w-full overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#050505]/50 to-[#050505]" />
-                {publicLists && publicLists[0]?.movies?.[0] ? (
-                    <img src={`https://image.tmdb.org/t/p/original${publicLists[0].movies[0].poster_path}`} alt="Cover" className="w-full h-full object-cover opacity-40 blur-sm scale-105" />
-                ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-gray-900 to-black" />
-                )}
-            </div>
+        <div className="min-h-screen pb-20 bg-background pt-20">
+            <div className="max-w-4xl mx-auto px-4">
 
-            {/* 2. PROFILE INFO */}
-            <div className="max-w-5xl mx-auto px-4 md:px-8 -mt-24 relative z-10">
-                <div className="flex flex-col md:flex-row items-end md:items-end gap-6 mb-8">
+                {/* 1. HEADER CLEAN LAYOUT */}
+                <div className="flex flex-col items-center text-center mb-10 animate-fade-in-up">
                     {/* Avatar */}
-                    <div className="relative group">
-                        <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-[#050505] bg-surface-elevated overflow-hidden shadow-2xl">
-                            <img src={profile.photoURL || "/logo.png"} alt={profile.displayName} className="w-full h-full object-cover" />
+                    <div className="relative mb-4">
+                        <div className="w-28 h-28 md:w-36 md:h-36 rounded-full p-1 bg-gradient-to-br from-white/10 to-transparent">
+                            <img
+                                src={profile.photoURL || "/logo.png"}
+                                alt={profile.displayName}
+                                className="w-full h-full object-cover rounded-full bg-surface-elevated"
+                            />
                         </div>
                         {profile.isPro && (
-                            <div className="absolute bottom-2 right-2 bg-gradient-to-r from-yellow-500 to-amber-600 text-black text-[10px] font-bold px-2 py-0.5 rounded-full border border-white/20 shadow-lg">PRO</div>
+                            <span className="absolute bottom-1 right-2 bg-primary text-black text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg">PRO</span>
                         )}
                     </div>
 
-                    {/* Text Info */}
-                    <div className="flex-1 mb-2 text-center md:text-left">
-                        <h1 className="text-3xl md:text-5xl font-display font-bold text-white mb-1">{profile.displayName}</h1>
-                        <p className="text-primary font-mono text-sm md:text-base mb-4">@{profile.username || 'usuario'}</p>
+                    {/* Basic Info */}
+                    <h1 className="text-2xl md:text-4xl font-bold text-white mb-1">{profile.displayName}</h1>
+                    <p className="text-gray-400 text-sm md:text-base mb-4 font-mono">
+                        {profile.username !== 'me' ? `@${profile.username}` : ''}
+                    </p>
 
-                        <div className="flex items-center justify-center md:justify-start gap-6 text-sm">
-                            <div className="text-center md:text-left">
-                                <span className="block font-bold text-white text-lg">{publicLists?.length || 0}</span>
-                                <span className="text-gray-500 text-xs uppercase tracking-wider">Listas</span>
-                            </div>
-                            <div className="text-center md:text-left">
-                                <span className="block font-bold text-white text-lg">{profile.social?.followersCount || 0}</span>
-                                <span className="text-gray-500 text-xs uppercase tracking-wider">Seguidores</span>
-                            </div>
-                            <div className="text-center md:text-left">
-                                <span className="block font-bold text-white text-lg">{profile.social?.followingCount || 0}</span>
-                                <span className="text-gray-500 text-xs uppercase tracking-wider">Seguidos</span>
-                            </div>
+                    {/* Stats Row */}
+                    <div className="flex items-center gap-6 text-sm mb-6 border-y border-white/5 py-3 px-8 bg-white/[0.02] rounded-full">
+                        <div className="flex flex-col">
+                            <span className="font-bold text-white">{publicLists?.length || 0}</span>
+                            <span className="text-xs text-gray-500 uppercase tracking-widest">Listas</span>
+                        </div>
+                        <div className="w-px h-8 bg-white/10" />
+                        <div className="flex flex-col">
+                            <span className="font-bold text-white">{profile.social?.followersCount || 0}</span>
+                            <span className="text-xs text-gray-500 uppercase tracking-widest">Fans</span>
+                        </div>
+                        <div className="w-px h-8 bg-white/10" />
+                        <div className="flex flex-col">
+                            <span className="font-bold text-white">{profile.social?.followingCount || 0}</span>
+                            <span className="text-xs text-gray-500 uppercase tracking-widest">Siguiendo</span>
                         </div>
                     </div>
 
-                    {/* Actions */}
-                    <div className="w-full md:w-auto flex gap-3 mb-2">
+                    {/* Bio */}
+                    {profile.bio && (
+                        <p className="text-gray-300 max-w-lg mb-6 leading-relaxed text-sm md:text-base">
+                            {profile.bio}
+                        </p>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flex items-center gap-3">
                         {!isOwnProfile ? (
                             <button
                                 onClick={handleFollowToggle}
                                 disabled={followLoading}
                                 className={cn(
-                                    "flex-1 md:flex-none px-6 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2",
+                                    "px-8 py-2.5 rounded-full font-bold text-sm transition-all shadow-lg active:scale-95",
                                     isFollowing
                                         ? "bg-surface border border-white/10 text-white hover:bg-white/5"
-                                        : "bg-primary text-black hover:bg-primary/90",
-                                    followLoading && "opacity-50 cursor-not-allowed"
+                                        : "bg-white text-black hover:bg-gray-200"
                                 )}
                             >
                                 {followLoading ? '...' : isFollowing ? 'Siguiendo' : 'Seguir'}
                             </button>
                         ) : (
-                            <button className="flex-1 md:flex-none px-6 py-3 bg-white/5 border border-white/10 rounded-xl font-bold text-white hover:bg-white/10 transition-all">Editar Perfil</button>
+                            <button className="px-6 py-2.5 bg-surface border border-white/10 rounded-full font-medium text-sm text-white hover:bg-white/5 transition-all flex items-center gap-2">
+                                <PencilIcon className="w-4 h-4" /> Editar
+                            </button>
                         )}
-                        <button onClick={() => setIsShareOpen(true)} className="px-3 py-3 bg-surface border border-white/10 rounded-xl text-white hover:bg-white/5" title="Compartir Perfil">
-                            <ShareIcon className="w-6 h-6" />
+                        <button
+                            onClick={() => setIsShareOpen(true)}
+                            className="p-2.5 bg-surface border border-white/10 rounded-full text-white hover:bg-white/5 transition-all"
+                            title="Compartir"
+                        >
+                            <ShareIcon className="w-5 h-5" />
                         </button>
                     </div>
                 </div>
 
-                <div className="max-w-2xl bg-white/5 rounded-2xl p-6 border border-white/5 mb-10 backdrop-blur-sm">
-                    <p className="text-gray-300 leading-relaxed italic">"{profile.bio || "Este usuario prefiere mantener el misterio sobre sus gustos..."}"</p>
-                </div>
+                {/* 2. TABS & CONTENT */}
+                <div className="w-full">
+                    <div className="flex justify-center border-b border-white/10 mb-8">
+                        <button
+                            onClick={() => setActiveTab('lists')}
+                            className={cn("px-8 py-3 text-sm font-bold border-b-2 transition-colors relative", activeTab === 'lists' ? "text-white border-primary" : "text-gray-500 border-transparent hover:text-gray-300")}
+                        >
+                            Listas
+                            {activeTab === 'lists' && <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary shadow-[0_-10px_20px_rgba(45,212,191,0.5)]" />}
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('favorites')}
+                            className={cn("px-8 py-3 text-sm font-bold border-b-2 transition-colors relative", activeTab === 'favorites' ? "text-white border-primary" : "text-gray-500 border-transparent hover:text-gray-300")}
+                        >
+                            Favoritos
+                            {activeTab === 'favorites' && <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary shadow-[0_-10px_20px_rgba(45,212,191,0.5)]" />}
+                        </button>
+                    </div>
 
-                {/* 3. CONTENT TABS */}
-                <div className="border-b border-white/10 mb-6 flex gap-6">
-                    <button
-                        onClick={() => setActiveTab('lists')}
-                        className={cn("pb-4 font-bold transition-colors border-b-2", activeTab === 'lists' ? "text-white border-primary" : "text-gray-500 border-transparent hover:text-gray-300")}
-                    >
-                        Listas ({publicLists?.length || 0})
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('favorites')}
-                        className={cn("pb-4 font-bold transition-colors border-b-2", activeTab === 'favorites' ? "text-white border-primary" : "text-gray-500 border-transparent hover:text-gray-300")}
-                    >
-                        Favoritos
-                    </button>
-                </div>
-
-                {/* CONTENT GRID */}
-                {activeTab === 'lists' ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {publicLists && publicLists.length > 0 ? publicLists.map(list => (
-                            <div
-                                key={list.id}
-                                onClick={() => navigate(`/lists/${list.id}`)}
-                                className="group bg-surface-elevated border border-white/5 rounded-xl overflow-hidden hover:border-primary/50 transition-all cursor-pointer"
+                    {/* CONTENT GRID */}
+                    <AnimatePresence mode="wait">
+                        {activeTab === 'lists' ? (
+                            <motion.div
+                                key="lists"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
                             >
-                                <div className="h-32 grid grid-cols-4 bg-black/50 overflow-hidden relative">
-                                    {list.movies?.slice(0, 4).map(m => (
-                                        <img key={m.id} src={`https://image.tmdb.org/t/p/w200${m.poster_path}`} className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity" alt="" />
-                                    ))}
-                                    {(!list.movies || list.movies.length === 0) && (
-                                        <div className="col-span-4 flex items-center justify-center text-gray-700 bg-black/40 h-full">Vacía</div>
-                                    )}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-surface-elevated to-transparent" />
-                                </div>
-                                <div className="p-4">
-                                    <p className="font-bold text-white text-lg leading-tight mb-1 group-hover:text-primary transition-colors truncate">{list.name}</p>
-                                    <span className="text-xs text-gray-400">{list.movieCount || list.movies?.length || 0} Películas</span>
-                                </div>
-                            </div>
-                        )) : (
-                            <div className="col-span-full py-10 text-center text-gray-500 italic">Este usuario no tiene listas públicas.</div>
+                                {publicLists && publicLists.length > 0 ? publicLists.map((list, idx) => (
+                                    <div
+                                        key={list.id}
+                                        onClick={() => navigate(`/lists/${list.id}`)}
+                                        className="group bg-surface border border-white/5 rounded-2xl overflow-hidden hover:border-white/10 hover:bg-surface-elevated transition-all cursor-pointer shadow-sm hover:shadow-xl"
+                                    >
+                                        <div className="h-40 grid grid-cols-4 bg-black/40 overflow-hidden relative isolate">
+                                            {list.movies?.slice(0, 4).map((m, i) => (
+                                                <img key={m.id || i} src={`https://image.tmdb.org/t/p/w200${m.poster_path}`} className="w-full h-full object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" alt="" />
+                                            ))}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent opacity-80" />
+                                            {(!list.movies || list.movies.length === 0) && (
+                                                <div className="col-span-4 flex items-center justify-center text-gray-700 h-full font-mono text-xs uppercase tracking-widest">Sin películas</div>
+                                            )}
+                                        </div>
+                                        <div className="p-5 relative">
+                                            <p className="font-bold text-white text-lg mb-1 group-hover:text-primary transition-colors truncate">{list.name}</p>
+                                            <div className="flex items-center justify-between text-xs text-gray-500">
+                                                <span>{list.movieCount || list.movies?.length || 0} películas</span>
+                                                <UserCircleIcon className="w-4 h-4 opacity-50" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )) : (
+                                    <div className="col-span-full py-20 text-center">
+                                        <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <LockClosedIcon className="w-6 h-6 text-gray-600" />
+                                        </div>
+                                        <p className="text-gray-400 font-medium">Sin listas públicas</p>
+                                    </div>
+                                )}
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="favorites"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4"
+                            >
+                                {movies.length > 0 ? movies.map((movie) => (
+                                    <MovieCard key={movie.id} movie={movie} onClick={onSelectMovie} />
+                                )) : (
+                                    <div className="col-span-full py-20 text-center text-gray-500">
+                                        No hay favoritos visibles.
+                                    </div>
+                                )}
+                            </motion.div>
                         )}
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        {movies.length > 0 ? movies.map((movie) => (
-                            <div key={movie.id}><MovieCard movie={movie} onClick={onSelectMovie} /></div>
-                        )) : (
-                            <div className="col-span-full py-10 text-center text-gray-500">
-                                <LockClosedIcon className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                                No hay favoritos visibles.
-                            </div>
-                        )}
-                    </div>
-                )}
+                    </AnimatePresence>
+                </div>
             </div>
 
             <AnimatePresence>
