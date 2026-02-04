@@ -7,7 +7,7 @@ import ShareModal from '../components/ui/ShareModal';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserProfile } from '../contexts/UserProfileContext';
 import { db } from '../api/firebase';
-import { collection, query, where, getDocs, limit, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { cn } from '../lib/utils';
 import { UserCircleIcon, LockClosedIcon } from '@heroicons/react/24/solid';
 
@@ -20,11 +20,15 @@ const PublicProfileView = ({ onSelectMovie }) => {
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [movies, setMovies] = useState([]); // Favorites
+    const [movies, setMovies] = useState([]); // Favorites (Future implementation)
 
     const [isFollowing, setIsFollowing] = useState(false);
     const [isShareOpen, setIsShareOpen] = useState(false);
     const [followLoading, setFollowLoading] = useState(false);
+
+    // Edit Mode State
+    const [isEditing, setIsEditing] = useState(false);
+    const [editForm, setEditForm] = useState({ displayName: '', bio: '' });
 
     const [activeTab, setActiveTab] = useState('lists');
     const [publicLists, setPublicLists] = useState([]);
@@ -43,7 +47,6 @@ const PublicProfileView = ({ onSelectMovie }) => {
                 } else if (currentUser && username === currentUser.displayName?.replace(/\s+/g, '').toLowerCase()) {
                     targetUid = currentUser.uid;
                 } else {
-                    // Try fetch by username field
                     try {
                         const q = query(collection(db, 'userProfiles'), where('username', '==', username), limit(1));
                         const querySnapshot = await getDocs(q);
@@ -53,7 +56,6 @@ const PublicProfileView = ({ onSelectMovie }) => {
                             targetUid = userDoc.id;
                             profileData = userDoc.data();
                         } else {
-                            // Fallback: Check if username is actually a UID
                             const docRef = doc(db, 'userProfiles', username);
                             const docSnap = await getDoc(docRef);
                             if (docSnap.exists()) {
@@ -78,14 +80,18 @@ const PublicProfileView = ({ onSelectMovie }) => {
 
                 if (profileData) {
                     setProfile({ ...profileData, uid: targetUid || profileData.uid });
+                    setEditForm({
+                        displayName: profileData.displayName || '',
+                        bio: profileData.bio || ''
+                    });
 
-                    // Fetch Lists
+                    // Fetch Lists - NOW SHOWING ALL LISTS REGARDLESS OF PRIVACY FIELD
                     if (targetUid) {
                         try {
                             const listsQuery = query(
                                 collection(db, 'lists'),
-                                where('ownerId', '==', targetUid),
-                                where('privacy', '==', 'public')
+                                where('ownerId', '==', targetUid)
+                                // Removed privacy check as requested
                             );
                             const listSnap = await getDocs(listsQuery);
                             const realLists = listSnap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -104,6 +110,10 @@ const PublicProfileView = ({ onSelectMovie }) => {
                             social: { followersCount: 0, followingCount: 0 },
                             stats: { moviesWatched: 0 },
                             isPro: false
+                        });
+                        setEditForm({
+                            displayName: currentUser.displayName || 'Usuario',
+                            bio: ''
                         });
                         setPublicLists([]);
                     } else if (username !== 'me') {
@@ -157,6 +167,23 @@ const PublicProfileView = ({ onSelectMovie }) => {
             console.error("Follow action failed", error);
         } finally {
             setFollowLoading(false);
+        }
+    };
+
+    const handleSaveProfile = async () => {
+        if (!currentUser || !profile) return;
+        try {
+            const userRef = doc(db, 'userProfiles', profile.uid);
+            await updateDoc(userRef, {
+                displayName: editForm.displayName,
+                bio: editForm.bio
+            });
+
+            setProfile(prev => ({ ...prev, ...editForm }));
+            setIsEditing(false);
+        } catch (error) {
+            console.error("Error updating profile:", error);
+            // Handling if document doesn't exist yet (first edit) would require setDoc with merge
         }
     };
 
@@ -216,15 +243,33 @@ const PublicProfileView = ({ onSelectMovie }) => {
                         </div>
                     </div>
 
-                    {/* Bio */}
-                    {profile.bio && (
-                        <p className="text-gray-300 max-w-lg mb-6 leading-relaxed text-sm md:text-base">
-                            {profile.bio}
-                        </p>
+                    {/* Bio & Edit Form */}
+                    {isEditing ? (
+                        <div className="w-full max-w-md space-y-3 mb-6 animate-fade-in">
+                            <input
+                                type="text"
+                                value={editForm.displayName}
+                                onChange={e => setEditForm(prev => ({ ...prev, displayName: e.target.value }))}
+                                className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary text-center"
+                                placeholder="Tu nombre"
+                            />
+                            <textarea
+                                value={editForm.bio}
+                                onChange={e => setEditForm(prev => ({ ...prev, bio: e.target.value }))}
+                                className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary resize-none h-24 text-center"
+                                placeholder="Cuéntanos sobre ti..."
+                            />
+                        </div>
+                    ) : (
+                        profile.bio && (
+                            <p className="text-gray-300 max-w-lg mb-6 leading-relaxed text-sm md:text-base">
+                                {profile.bio}
+                            </p>
+                        )
                     )}
 
                     {/* Action Buttons */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-wrap justify-center">
                         {!isOwnProfile ? (
                             <button
                                 onClick={handleFollowToggle}
@@ -239,17 +284,51 @@ const PublicProfileView = ({ onSelectMovie }) => {
                                 {followLoading ? '...' : isFollowing ? 'Siguiendo' : 'Seguir'}
                             </button>
                         ) : (
-                            <button className="px-6 py-2.5 bg-surface border border-white/10 rounded-full font-medium text-sm text-white hover:bg-white/5 transition-all flex items-center gap-2">
-                                <PencilIcon className="w-4 h-4" /> Editar
-                            </button>
+                            <>
+                                {isEditing ? (
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => setIsEditing(false)}
+                                            className="px-6 py-2.5 bg-surface border border-white/10 rounded-full font-medium text-sm text-gray-300 hover:text-white hover:bg-white/5"
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button
+                                            onClick={handleSaveProfile}
+                                            className="px-6 py-2.5 bg-primary text-black rounded-full font-bold text-sm hover:bg-white transition-all shadow-lg"
+                                        >
+                                            Guardar
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={() => setIsEditing(true)}
+                                        className="px-6 py-2.5 bg-surface border border-white/10 rounded-full font-medium text-sm text-white hover:bg-white/5 transition-all flex items-center gap-2"
+                                    >
+                                        <PencilIcon className="w-4 h-4" /> Editar
+                                    </button>
+                                )}
+                            </>
                         )}
-                        <button
-                            onClick={() => setIsShareOpen(true)}
-                            className="p-2.5 bg-surface border border-white/10 rounded-full text-white hover:bg-white/5 transition-all"
-                            title="Compartir"
-                        >
-                            <ShareIcon className="w-5 h-5" />
-                        </button>
+
+                        {!isEditing && (
+                            <>
+                                <button
+                                    onClick={() => setIsShareOpen(true)}
+                                    className="p-2.5 bg-surface border border-white/10 rounded-full text-white hover:bg-white/5 transition-all"
+                                    title="Compartir"
+                                >
+                                    <ShareIcon className="w-5 h-5" />
+                                </button>
+                                <button
+                                    onClick={() => navigate('/search')}
+                                    className="px-4 py-2.5 bg-surface border border-white/10 rounded-full font-medium text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-all flex items-center gap-2"
+                                    title="Buscar usuarios"
+                                >
+                                    <UserPlusIcon className="w-4 h-4" /> Buscar Amigos
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
 
