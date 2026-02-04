@@ -263,9 +263,20 @@ const DiscoverView = ({ onSelectMovie }) => {
     }
 
     return (
-        <div className="pb-24">
+        <div className="pb-24 pt-8">
+            <header className="mb-8 flex items-end justify-between border-b border-white/5 pb-6">
+                <div>
+                    <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-2 tracking-tight">
+                        DESCUBRIR <span className="text-primary">CINE</span>
+                    </h1>
+                    <p className="font-mono text-xs md:text-sm text-gray-400">
+                        ESTRENOS Y CLÁSICOS SELECCIONADOS
+                    </p>
+                </div>
+            </header>
+
             {/* Hero Carousel */}
-            <div className="-mt-12">
+            <div>
                 <HeroCarousel movies={data.trending.slice(0, 5)} onSelectMovie={onSelectMovie} />
             </div>
 
