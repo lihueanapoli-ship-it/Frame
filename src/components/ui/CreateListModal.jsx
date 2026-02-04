@@ -7,7 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 const CreateListModal = ({ isOpen, onClose, onCreated }) => {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
-    const [privacy, setPrivacy] = useState('private'); // 'private' | 'friends' | 'public'
+    // Privacy state removed
     const { createList } = useLists();
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
@@ -22,7 +22,7 @@ const CreateListModal = ({ isOpen, onClose, onCreated }) => {
             const newListId = await createList({
                 name,
                 description,
-                privacy,
+                privacy: 'public', // Always public now
                 ownerId: user.uid,
                 ownerName: user.displayName,
                 movies: [],
@@ -40,7 +40,7 @@ const CreateListModal = ({ isOpen, onClose, onCreated }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -76,24 +76,7 @@ const CreateListModal = ({ isOpen, onClose, onCreated }) => {
                             className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary h-24 resize-none"
                         />
                     </div>
-                    <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Privacidad</label>
-                        <div className="flex bg-white/5 rounded-xl p-1">
-                            {['private', 'friends', 'public'].map(type => (
-                                <button
-                                    key={type}
-                                    type="button"
-                                    onClick={() => setPrivacy(type)}
-                                    className={cn(
-                                        "flex-1 py-2 rounded-lg text-xs font-semibold capitalize transition-all",
-                                        privacy === type ? "bg-white/10 text-white shadow" : "text-gray-500 hover:text-white"
-                                    )}
-                                >
-                                    {type === 'private' ? 'Privada' : type === 'friends' ? 'Amigos' : 'Pública'}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+                    {/* Privacy Selector Removed - Simplification */}
 
                     <button
                         type="submit"
