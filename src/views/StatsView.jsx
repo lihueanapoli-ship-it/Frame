@@ -1,3 +1,4 @@
+import React, { useMemo, useState, useEffect } from 'react';
 import { useMovies } from '../contexts/MovieContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserProfile } from '../contexts/UserProfileContext'; // New import
