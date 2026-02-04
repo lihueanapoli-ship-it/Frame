@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserCircleIcon, LockClosedIcon, UserPlusIcon, EllipsisHorizontalIcon, TrophyIcon, FireIcon, ShareIcon } from '@heroicons/react/24/outline';
-import { StarIcon } from '@heroicons/react/24/solid';
+import { UserCircleIcon, LockClosedIcon, ShareIcon } from '@heroicons/react/24/outline';
 import MovieCard from '../components/MovieCard';
 import ShareModal from '../components/ui/ShareModal';
 import { useAuth } from '../contexts/AuthContext';
@@ -22,18 +21,17 @@ const PublicProfileView = ({ onSelectMovie }) => {
     const [error, setError] = useState(null);
     const [movies, setMovies] = useState([]);
 
-    // UI State
     const [isFollowing, setIsFollowing] = useState(false);
     const [isShareOpen, setIsShareOpen] = useState(false);
     const [followLoading, setFollowLoading] = useState(false);
 
-    // New Tabs State
     const [activeTab, setActiveTab] = useState('lists');
     const [publicLists, setPublicLists] = useState([]);
 
     useEffect(() => {
         const fetchPublicProfile = async () => {
             setLoading(true);
+            setError(null);
             try {
                 let targetUid = null;
                 let profileData = null;
@@ -44,51 +42,43 @@ const PublicProfileView = ({ onSelectMovie }) => {
                 } else if (currentUser && username === currentUser.displayName?.replace(/\s+/g, '').toLowerCase()) {
                     targetUid = currentUser.uid;
                 } else {
-                    const q = query(collection(db, 'userProfiles'), where('username', '==', username), limit(1));
-                    const querySnapshot = await getDocs(q);
+                    // Try fetch by username field
+                    try {
+                        const q = query(collection(db, 'userProfiles'), where('username', '==', username), limit(1));
+                        const querySnapshot = await getDocs(q);
 
-                    if (!querySnapshot.empty) {
-                        const userDoc = querySnapshot.docs[0];
-                        targetUid = userDoc.id;
-                        profileData = userDoc.data();
-                    } else {
-                        const docRef = doc(db, 'userProfiles', username);
-                        const docSnap = await getDoc(docRef);
-                        if (docSnap.exists()) {
-                            targetUid = docSnap.id;
-                            profileData = docSnap.data();
+                        if (!querySnapshot.empty) {
+                            const userDoc = querySnapshot.docs[0];
+                            targetUid = userDoc.id;
+                            profileData = userDoc.data();
+                        } else {
+                            // Fallback: Check if username is actually a UID
+                            const docRef = doc(db, 'userProfiles', username);
+                            const docSnap = await getDoc(docRef);
+                            if (docSnap.exists()) {
+                                targetUid = docSnap.id;
+                                profileData = docSnap.data();
+                            }
                         }
+                    } catch (e) {
+                        console.warn("User fetch failed (likely permissions or index)", e);
                     }
-                }
-
-                if (!targetUid && !profileData && username !== 'me') {
-                    // MOCK FALLBACK
-                    setProfile({
-                        uid: 'mock-user-123',
-                        displayName: username,
-                        username: username,
-                        photoURL: null,
-                        bio: "Usuario simulado.",
-                        stats: { watched: 0, followers: 0 },
-                        privacy: 'public'
-                    });
-                    setMovies([]);
-                    setLoading(false);
-                    return;
                 }
 
                 if (targetUid && !profileData) {
-                    const docRef = doc(db, 'userProfiles', targetUid);
-                    const docSnap = await getDoc(docRef);
-                    if (docSnap.exists()) {
-                        profileData = docSnap.data();
-                    }
+                    try {
+                        const docRef = doc(db, 'userProfiles', targetUid);
+                        const docSnap = await getDoc(docRef);
+                        if (docSnap.exists()) {
+                            profileData = docSnap.data();
+                        }
+                    } catch (e) { console.error("Direct profile fetch failed", e); }
                 }
 
                 if (profileData) {
-                    setProfile({ ...profileData, uid: targetUid });
+                    setProfile({ ...profileData, uid: targetUid || profileData.uid });
 
-                    // Fetch Lists
+                    // Fetch Lists (Protected)
                     if (targetUid) {
                         try {
                             const listsQuery = query(
@@ -100,18 +90,39 @@ const PublicProfileView = ({ onSelectMovie }) => {
                             const realLists = listSnap.docs.map(d => ({ id: d.id, ...d.data() }));
                             setPublicLists(realLists);
                         } catch (listErr) {
-                            console.warn("⚠️ Could not fetch user lists. Check Firestore Rules.", listErr);
-                            // Don't crash the whole profile, just show empty lists
+                            console.warn("⚠️ Could not fetch user lists.", listErr);
                             setPublicLists([]);
                         }
                     }
                 } else {
-                    setError("Usuario no encontrado.");
+                    // FALLBACK: Auth Context Reconstruction
+                    if (currentUser && (username === 'me' || targetUid === currentUser.uid)) {
+                        console.log("⚠️ Using Auth Fallback for Profile");
+                        setProfile({
+                            uid: currentUser.uid,
+                            displayName: currentUser.displayName || 'Usuario',
+                            username: 'me',
+                            photoURL: currentUser.photoURL,
+                            bio: 'Bienvenido a tu perfil.',
+                            social: { followersCount: 0, followingCount: 0 },
+                            stats: { moviesWatched: 0 },
+                            isPro: false
+                        });
+                        setPublicLists([]);
+                    } else if (username !== 'me') {
+                        // Mock for demo if not found
+                        setError("Usuario no encontrado.");
+                    }
                 }
 
+                // Check Follow Status
                 if (currentUser && targetUid && currentUser.uid !== targetUid) {
-                    const following = await isUserFollowing(targetUid);
-                    setIsFollowing(following);
+                    try {
+                        const following = await isUserFollowing(targetUid);
+                        setIsFollowing(following);
+                    } catch (e) {
+                        console.warn("Follow check failed", e);
+                    }
                 }
 
             } catch (err) {
@@ -173,7 +184,7 @@ const PublicProfileView = ({ onSelectMovie }) => {
             {/* 1. HERO COVER */}
             <div className="relative h-64 md:h-80 w-full overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#050505]/50 to-[#050505]" />
-                {publicLists[0]?.movies?.[0] ? (
+                {publicLists && publicLists[0]?.movies?.[0] ? (
                     <img src={`https://image.tmdb.org/t/p/original${publicLists[0].movies[0].poster_path}`} alt="Cover" className="w-full h-full object-cover opacity-40 blur-sm scale-105" />
                 ) : (
                     <div className="w-full h-full bg-gradient-to-br from-gray-900 to-black" />
@@ -196,11 +207,11 @@ const PublicProfileView = ({ onSelectMovie }) => {
                     {/* Text Info */}
                     <div className="flex-1 mb-2 text-center md:text-left">
                         <h1 className="text-3xl md:text-5xl font-display font-bold text-white mb-1">{profile.displayName}</h1>
-                        <p className="text-primary font-mono text-sm md:text-base mb-4">@{profile.username}</p>
+                        <p className="text-primary font-mono text-sm md:text-base mb-4">@{profile.username || 'usuario'}</p>
 
                         <div className="flex items-center justify-center md:justify-start gap-6 text-sm">
                             <div className="text-center md:text-left">
-                                <span className="block font-bold text-white text-lg">{publicLists.length}</span>
+                                <span className="block font-bold text-white text-lg">{publicLists?.length || 0}</span>
                                 <span className="text-gray-500 text-xs uppercase tracking-wider">Listas</span>
                             </div>
                             <div className="text-center md:text-left">
@@ -249,7 +260,7 @@ const PublicProfileView = ({ onSelectMovie }) => {
                         onClick={() => setActiveTab('lists')}
                         className={cn("pb-4 font-bold transition-colors border-b-2", activeTab === 'lists' ? "text-white border-primary" : "text-gray-500 border-transparent hover:text-gray-300")}
                     >
-                        Listas ({publicLists.length})
+                        Listas ({publicLists?.length || 0})
                     </button>
                     <button
                         onClick={() => setActiveTab('favorites')}
@@ -262,7 +273,7 @@ const PublicProfileView = ({ onSelectMovie }) => {
                 {/* CONTENT GRID */}
                 {activeTab === 'lists' ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {publicLists.length > 0 ? publicLists.map(list => (
+                        {publicLists && publicLists.length > 0 ? publicLists.map(list => (
                             <div
                                 key={list.id}
                                 onClick={() => navigate(`/lists/${list.id}`)}
@@ -308,7 +319,7 @@ const PublicProfileView = ({ onSelectMovie }) => {
                         data={{
                             title: profile.displayName,
                             subtitle: `@${profile.username} • Cinéfilo en FRAME`,
-                            movies: activeTab === 'lists' ? [] : movies, // If sharing lists view, maybe share profile summary
+                            movies: activeTab === 'lists' ? [] : movies,
                             type: 'profile'
                         }}
                     />
