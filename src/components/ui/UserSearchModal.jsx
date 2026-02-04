@@ -17,11 +17,14 @@ const UserSearchModal = ({ isOpen, onClose }) => {
             if (searchQuery.trim().length > 0) {
                 setLoading(true);
                 try {
-                    const term = searchQuery.toLowerCase();
+                    // Search by displayName (Case sensitive in Firestore standard queries)
+                    // We assume names are stored capitalized e.g. "Lihue Napoli"
+                    // Ideally we would store a lowercase 'searchKey' field in DB for robust search.
+                    const term = searchQuery;
                     const q = query(
                         collection(db, 'userProfiles'),
-                        where('username', '>=', term),
-                        where('username', '<=', term + '\uf8ff'),
+                        where('displayName', '>=', term),
+                        where('displayName', '<=', term + '\uf8ff'),
                         limit(10)
                     );
                     const snap = await getDocs(q);
@@ -69,7 +72,7 @@ const UserSearchModal = ({ isOpen, onClose }) => {
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Escribe un nombre de usuario..."
+                        placeholder="Escribe un nombre y apellido..."
                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors"
                         autoFocus
                     />

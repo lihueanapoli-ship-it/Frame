@@ -255,7 +255,25 @@ const StatsView = () => {
                     </div>
                 </div>
 
-                {/* 5. Pulse */}
+                {/* 5. Rating Histogram - Spans 2 cols (Restored) */}
+                <div className="col-span-1 md:col-span-2 bg-surface border border-white/5 p-6 flex flex-col min-h-[350px] rounded-xl">
+                    <h3 className="font-mono text-xs text-gray-500 uppercase tracking-widest mb-4">CURVA DE EXIGENCIA</h3>
+                    <div className="w-full h-[250px]">
+                        <ResponsiveContainer width="100%" height={250}>
+                            <BarChart data={ratingDistribution}>
+                                <XAxis dataKey="rating" stroke="#333" tick={{ fill: '#6B7280', fontSize: 10, fontFamily: 'monospace' }} />
+                                <Tooltip
+                                    cursor={{ fill: '#18181b' }}
+                                    contentStyle={{ backgroundColor: '#121212', borderColor: '#333', color: '#fff' }}
+                                    itemStyle={{ color: '#00F0FF', fontFamily: 'monospace' }}
+                                />
+                                <Bar dataKey="count" fill="#333" radius={[2, 2, 0, 0]} activeBar={{ fill: '#00F0FF' }} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* 6. Pulse */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-4 bg-surface border border-white/5 p-6 rounded-xl">
                     <h3 className="font-mono text-xs text-primary uppercase tracking-widest flex items-center gap-2 mb-4"><FireIcon className="w-4 h-4" /> PULSO CINÉFILO</h3>
                     <div className="w-full h-[200px]">
