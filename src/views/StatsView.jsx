@@ -232,7 +232,7 @@ const StatsView = () => {
                 </div>
 
                 {/* 4. Radar */}
-                <div className="col-span-1 md:col-span-2 bg-surface border border-white/5 p-6 flex flex-col min-h-[350px] rounded-xl">
+                <div className="col-span-1 md:col-span-2 bg-surface border border-white/5 p-6 flex flex-col min-h-[450px] rounded-xl">
                     <div className="flex justify-between items-start mb-6">
                         <h3 className="font-mono text-xs text-gray-500 uppercase tracking-widest">RADAR DE GÉNEROS</h3>
                         <div className="flex bg-black/40 rounded-lg p-1 border border-white/5">
@@ -240,9 +240,9 @@ const StatsView = () => {
                             <button onClick={() => setRadarMode('quality')} className={cn("px-3 py-1 rounded-md text-[10px] font-mono transition-all", radarMode === 'quality' ? "bg-pink-500/20 text-pink-500" : "text-gray-500")}>CALIDAD</button>
                         </div>
                     </div>
-                    <div className="w-full h-[250px] relative">
+                    <div className="w-full h-[350px] relative">
                         {currentRadarData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={250}>
+                            <ResponsiveContainer width="100%" height={350}>
                                 <RadarChart cx="50%" cy="50%" outerRadius="70%" data={currentRadarData}>
                                     <PolarGrid stroke="#333" />
                                     <PolarAngleAxis dataKey="subject" tick={{ fill: '#9CA3AF', fontSize: 10, fontFamily: 'monospace' }} />

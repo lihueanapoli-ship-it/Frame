@@ -9,11 +9,12 @@ import MovieCard from '../components/MovieCard';
 import BottomSheet from '../components/ui/BottomSheet';
 import { FilterChip } from '../components/ui/FilterChip';
 import { createPortal } from 'react-dom';
-import { AdjustmentsHorizontalIcon, MagnifyingGlassIcon, XMarkIcon, ListBulletIcon, PlusIcon, LockClosedIcon, GlobeAltIcon, UserGroupIcon } from '@heroicons/react/24/outline';
-import { FilmIcon, CheckBadgeIcon, ClockIcon } from '@heroicons/react/24/solid';
+import { AdjustmentsHorizontalIcon, MagnifyingGlassIcon, XMarkIcon, PlusIcon, UserPlusIcon, TrashIcon, ChevronDownIcon, CheckBadgeIcon } from '@heroicons/react/24/outline';
+import { FilmIcon, ClockIcon } from '@heroicons/react/24/solid';
 import { cn } from '../lib/utils';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import UserSearchModal from '../components/ui/UserSearchModal';
 
 const ALL_GENRES = [
     { id: 28, name: "Acción" }, { id: 12, name: "Aventura" }, { id: 16, name: "Animación" },
@@ -27,8 +28,10 @@ const ALL_GENRES = [
 const LibraryView = ({ onSelectMovie }) => {
     // State
     const [activeTab, setActiveTab] = useState('watchlist'); // 'watchlist' | 'watched'
+    const [selectedListId, setSelectedListId] = useState('watchlist'); // 'watchlist' or list UUID
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [localSearch, setLocalSearch] = useState('');
+    const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
 
     // Filter States
     const [selectedGenres, setSelectedGenres] = useState([]);
@@ -39,11 +42,39 @@ const LibraryView = ({ onSelectMovie }) => {
 
     // Data
     const { watchlist, watched, updateMovieMetadata } = useMovies();
-    const { myLists, collabLists } = useLists();
+    const { myLists, collabLists, addCollaborator, deleteList } = useLists();
     const { user, loginWithGoogle } = useAuth();
     const navigate = useNavigate();
 
     const allListsDisplay = useMemo(() => [...myLists, ...collabLists], [myLists, collabLists]);
+
+    // Derived: Current Active List Object (if custom)
+    const currentCustomList = useMemo(() => {
+        if (selectedListId === 'watchlist') return null;
+        return allListsDisplay.find(l => l.id === selectedListId);
+    }, [selectedListId, allListsDisplay]);
+
+    // Determine Raw Movies based on selection
+    const rawMovies = useMemo(() => {
+        if (activeTab === 'watched') return watched;
+        if (selectedListId === 'watchlist') return watchlist;
+        return currentCustomList?.movies || [];
+    }, [activeTab, selectedListId, watchlist, watched, currentCustomList]);
+
+    // Handle Collaboration Invitation
+    const handleInviteUser = async (selectedUser) => {
+        if (!currentCustomList) return;
+        await addCollaborator(currentCustomList.id, selectedUser.uid);
+        alert(`¡${selectedUser.displayName} ahora puede editar esta lista!`);
+    };
+
+    const handleDeleteList = async () => {
+        if (!currentCustomList) return;
+        if (window.confirm("¿Estás seguro de que quieres eliminar esta lista?")) {
+            await deleteList(currentCustomList.id);
+            setSelectedListId('watchlist');
+        }
+    };
 
     // Auto-Repair Logic (Simplified)
     useEffect(() => {
@@ -66,25 +97,7 @@ const LibraryView = ({ onSelectMovie }) => {
 
     const ratingSource = activeTab === 'watchlist' ? 'tmdb' : 'user';
 
-    useEffect(() => { clearFilters(); }, [activeTab]);
-
-    const topGenres = useMemo(() => {
-        if (!watched || !watched.length) return ALL_GENRES.slice(0, 5);
-        const counts = {};
-        const cache = getCachedGenres();
-        watched.forEach(m => {
-            let ids = m.genre_ids;
-            if (!ids || ids.length === 0) {
-                if (cache[m.id]?.genres) ids = cache[m.id].genres.map(g => g.id);
-                else ids = m.genres?.map(g => g.id);
-            }
-            if (ids) ids.forEach(id => { counts[id] = (counts[id] || 0) + 1; });
-        });
-        const sortedIds = Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([id]) => parseInt(id));
-        return sortedIds.slice(0, 5).map(id => ALL_GENRES.find(g => g.id === id)).filter(Boolean);
-    }, [watched]);
-
-    const rawMovies = activeTab === 'watchlist' ? watchlist : watched;
+    useEffect(() => { clearFilters(); }, [activeTab, selectedListId]);
 
     const { filteredMovies, totalCount } = useMovieFilter(rawMovies, {
         search: localSearch, status: 'all', sort: sortOption, genres: selectedGenres, minRating, runtime: runtimeFilter, yearRange, ratingSource
@@ -105,9 +118,11 @@ const LibraryView = ({ onSelectMovie }) => {
 
     return (
         <div className="min-h-screen pb-24 px-4 pt-4">
-            <div className="sticky top-20 z-30 bg-background/95 backdrop-blur-md py-2 -mx-4 px-4 border-b border-white/5 mb-4">
-                {/* TABS (Simplified: Only Watchlist & Watched) */}
-                <div className="flex p-1 bg-surface rounded-xl mb-4 relative overflow-hidden">
+            {/* STICKY HEADER AREA */}
+            <div className="sticky top-20 z-30 bg-background/95 backdrop-blur-md py-4 -mx-4 px-4 border-b border-white/5 mb-6 space-y-4">
+
+                {/* 1. MAIN TABS (Context Switcher) */}
+                <div className="flex p-1 bg-surface rounded-xl relative overflow-hidden">
                     <button onClick={() => setActiveTab('watchlist')} className={cn("flex-1 flex items-center justify-center gap-2 py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all z-10", activeTab === 'watchlist' ? "text-white" : "text-gray-500 hover:text-gray-300")}>
                         <FilmIcon className="w-4 h-4" /> <span className="hidden sm:inline">Por ver</span><span className="sm:hidden">Watchlist</span>
                     </button>
@@ -122,13 +137,63 @@ const LibraryView = ({ onSelectMovie }) => {
                     />
                 </div>
 
-                {/* FILTERS & SEARCH */}
+                {/* 2. LIST SELECTOR (Visible only in Watchlist tab) */}
+                {activeTab === 'watchlist' && (
+                    <div className="flex items-center gap-3">
+                        <div className="relative flex-1">
+                            <select
+                                value={selectedListId}
+                                onChange={(e) => {
+                                    if (e.target.value === 'new') {
+                                        navigate('/lists/new');
+                                        return;
+                                    }
+                                    setSelectedListId(e.target.value);
+                                }}
+                                className="w-full appearance-none bg-surface-elevated border border-white/10 text-white rounded-xl py-3 pl-4 pr-10 text-sm font-medium focus:ring-1 focus:ring-primary focus:border-primary cursor-pointer hover:bg-white/5 transition-colors"
+                            >
+                                <option value="watchlist">🎬 Mi Watchlist (General)</option>
+                                <optgroup label="Mis Colecciones">
+                                    {allListsDisplay.map(list => (
+                                        <option key={list.id} value={list.id}>
+                                            📑 {list.name} {list.ownerId !== user.uid ? '(Colaboración)' : ''}
+                                        </option>
+                                    ))}
+                                </optgroup>
+                                <option value="new">+ Crear Nueva Lista...</option>
+                            </select>
+                            <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                        </div>
+
+                        {/* ACTION BUTTONS FOR CUSTOM LISTS */}
+                        {currentCustomList && currentCustomList.ownerId === user.uid && (
+                            <>
+                                <button
+                                    onClick={() => setIsInviteModalOpen(true)}
+                                    className="p-3 bg-surface-elevated border border-white/10 rounded-xl hover:bg-white/10 hover:text-primary transition-colors text-gray-400"
+                                    title="Invitar amigo a colaborar"
+                                >
+                                    <UserPlusIcon className="w-5 h-5" />
+                                </button>
+                                <button
+                                    onClick={handleDeleteList}
+                                    className="p-3 bg-surface-elevated border border-white/10 rounded-xl hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/50 transition-colors text-gray-400"
+                                    title="Eliminar lista"
+                                >
+                                    <TrashIcon className="w-5 h-5" />
+                                </button>
+                            </>
+                        )}
+                    </div>
+                )}
+
+                {/* 3. FILTERS & SEARCH */}
                 <div className="flex gap-3 animate-fade-in">
                     <div className="relative flex-1">
                         <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                         <input
                             type="text"
-                            placeholder={`Buscar en ${activeTab === 'watchlist' ? 'Por ver' : 'Vistas'}...`}
+                            placeholder={`Buscar en ${currentCustomList ? currentCustomList.name : activeTab === 'watchlist' ? 'Watchlist' : 'Vistas'}...`}
                             value={localSearch}
                             onChange={(e) => setLocalSearch(e.target.value)}
                             className="w-full bg-surface-elevated border-none text-sm text-white rounded-xl py-3 pl-10 pr-4 placeholder-gray-500 focus:ring-1 focus:ring-primary/50"
@@ -141,77 +206,42 @@ const LibraryView = ({ onSelectMovie }) => {
                 </div>
             </div>
 
-            <div className="space-y-6">
-
-                {/* LISTS SECTION (Embedded in Watchlist Tab) */}
-                {activeTab === 'watchlist' && !localSearch && activeFilterCount === 0 && (
-                    <div className="mb-8">
-                        <div className="flex items-center justify-between mb-3 px-1">
-                            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">TUS COLECCIONES</h3>
-                        </div>
-                        <div className="flex gap-3 overflow-x-auto pb-4 hide-scrollbar -mx-4 px-4 snap-x">
-                            {/* Create List Button */}
-                            <button
-                                onClick={() => navigate('/lists/new')} // Assuming route or modal hook exists, or redirect to simple creator
-                                className="flex-shrink-0 w-32 h-20 bg-surface-elevated border border-dashed border-white/20 rounded-xl flex flex-col items-center justify-center gap-2 hover:bg-white/5 transition-colors snap-start"
-                            >
-                                <PlusIcon className="w-6 h-6 text-primary" />
-                                <span className="text-[10px] font-bold text-gray-400 uppercase">Nueva Lista</span>
-                            </button>
-
-                            {/* Render Lists */}
-                            {allListsDisplay.map(list => (
-                                <div
-                                    key={list.id}
-                                    onClick={() => navigate(`/lists/${list.id}`)}
-                                    className="flex-shrink-0 w-48 h-20 bg-surface-elevated border border-white/5 rounded-xl overflow-hidden relative cursor-pointer group snap-start"
-                                >
-                                    {/* Background Image */}
-                                    {list.movies?.[0] && (
-                                        <img src={`https://image.tmdb.org/t/p/w200${list.movies[0].poster_path}`} className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-60 transition-opacity" alt="" />
-                                    )}
-                                    <div className="absolute inset-0 bg-gradient-to-r from-black/80 to-transparent p-3 flex flex-col justify-center">
-                                        <span className="font-bold text-white text-sm line-clamp-2 leading-tight">{list.name}</span>
-                                        <span className="text-[10px] text-gray-400 mt-1">{list.movies?.length || 0} películas</span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* MOVIES GRID */}
-                <div>
-                    {activeTab === 'watchlist' && !localSearch && activeFilterCount === 0 && (
-                        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 px-1">watchlist general</h3>
-                    )}
-
-                    <div className="text-xs text-gray-500 font-medium uppercase tracking-wider flex justify-between items-center mb-3">
-                        <span>{totalCount} Películas</span>
-                        {activeFilterCount > 0 && <button onClick={clearFilters} className="text-primary flex items-center gap-1 hover:underline"><XMarkIcon className="w-3 h-3" /> Limpiar filtros</button>}
-                    </div>
-
-                    {totalCount === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-20 opacity-50">
-                            <FilmIcon className="w-16 h-16 text-gray-700 mb-4" />
-                            <p className="text-gray-400">{activeFilterCount > 0 ? "No hay coincidencias." : activeTab === 'watchlist' ? "Tu watchlist está vacía." : "Aún no has marcado películas vistas."}</p>
-                        </div>
-                    ) : (
-                        <motion.div variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } }} initial="hidden" animate="show" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                            {filteredMovies.map(movie => (
-                                <motion.div key={movie.id} variants={{ hidden: { opacity: 0, scale: 0.9 }, show: { opacity: 1, scale: 1 } }}>
-                                    <MovieCard movie={movie} onClick={onSelectMovie} rating={activeTab === 'watched' ? movie.rating : undefined} />
-                                </motion.div>
-                            ))}
-                        </motion.div>
-                    )}
+            {/* CONTENT GRID */}
+            <div>
+                <div className="text-xs text-gray-500 font-medium uppercase tracking-wider flex justify-between items-center mb-3">
+                    <span>{totalCount} Películas {currentCustomList ? `en ${currentCustomList.name}` : ''}</span>
+                    {activeFilterCount > 0 && <button onClick={clearFilters} className="text-primary flex items-center gap-1 hover:underline"><XMarkIcon className="w-3 h-3" /> Limpiar filtros</button>}
                 </div>
+
+                {totalCount === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 opacity-50">
+                        <FilmIcon className="w-16 h-16 text-gray-700 mb-4" />
+                        <p className="text-gray-400">
+                            {activeFilterCount > 0 ? "No hay coincidencias." :
+                                currentCustomList ? "Esta lista está vacía." :
+                                    activeTab === 'watchlist' ? "Tu watchlist está vacía." : "Aún no has marcado películas vistas."}
+                        </p>
+                        {currentCustomList && (
+                            <button onClick={() => navigate('/')} className="mt-4 text-primary text-sm font-bold hover:underline">Explorar películas para añadir</button>
+                        )}
+                    </div>
+                ) : (
+                    <motion.div variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } }} initial="hidden" animate="show" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {filteredMovies.map(movie => (
+                            <motion.div key={movie.id} variants={{ hidden: { opacity: 0, scale: 0.9 }, show: { opacity: 1, scale: 1 } }}>
+                                <MovieCard movie={movie} onClick={onSelectMovie} rating={activeTab === 'watched' ? movie.rating : undefined} />
+                            </motion.div>
+                        ))}
+                    </motion.div>
+                )}
             </div>
 
+            {/* MODALS */}
             {/* Filter Portal */}
             {createPortal(
-                <BottomSheet isOpen={isFilterOpen} onClose={() => setIsFilterOpen(false)} title={`Filtros: ${activeTab === 'watchlist' ? 'Por ver' : 'Vistas'}`}>
+                <BottomSheet isOpen={isFilterOpen} onClose={() => setIsFilterOpen(false)} title="Filtros">
                     <div className="space-y-8 pb-8">
+                        {/* Reused Filter UI Logic */}
                         <div>
                             <h4 className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-widest">Ordenar Por</h4>
                             <div className="grid grid-cols-2 gap-3">
@@ -220,14 +250,20 @@ const LibraryView = ({ onSelectMovie }) => {
                                 ))}
                             </div>
                         </div>
-                        {/* Other filters (simplified same as before) */}
                         <div className="pt-4 flex gap-3">
                             <button onClick={clearFilters} className="flex-1 py-3.5 rounded-xl font-semibold text-gray-400 hover:text-white transition-colors border border-white/10">Limpiar todo</button>
-                            <button onClick={() => setIsFilterOpen(false)} className="flex-[2] py-3.5 bg-primary text-black rounded-xl font-bold shadow-lg shadow-primary/25 active:scale-95 transition-all">Ver {filteredMovies.length} Películas</button>
+                            <button onClick={() => setIsFilterOpen(false)} className="flex-[2] py-3.5 bg-primary text-black rounded-xl font-bold shadow-lg shadow-primary/25 active:scale-95 transition-all">Ver Resultados</button>
                         </div>
                     </div>
                 </BottomSheet>, document.body
             )}
+
+            {/* Invite Collaborator Modal */}
+            <UserSearchModal
+                isOpen={isInviteModalOpen}
+                onClose={() => setIsInviteModalOpen(false)}
+                onSelectUser={handleInviteUser}
+            />
         </div>
     );
 };

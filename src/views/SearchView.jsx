@@ -163,7 +163,7 @@ const SearchView = ({ onSelectMovie }) => {
     const activeFilterCount = (minRating > 0 ? 1 : 0) + (runtimeFilter !== 'any' ? 1 : 0) + (yearRange.min > 1900 ? 1 : 0) + (sortOption !== 'popularity.desc' ? 1 : 0);
 
     return (
-        <div className="p-4 pt-20 pb-24 min-h-screen max-w-7xl mx-auto relative">
+        <div className="p-4 pt-8 pb-24 min-h-screen max-w-7xl mx-auto relative">
 
             {/* Filter Toggle */}
             <div className="sticky top-24 z-30 flex justify-end mb-4 pointer-events-none">
@@ -185,7 +185,16 @@ const SearchView = ({ onSelectMovie }) => {
                 </button>
             </div>
 
-            <h1 className="text-3xl font-bold text-white mb-6 tracking-tight">Explorar</h1>
+            <header className="mb-8 flex items-end justify-between border-b border-white/5 pb-6">
+                <div>
+                    <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-2 tracking-tight">
+                        EXPLORAR <span className="text-primary">PELÍCULAS</span>
+                    </h1>
+                    <p className="font-mono text-xs md:text-sm text-gray-400">
+                        DESCUBRE TU PRÓXIMA OBSESIÓN
+                    </p>
+                </div>
+            </header>
 
             <div className="mb-6">
                 <SearchBar onSelectMovie={onSelectMovie} onSearchCallback={handleSearch} placeholder="Buscar películas..." />

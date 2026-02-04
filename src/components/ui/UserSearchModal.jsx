@@ -6,7 +6,7 @@ import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const UserSearchModal = ({ isOpen, onClose }) => {
+const UserSearchModal = ({ isOpen, onClose, onSelectUser }) => {
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [results, setResults] = useState([]);
@@ -86,7 +86,11 @@ const UserSearchModal = ({ isOpen, onClose }) => {
                             <div
                                 key={user.uid}
                                 onClick={() => {
-                                    navigate(`/u/${user.username}`);
+                                    if (onSelectUser) {
+                                        onSelectUser(user);
+                                    } else {
+                                        navigate(`/u/${user.username}`);
+                                    }
                                     onClose();
                                 }}
                                 className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 cursor-pointer transition-colors group"

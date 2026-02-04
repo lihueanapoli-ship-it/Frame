@@ -153,7 +153,7 @@ const AppContent = () => {
         <div className="min-h-screen bg-background text-white font-sans selection:bg-primary selection:text-white">
             <SpotlightCursor />
             <PageTransitionOverlay />
-            <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-background/50 border-b border-white/5 transition-all duration-300">
+            <header className="sticky top-0 z-50 w-full backdrop-blur-xl bg-background/90 border-b border-white/5 transition-all duration-300">
                 <div className="flex h-20 items-center w-full px-4 max-w-7xl mx-auto justify-between relative">
                     <a href="/" onClick={(e) => {
                         e.preventDefault();
@@ -217,7 +217,7 @@ const AppContent = () => {
                 </div>
             </header>
 
-            <main className="container max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 pb-32">
+            <main className="container max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 pb-32">
                 <AnimatePresence mode="wait">
                     <Routes>
                         <Route path="/" element={<DiscoverView onSelectMovie={setSelectedMovie} />} />
