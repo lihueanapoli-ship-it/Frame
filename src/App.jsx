@@ -105,22 +105,7 @@ const AppContent = () => {
                                     </div>
                                     <div className="p-2 space-y-1">
 
-                                        {/* Public Profile Link (New Phase 5) */}
-                                        <button
-                                            onClick={() => {
-                                                setIsMenuOpen(false);
-                                                navigate('/u/me');
-                                            }}
-                                            className="w-full text-left flex items-center gap-3 px-3 py-2.5 text-sm text-gray-200 hover:text-white hover:bg-white/10 rounded-lg transition-all group"
-                                        >
-                                            <div className="p-1.5 bg-blue-500/10 rounded-md group-hover:bg-blue-500/20 transition-colors">
-                                                <UserIcon className="w-4 h-4 text-blue-400" />
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="font-medium">Mi Perfil Público</span>
-                                                <span className="text-[10px] text-gray-500">Como te ven otros</span>
-                                            </div>
-                                        </button>
+
 
                                         {/* Feedback Button */}
                                         <button

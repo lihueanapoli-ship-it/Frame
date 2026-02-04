@@ -1,17 +1,14 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { getTrendingMovies, getMoviesByGenre, searchMovies, discoverMovies } from '../api/tmdb';
 import { getOscarWinners } from '../api/oscarApi';
-import { db } from '../api/firebase';
-import { collection, query, where, getDocs, limit, orderBy, startAt, endAt } from 'firebase/firestore';
 import SearchBar from '../components/SearchBar';
 import MovieCard from '../components/MovieCard';
-import { Loader2, Sparkles, User, Users } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import BottomSheet from '../components/ui/BottomSheet';
 import { cn } from '../lib/utils';
-import { ClockIcon } from '@heroicons/react/24/solid';
-import { AdjustmentsHorizontalIcon, XMarkIcon, UserCircleIcon, FilmIcon } from '@heroicons/react/24/outline';
+import { AdjustmentsHorizontalIcon, FilmIcon } from '@heroicons/react/24/outline';
 import MovieCardSkeleton from '../components/ui/MovieCardSkeleton';
 
 const GENRES = [
@@ -39,14 +36,12 @@ const SearchView = ({ onSelectMovie }) => {
     const navigate = useNavigate();
 
     // Mode State
-    const [activeTab, setActiveTab] = useState('movies'); // 'movies' | 'people'
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedGenre, setSelectedGenre] = useState(null);
     const [isOscars, setIsOscars] = useState(false);
 
     // Data State
     const [results, setResults] = useState([]);
-    const [userResults, setUserResults] = useState([]);
     const [loading, setLoading] = useState(false);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
@@ -124,50 +119,12 @@ const SearchView = ({ onSelectMovie }) => {
         }
     }, [searchQuery, selectedGenre, isOscars, minRating, runtimeFilter, yearRange, sortOption]);
 
-    // USERS FETCH
-    const fetchUsers = useCallback(async () => {
-        setLoading(true);
-        try {
-            let q;
-            if (searchQuery) {
-                // Simple search by username prefix
-                // Note: This matches case-sensitive in simplified setup. 
-                // For better results we'd store a lowercase 'searchKey' in DB.
-                // Here we assume user types simplified lowercase or exact
-                const term = searchQuery.toLowerCase();
-                q = query(
-                    collection(db, 'userProfiles'),
-                    where('username', '>=', term),
-                    where('username', '<=', term + '\uf8ff'),
-                    limit(20)
-                );
-            } else {
-                // Show latest users or random (simulated by simple limit for now)
-                q = query(collection(db, 'userProfiles'), limit(10));
-            }
-
-            const snapshot = await getDocs(q);
-            const users = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
-            setUserResults(users);
-        } catch (error) {
-            console.error("Error fetching users:", error);
-            // Fallback empty
-            setUserResults([]);
-        } finally {
-            setLoading(false);
-        }
-    }, [searchQuery]);
-
     // Trigger Fetch
     useEffect(() => {
-        if (activeTab === 'movies') {
-            setPage(1);
-            setHasMore(true);
-            fetchMovies(1, true);
-        } else {
-            fetchUsers();
-        }
-    }, [searchQuery, selectedGenre, isOscars, minRating, runtimeFilter, yearRange, sortOption, activeTab, fetchMovies, fetchUsers]);
+        setPage(1);
+        setHasMore(true);
+        fetchMovies(1, true);
+    }, [searchQuery, selectedGenre, isOscars, minRating, runtimeFilter, yearRange, sortOption, fetchMovies]);
 
     const handleSearch = (query) => {
         setSearchQuery(query);
@@ -178,7 +135,6 @@ const SearchView = ({ onSelectMovie }) => {
     };
 
     const handleGenreClick = (id) => {
-        setActiveTab('movies');
         if (selectedGenre === id) setSelectedGenre(null);
         else setSelectedGenre(id);
         setIsOscars(false);
@@ -186,7 +142,6 @@ const SearchView = ({ onSelectMovie }) => {
     };
 
     const handleOscarClick = () => {
-        setActiveTab('movies');
         setIsOscars(!isOscars);
         setSelectedGenre(null);
         setSearchQuery('');
@@ -210,58 +165,34 @@ const SearchView = ({ onSelectMovie }) => {
     return (
         <div className="p-4 pt-20 pb-24 min-h-screen max-w-7xl mx-auto relative">
 
-            {/* Filter Toggle (Only for Movies) */}
-            {activeTab === 'movies' && (
-                <div className="sticky top-24 z-30 flex justify-end mb-4 pointer-events-none">
-                    <button
-                        onClick={() => setIsFilterOpen(true)}
-                        className={cn(
-                            "pointer-events-auto flex items-center justify-center w-10 h-10 rounded-full shadow-xl backdrop-blur-md border transition-all active:scale-95",
-                            activeFilterCount > 0
-                                ? "bg-primary text-black border-primary"
-                                : "bg-surface/80 text-white border-white/10 hover:bg-surface"
-                        )}
-                    >
-                        <AdjustmentsHorizontalIcon className="w-5 h-5" />
-                        {activeFilterCount > 0 && (
-                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center font-bold text-white border border-[#121212]">
-                                {activeFilterCount}
-                            </span>
-                        )}
-                    </button>
-                </div>
-            )}
+            {/* Filter Toggle */}
+            <div className="sticky top-24 z-30 flex justify-end mb-4 pointer-events-none">
+                <button
+                    onClick={() => setIsFilterOpen(true)}
+                    className={cn(
+                        "pointer-events-auto flex items-center justify-center w-10 h-10 rounded-full shadow-xl backdrop-blur-md border transition-all active:scale-95",
+                        activeFilterCount > 0
+                            ? "bg-primary text-black border-primary"
+                            : "bg-surface/80 text-white border-white/10 hover:bg-surface"
+                    )}
+                >
+                    <AdjustmentsHorizontalIcon className="w-5 h-5" />
+                    {activeFilterCount > 0 && (
+                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center font-bold text-white border border-[#121212]">
+                            {activeFilterCount}
+                        </span>
+                    )}
+                </button>
+            </div>
 
             <h1 className="text-3xl font-bold text-white mb-6 tracking-tight">Explorar</h1>
 
             <div className="mb-6">
-                <SearchBar onSelectMovie={onSelectMovie} onSearchCallback={handleSearch} placeholder={activeTab === 'movies' ? "Buscar películas..." : "Buscar personas..."} />
+                <SearchBar onSelectMovie={onSelectMovie} onSearchCallback={handleSearch} placeholder="Buscar películas..." />
             </div>
 
-            {/* TABS SWITCHER */}
-            <div className="flex p-1 bg-surface rounded-xl mb-8 w-full max-w-md mx-auto">
-                <button
-                    onClick={() => setActiveTab('movies')}
-                    className={cn(
-                        "flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-lg transition-all",
-                        activeTab === 'movies' ? "bg-surface-elevated text-white shadow" : "text-gray-500 hover:text-white"
-                    )}
-                >
-                    <FilmIcon className="w-4 h-4" /> Películas
-                </button>
-                <button
-                    onClick={() => setActiveTab('people')}
-                    className={cn(
-                        "flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-lg transition-all",
-                        activeTab === 'people' ? "bg-surface-elevated text-white shadow" : "text-gray-500 hover:text-white"
-                    )}
-                >
-                    <Users className="w-4 h-4" /> Personas
-                </button>
-            </div>
-
-            {/* Quick Categories (Movies Only) */}
-            {activeTab === 'movies' && !searchQuery && (
+            {/* Quick Categories */}
+            {!searchQuery && (
                 <div className="mb-10 animate-fade-in">
                     <h2 className="text-lg font-semibold text-gray-400 mb-4">Categorías</h2>
                     <div className="flex flex-wrap gap-3">
@@ -278,77 +209,34 @@ const SearchView = ({ onSelectMovie }) => {
             )}
 
             {/* CONTENT AREA */}
-            {activeTab === 'movies' ? (
-                // MOVIES GRID
-                <>
-                    <h2 className="text-xl font-bold text-white mb-4">
-                        {isOscars ? "🏆 Ganadoras del Oscar" : selectedGenre ? `Películas de ${GENRES.find(g => g.id === selectedGenre)?.name}` : searchQuery ? `Buscando "${searchQuery}"` : activeFilterCount > 0 ? "Resultados Filtrados" : "Tendencias"}
-                    </h2>
+            <h2 className="text-xl font-bold text-white mb-4">
+                {isOscars ? "🏆 Ganadoras del Oscar" : selectedGenre ? `Películas de ${GENRES.find(g => g.id === selectedGenre)?.name}` : searchQuery ? `Buscando "${searchQuery}"` : activeFilterCount > 0 ? "Resultados Filtrados" : "Tendencias"}
+            </h2>
 
-                    {loading && results.length === 0 ? (
-                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                            {[...Array(10)].map((_, i) => <MovieCardSkeleton key={i} />)}
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                            {results.map((movie, idx) => (
-                                <MovieCard key={`${movie.id}-${idx}`} movie={movie} onClick={onSelectMovie} />
-                            ))}
-                            {results.length === 0 && !loading && (
-                                <div className="col-span-full py-20 text-center">
-                                    <Sparkles className="w-12 h-12 text-gray-700 mx-auto mb-3" />
-                                    <p className="text-gray-500">No se encontraron películas.</p>
-                                </div>
-                            )}
-                            {hasMore && results.length > 0 && !loading && (
-                                <div className="col-span-full flex justify-center mt-8">
-                                    <button onClick={loadMore} className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-full transition-all">Cargar más películas</button>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </>
+            {loading && results.length === 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    {[...Array(10)].map((_, i) => <MovieCardSkeleton key={i} />)}
+                </div>
             ) : (
-                // PEOPLE GRID
-                <>
-                    <h2 className="text-xl font-bold text-white mb-4">
-                        {searchQuery ? `Usuarios encontrados para "${searchQuery}"` : "Usuarios Recientes"}
-                    </h2>
-
-                    {loading ? (
-                        <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>
-                    ) : userResults.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                            {userResults.map(user => (
-                                <div
-                                    key={user.uid}
-                                    onClick={() => navigate(`/u/${user.username}`)}
-                                    className="flex items-center gap-4 p-4 bg-surface-elevated border border-white/5 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group"
-                                >
-                                    <div className="w-12 h-12 rounded-full overflow-hidden border border-white/10">
-                                        <img src={user.photoURL || "/logo.png"} alt={user.displayName} className="w-full h-full object-cover" />
-                                    </div>
-                                    <div className="flex-1 overflow-hidden">
-                                        <h4 className="font-bold text-white truncate group-hover:text-primary transition-colors">{user.displayName}</h4>
-                                        <p className="text-xs text-gray-400 font-mono truncate">@{user.username}</p>
-                                    </div>
-                                    <div className="text-xs text-gray-500 font-bold bg-black/20 px-2 py-1 rounded">
-                                        Ver
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="py-20 text-center border border-dashed border-white/10 rounded-xl bg-white/5">
-                            <UserCircleIcon className="w-12 h-12 text-gray-600 mx-auto mb-2" />
-                            <p className="text-gray-400">No encontramos usuarios con ese nombre.</p>
-                            <p className="text-xs text-gray-500 mt-1">Intenta buscar por nombre de usuario exacto.</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    {results.map((movie, idx) => (
+                        <MovieCard key={`${movie.id}-${idx}`} movie={movie} onClick={onSelectMovie} />
+                    ))}
+                    {results.length === 0 && !loading && (
+                        <div className="col-span-full py-20 text-center">
+                            <Sparkles className="w-12 h-12 text-gray-700 mx-auto mb-3" />
+                            <p className="text-gray-500">No se encontraron películas.</p>
                         </div>
                     )}
-                </>
+                    {hasMore && results.length > 0 && !loading && (
+                        <div className="col-span-full flex justify-center mt-8">
+                            <button onClick={loadMore} className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-full transition-all">Cargar más películas</button>
+                        </div>
+                    )}
+                </div>
             )}
 
-            {/* Filter Bottom Sheet (Only Movies) */}
+            {/* Filter Bottom Sheet */}
             {createPortal(
                 <BottomSheet isOpen={isFilterOpen} onClose={() => setIsFilterOpen(false)} title="Filtros Avanzados">
                     <div className="space-y-8 pb-8">
@@ -360,7 +248,7 @@ const SearchView = ({ onSelectMovie }) => {
                                 ))}
                             </div>
                         </div>
-                        {/* ... Simplified Repetition of Filter UI ... */}
+                        {/* More filters code assumed to be here or simplified for brevity - restoration focus */}
                         <div className="pt-4 flex gap-3">
                             <button onClick={clearFilters} className="flex-1 py-3.5 rounded-xl font-semibold text-gray-400 hover:text-white transition-colors border border-white/10">Limpiar</button>
                             <button onClick={() => setIsFilterOpen(false)} className="flex-[2] py-3.5 bg-primary text-black rounded-xl font-bold shadow-lg shadow-primary/25 active:scale-95 transition-all">Ver Resultados</button>
