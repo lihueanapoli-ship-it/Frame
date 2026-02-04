@@ -1,8 +1,7 @@
-import React, { useMemo, useState, useEffect } from 'react';
 import { useMovies } from '../contexts/MovieContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserProfile } from '../contexts/UserProfileContext'; // New import
-import { useList } from '../contexts/ListContext'; // New import for owned lists
+import { useLists } from '../contexts/ListContext'; // New import for owned lists
 import { motion, animate, AnimatePresence } from 'framer-motion';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, BarChart, Bar, AreaChart, Area, XAxis, Tooltip } from 'recharts';
 import { ClockIcon, TrophyIcon, FireIcon, BookmarkIcon, PencilIcon } from '@heroicons/react/24/solid';
@@ -86,7 +85,7 @@ const StatsView = () => {
     const { watched, watchlist } = useMovies();
     const { user } = useAuth();
     const { profile: userProfileContext } = useUserProfile();
-    const { myLists } = useList();
+    const { myLists } = useLists();
     const navigate = useNavigate();
 
     // Profile Edit State
