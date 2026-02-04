@@ -20,10 +20,31 @@ export const SoundProvider = ({ children }) => {
         if (!audioCtxRef.current) {
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             audioCtxRef.current = new AudioContext();
-            // Create Shutter Noise Buffer
             createShutterBuffer();
         }
+        // Resume if suspended (browser policy)
+        if (audioCtxRef.current.state === 'suspended') {
+            audioCtxRef.current.resume().catch(() => { });
+        }
     };
+
+    // Auto-resume on first global interaction to fix Browser Warnings
+    useEffect(() => {
+        const handleInteraction = () => {
+            initAudio();
+            // Remove listeners once initialized
+            window.removeEventListener('click', handleInteraction);
+            window.removeEventListener('keydown', handleInteraction);
+        };
+
+        window.addEventListener('click', handleInteraction);
+        window.addEventListener('keydown', handleInteraction);
+
+        return () => {
+            window.removeEventListener('click', handleInteraction);
+            window.removeEventListener('keydown', handleInteraction);
+        };
+    }, []);
 
     const createShutterBuffer = () => {
         if (!audioCtxRef.current) return;
