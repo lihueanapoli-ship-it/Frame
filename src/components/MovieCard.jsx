@@ -22,7 +22,6 @@ const MovieCard = ({ movie, onClick, rating, variant = 'default', onAddToWatchli
             transition={{ duration: 0.3 }}
             onHoverStart={() => {
                 setIsHovered(true);
-                playHover();
             }}
             onHoverEnd={() => {
                 setIsHovered(false);
