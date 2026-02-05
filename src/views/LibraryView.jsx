@@ -92,7 +92,7 @@ const LibraryView = ({ onSelectMovie }) => {
             </header>
 
             {/* CONTROLS (Sticky) */}
-            <div className="sticky top-20 z-30 bg-background/95 backdrop-blur-md py-4 -mx-4 px-4 border-b border-white/5 mb-6 space-y-4 shadow-xl">
+            <div className="sticky top-20 z-40 bg-[#0A0A0A] py-4 -mx-4 px-4 border-b border-white/5 mb-6 space-y-4 shadow-xl">
 
                 {/* 1. TABS */}
                 <div className="flex p-1 bg-surface rounded-xl relative overflow-hidden">
