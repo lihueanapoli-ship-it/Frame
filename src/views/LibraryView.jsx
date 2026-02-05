@@ -91,9 +91,8 @@ const LibraryView = ({ onSelectMovie }) => {
                 </div>
             </header>
 
-            {/* CONTROLS (Sticky) */}
-            <div className="sticky top-20 z-40 bg-[#0A0A0A] py-4 -mx-4 px-4 border-b border-white/5 mb-6 space-y-4 shadow-xl">
-
+            {/* CONTROLS (Sticky Tabs Only) */}
+            <div className="sticky top-20 z-40 bg-[#0A0A0A] py-4 -mx-4 px-4 border-b border-white/5 mb-6 shadow-xl">
                 {/* 1. TABS */}
                 <div className="flex p-1 bg-surface rounded-xl relative overflow-hidden">
                     <button onClick={() => setActiveTab('watchlist')} className={cn("flex-1 flex items-center justify-center gap-2 py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all z-10", activeTab === 'watchlist' ? "text-white" : "text-gray-500 hover:text-gray-300")}>
@@ -109,7 +108,10 @@ const LibraryView = ({ onSelectMovie }) => {
                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
                     />
                 </div>
+            </div>
 
+            {/* NON-STICKY CONTROLS (Scrollable) */}
+            <div className="space-y-4 mb-6">
                 {/* 2. LIST SELECTOR */}
                 {activeTab === 'watchlist' && (
                     <div className="flex items-center gap-3">
