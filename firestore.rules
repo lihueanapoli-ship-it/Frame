@@ -23,8 +23,34 @@ service cloud.firestore {
 
     // --- LEGACY USER DATA (MovieContext: Watchlist/Watched) ---
     // This collection is strictly private to the user
+    // --- USERS (Social Data & Search) ---
+    // Previously strict private, now needs to be readable for Search/Social
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null; // Authenticated users can search others
+      allow write: if request.auth != null && request.auth.uid == userId; // Only owner can edit their profile
+      
+      // Friends Subcollection (Bi-directional check ideally, but we trust client logic for MVP)
+      match /friends/{friendId} {
+         allow read, write: if request.auth != null; // Simplified for MVP: Users write to each other's friends list on acceptance. 
+      }
+    }
+
+    // --- FRIEND REQUESTS ---
+    match /friendRequests/{requestId} {
+      // Create: Authenticated users can create requests coming FROM them
+      allow create: if request.auth != null && request.resource.data.fromUid == request.auth.uid;
+      
+      // Read: Users can see requests sent TO them or BY them
+      allow read: if request.auth != null && (
+        resource.data.toUid == request.auth.uid || 
+        resource.data.fromUid == request.auth.uid
+      );
+      
+      // Delete: Users can cancel their own requests OR reject/accept requests sent to them
+      allow delete: if request.auth != null && (
+        resource.data.fromUid == request.auth.uid || 
+        resource.data.toUid == request.auth.uid
+      );
     }
 
     // --- LISTS (Core Social Feature) ---

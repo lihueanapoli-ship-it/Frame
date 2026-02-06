@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { HomeIcon, MagnifyingGlassIcon, RectangleStackIcon, ChartBarIcon, ChatBubbleLeftRightIcon, ArrowLeftOnRectangleIcon, UserIcon } from '@heroicons/react/24/outline';
-import { HomeIcon as HomeIconSolid, MagnifyingGlassIcon as SearchIconSolid, RectangleStackIcon as LibraryIconSolid, ChartBarIcon as ChartBarIconSolid } from '@heroicons/react/24/solid';
+import { HomeIcon, MagnifyingGlassIcon, RectangleStackIcon, ChartBarIcon, ChatBubbleLeftRightIcon, ArrowLeftOnRectangleIcon, UserIcon, UsersIcon } from '@heroicons/react/24/outline';
+import { HomeIcon as HomeIconSolid, MagnifyingGlassIcon as SearchIconSolid, RectangleStackIcon as LibraryIconSolid, ChartBarIcon as ChartBarIconSolid, UsersIcon as UsersIconSolid } from '@heroicons/react/24/solid';
 import { BrowserRouter, Routes, Route, useNavigate, Navigate, NavLink } from 'react-router-dom';
 import { MovieProvider } from './contexts/MovieContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -17,6 +17,7 @@ import CategoryView from './views/CategoryView';
 import SearchView from './views/SearchView';
 import StatsView from './views/StatsView';
 import PublicProfileView from './views/PublicProfileView';
+import FriendsView from './views/FriendsView';
 import ListView from './views/ListView';
 
 import BottomNav from './components/navigation/BottomNav';
@@ -39,6 +40,7 @@ const AppContent = () => {
         { name: 'Inicio', path: '/', icon: HomeIcon, activeIcon: HomeIconSolid },
         { name: 'Explorar', path: '/search', icon: MagnifyingGlassIcon, activeIcon: SearchIconSolid },
         { name: 'ADN', path: '/dashboard', icon: ChartBarIcon, activeIcon: ChartBarIconSolid },
+        { name: 'Amigos', path: '/friends', icon: UsersIcon, activeIcon: UsersIconSolid },
         { name: 'Listas', path: '/library', icon: RectangleStackIcon, activeIcon: LibraryIconSolid },
     ];
 
@@ -223,6 +225,7 @@ const AppContent = () => {
                         <Route path="/" element={<DiscoverView onSelectMovie={setSelectedMovie} />} />
                         <Route path="/search" element={<SearchView onSelectMovie={setSelectedMovie} />} />
                         <Route path="/library" element={<LibraryView onSelectMovie={setSelectedMovie} />} />
+                        <Route path="/friends" element={<FriendsView />} />
                         <Route path="/dashboard" element={<StatsView />} />
                         <Route path="/u/:username" element={<PublicProfileView onSelectMovie={setSelectedMovie} />} />
                         <Route path="/lists/:id" element={<ListView onSelectMovie={setSelectedMovie} />} />

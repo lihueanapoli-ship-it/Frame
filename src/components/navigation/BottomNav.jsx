@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { HomeIcon, MagnifyingGlassIcon, RectangleStackIcon, ChartBarIcon } from '@heroicons/react/24/outline';
-import { HomeIcon as HomeIconSolid, MagnifyingGlassIcon as SearchIconSolid, RectangleStackIcon as LibraryIconSolid, ChartBarIcon as ChartBarIconSolid } from '@heroicons/react/24/solid';
+import { HomeIcon, MagnifyingGlassIcon, RectangleStackIcon, ChartBarIcon, UsersIcon } from '@heroicons/react/24/outline';
+import { HomeIcon as HomeIconSolid, MagnifyingGlassIcon as SearchIconSolid, RectangleStackIcon as LibraryIconSolid, ChartBarIcon as ChartBarIconSolid, UsersIcon as UsersIconSolid } from '@heroicons/react/24/solid';
 import { cn } from '../../lib/utils'; // Assuming I created this utility
 
 const BottomNav = () => {
@@ -9,6 +9,7 @@ const BottomNav = () => {
         { name: 'Inicio', path: '/', icon: HomeIcon, activeIcon: HomeIconSolid },
         { name: 'Explorar', path: '/search', icon: MagnifyingGlassIcon, activeIcon: SearchIconSolid },
         { name: 'ADN', path: '/dashboard', icon: ChartBarIcon, activeIcon: ChartBarIconSolid },
+        { name: 'Amigos', path: '/friends', icon: UsersIcon, activeIcon: UsersIconSolid },
         { name: 'Listas', path: '/library', icon: RectangleStackIcon, activeIcon: LibraryIconSolid },
     ];
 
