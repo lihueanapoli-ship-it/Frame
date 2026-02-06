@@ -177,64 +177,98 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                         <div className="p-6 md:p-8 flex flex-col h-full overflow-y-auto custom-scrollbar">
                             {!submitted ? (
                                 <>
-                                    <div className="text-center mb-6">
-                                        <h2 className="text-xl font-display font-bold text-white mb-1">Feedback Rápido ⚡</h2>
-                                        <p className="text-xs text-gray-400">Selecciona, califica y graba. ¡Listo!</p>
+                                    <div className="text-center mb-10">
+                                        <div className="inline-block p-2 bg-primary/10 rounded-full mb-3 ring-1 ring-primary/20">
+                                            <PaperAirplaneIcon className="w-5 h-5 text-primary" />
+                                        </div>
+                                        <h2 className="text-2xl font-bold text-white mb-2">Ayúdanos a mejorar</h2>
+                                        <p className="text-sm text-gray-400">Tu opinión nos ayuda a que FRAME sea mejor cada día.</p>
                                     </div>
 
                                     {/* 1. Category Selector (Chips) */}
-                                    <div className="grid grid-cols-2 gap-3 mb-6">
+                                    <div className="grid grid-cols-2 gap-4 mb-8">
                                         {categories.map((cat) => (
                                             <button
                                                 key={cat.id}
                                                 onClick={() => { playClick(); setCategory(cat.id); }}
                                                 className={cn(
-                                                    "flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-200 group",
+                                                    "flex items-center gap-3 p-4 rounded-2xl border transition-all duration-300 group relative overflow-hidden",
                                                     category === cat.id
-                                                        ? `${cat.bg} ${cat.border} ring-1 ring-offset-1 ring-offset-[#0F0F0F] ring-${cat.color.split('-')[1]}-400`
-                                                        : "bg-surface-elevated border-white/5 hover:bg-white/5"
+                                                        ? `${cat.bg} ${cat.border} shadow-[0_0_20px_rgba(255,255,255,0.03)]`
+                                                        : "bg-white/[0.03] border-white/5 hover:bg-white/[0.06] hover:border-white/10"
                                                 )}
                                             >
-                                                <cat.icon className={cn("w-6 h-6 mb-2 transition-colors", category === cat.id ? cat.color : "text-gray-500 group-hover:text-gray-300")} />
-                                                <span className={cn("text-xs font-semibold", category === cat.id ? "text-white" : "text-gray-500")}>{cat.label}</span>
+                                                {category === cat.id && (
+                                                    <motion.div layoutId="category-glow" className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.05] to-transparent pointer-events-none" />
+                                                )}
+                                                <div className={cn(
+                                                    "p-2 rounded-lg transition-colors",
+                                                    category === cat.id ? "bg-white/10" : "bg-white/5 group-hover:bg-white/10"
+                                                )}>
+                                                    <cat.icon className={cn("w-5 h-5 transition-colors", category === cat.id ? cat.color : "text-gray-400 group-hover:text-gray-200")} />
+                                                </div>
+                                                <span className={cn("text-xs font-bold tracking-wide", category === cat.id ? "text-white" : "text-gray-400 group-hover:text-gray-200")}>{cat.label}</span>
                                             </button>
                                         ))}
                                     </div>
 
                                     {/* 2. Audio Recorder (Compact & Aesthetics) */}
-                                    <div className="bg-surface-elevated rounded-xl p-4 border border-white/5 mb-6">
-                                        <div className="flex justify-between items-center mb-3">
-                                            <label className="text-[10px] font-mono uppercase tracking-widest text-gray-400">
-                                                NOTA DE VOZ (OPCIONAL)
+                                    <div className="bg-white/[0.02] rounded-2xl p-5 border border-white/5 mb-8 relative group">
+                                        <div className="flex justify-between items-center mb-4">
+                                            <label className="text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">
+                                                MENSAJE DE VOZ
                                             </label>
-                                            {audioBlob && <span className="text-[10px] text-green-400 font-mono flex items-center gap-1"><CheckCircleIcon className="w-3 h-3" /> LISTO</span>}
+                                            <div className="flex items-center gap-1.5 min-h-[14px]">
+                                                {isRecording && <span className="flex w-2 h-2 rounded-full bg-red-500 animate-pulse" />}
+                                                {audioBlob && <span className="text-[10px] text-primary/80 font-bold tracking-wider">ARCHIVO LISTO</span>}
+                                            </div>
                                         </div>
 
-                                        <div className="flex items-center justify-center gap-4">
+                                        <div className="flex items-center justify-center h-14">
                                             {!isRecording && !audioBlob && (
-                                                <button onClick={startRecording} disabled={isSending} className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-lg border border-white/10 transition-all flex items-center justify-center gap-2 group">
-                                                    <div className="w-2 h-2 bg-red-500 rounded-full group-hover:animate-pulse" />
-                                                    <span className="text-sm font-medium">Grabar</span>
+                                                <button
+                                                    onClick={startRecording}
+                                                    disabled={isSending}
+                                                    className="w-full h-full bg-white/5 hover:bg-white/10 text-white rounded-xl border border-white/10 transition-all flex items-center justify-center gap-3 group active:scale-[0.98]"
+                                                >
+                                                    <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center group-hover:bg-red-500/30 transition-colors">
+                                                        <MicrophoneIcon className="w-4 h-4 text-red-400" />
+                                                    </div>
+                                                    <span className="text-sm font-bold tracking-wide">Toca para grabar</span>
                                                 </button>
                                             )}
 
                                             {isRecording && (
-                                                <div className="flex-1 flex items-center justify-between bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-2 h-2 bg-red-500 rounded-full animate-ping" />
-                                                        <span className="font-mono text-sm text-red-100">{formatTime(recordingTime)}</span>
+                                                <div className="w-full h-full flex items-center justify-between bg-red-500/10 border border-red-500/20 rounded-xl px-6">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="flex gap-1 h-3 items-end">
+                                                            {[1, 2, 3, 4, 3, 2, 1].map((h, i) => (
+                                                                <motion.div
+                                                                    key={i}
+                                                                    animate={{ height: ['20%', '100%', '20%'] }}
+                                                                    transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.1 }}
+                                                                    className="w-0.5 bg-red-400 rounded-full"
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                        <span className="font-mono text-lg font-medium text-red-200 tabular-nums">{formatTime(recordingTime)}</span>
                                                     </div>
-                                                    <button onClick={stopRecording} className="p-1.5 bg-red-500 hover:bg-red-600 rounded-md text-white shadow-lg transition-transform hover:scale-105">
-                                                        <StopIcon className="w-4 h-4" />
+                                                    <button onClick={stopRecording} className="p-2.5 bg-red-500 hover:bg-red-600 rounded-lg text-white shadow-lg transition-all active:scale-90 ring-4 ring-red-500/10">
+                                                        <StopIcon className="w-5 h-5" />
                                                     </button>
                                                 </div>
                                             )}
 
                                             {audioBlob && !isRecording && (
-                                                <div className="flex-1 flex items-center justify-between bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2">
-                                                    <span className="text-xs font-mono text-emerald-200 truncate max-w-[120px]">Audio adjunto</span>
-                                                    <button onClick={deleteRecording} disabled={isSending} className="p-1.5 hover:bg-white/10 rounded-md text-gray-400 hover:text-red-400 transition-colors">
-                                                        <TrashIcon className="w-4 h-4" />
+                                                <div className="w-full h-full flex items-center justify-between bg-primary/5 border border-primary/20 rounded-xl px-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                                            <CheckCircleIcon className="w-4 h-4 text-primary" />
+                                                        </div>
+                                                        <span className="text-xs font-bold text-gray-300">Nota de voz guardada</span>
+                                                    </div>
+                                                    <button onClick={deleteRecording} disabled={isSending} className="p-2 hover:bg-white/5 rounded-lg text-gray-500 hover:text-red-400 transition-colors active:scale-95">
+                                                        <TrashIcon className="w-5 h-5" />
                                                     </button>
                                                 </div>
                                             )}
@@ -263,14 +297,15 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                         <button
                                             onClick={handleSubmit}
                                             disabled={(!rating && !category) || isSending}
-                                            className="w-full py-3.5 bg-primary text-black font-bold rounded-xl hover:shadow-[0_0_20px_rgba(0,240,255,0.3)] hover:scale-[1.01] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2"
+                                            className="w-full py-4 bg-primary text-black font-black rounded-2xl hover:shadow-[0_0_30px_rgba(0,240,255,0.2)] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-3 relative overflow-hidden group/btn"
                                         >
                                             {isSending ? (
-                                                <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                                                <div className="w-5 h-5 border-3 border-black/30 border-t-black rounded-full animate-spin" />
                                             ) : (
                                                 <>
-                                                    <PaperAirplaneIcon className="w-4 h-4" />
-                                                    <span>Enviar Feedback</span>
+                                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:animate-shimmer" />
+                                                    <PaperAirplaneIcon className="w-5 h-5 -rotate-12 group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
+                                                    <span className="text-sm uppercase tracking-widest">Enviar Feedback</span>
                                                 </>
                                             )}
                                         </button>
