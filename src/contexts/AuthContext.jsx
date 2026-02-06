@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { auth } from '../api/firebase';
+import { auth, db } from '../api/firebase';
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 const AuthContext = createContext();
 
@@ -18,8 +19,26 @@ export const AuthProvider = ({ children }) => {
             return;
         }
 
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             setUser(currentUser);
+
+            // Sync user to Firestore on every login/refresh to keep data fresh
+            if (currentUser) {
+                try {
+                    const userRef = doc(db, 'users', currentUser.uid);
+                    await setDoc(userRef, {
+                        uid: currentUser.uid,
+                        displayName: currentUser.displayName,
+                        email: currentUser.email,
+                        photoURL: currentUser.photoURL,
+                        searchName: currentUser.displayName ? currentUser.displayName.toLowerCase() : '',
+                        lastLogin: serverTimestamp()
+                    }, { merge: true });
+                } catch (error) {
+                    console.error("Error syncing user to Firestore:", error);
+                }
+            }
+
             setLoading(false);
         });
         return unsubscribe;

@@ -14,23 +14,23 @@ const UserSearchModal = ({ isOpen, onClose, onSelectUser }) => {
 
     useEffect(() => {
         const timeoutId = setTimeout(async () => {
-            if (searchQuery.trim().length > 0) {
+            if (searchQuery.trim().length > 1) {
                 setLoading(true);
                 try {
-                    // Search by displayName (Case sensitive in Firestore standard queries)
-                    // We assume names are stored capitalized e.g. "Lihue Napoli"
-                    // Ideally we would store a lowercase 'searchKey' field in DB for robust search.
-                    const term = searchQuery;
+                    // Search by lowercase 'searchName' for case-insensitive robust search
+                    const term = searchQuery.toLowerCase().trim();
                     const q = query(
-                        collection(db, 'userProfiles'),
-                        where('displayName', '>=', term),
-                        where('displayName', '<=', term + '\uf8ff'),
+                        collection(db, 'users'),
+                        where('searchName', '>=', term),
+                        where('searchName', '<=', term + '\uf8ff'),
                         limit(10)
                     );
                     const snap = await getDocs(q);
-                    setResults(snap.docs.map(d => ({ uid: d.id, ...d.data() })));
+                    const foundUsers = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+                    setResults(foundUsers);
                 } catch (e) {
                     console.error("Search error", e);
+                    setResults([]);
                 } finally {
                     setLoading(false);
                 }
@@ -83,27 +83,33 @@ const UserSearchModal = ({ isOpen, onClose, onSelectUser }) => {
                             {loading ? (
                                 <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 text-primary animate-spin" /></div>
                             ) : results.length > 0 ? (
-                                results.map(user => (
-                                    <div
-                                        key={user.uid}
+                                results.map(userResult => (
+                                    <button
+                                        key={userResult.uid}
                                         onClick={() => {
                                             if (onSelectUser) {
-                                                onSelectUser(user);
+                                                onSelectUser(userResult);
                                             } else {
-                                                navigate(`/u/${user.username}`);
+                                                // If we had a public profile page: navigate(`/u/${userResult.uid}`);
                                             }
                                             onClose();
                                         }}
-                                        className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 cursor-pointer transition-colors group"
+                                        className="w-full text-left flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 cursor-pointer transition-colors group"
                                     >
-                                        <div className="w-10 h-10 rounded-full bg-white/10 overflow-hidden">
-                                            <img src={user.photoURL || "/logo.png"} alt="" className="w-full h-full object-cover" />
+                                        <div className="w-10 h-10 rounded-full bg-white/10 overflow-hidden border border-white/10">
+                                            {userResult.photoURL ? (
+                                                <img src={userResult.photoURL} alt="" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center bg-primary/20 text-primary font-bold">
+                                                    {userResult.displayName?.charAt(0).toUpperCase()}
+                                                </div>
+                                            )}
                                         </div>
                                         <div>
-                                            <p className="font-bold text-white group-hover:text-primary transition-colors">{user.displayName}</p>
-                                            <p className="text-xs text-gray-500 font-mono">@{user.username}</p>
+                                            <p className="font-bold text-white group-hover:text-primary transition-colors">{userResult.displayName}</p>
+                                            <p className="text-xs text-gray-500 font-mono">{userResult.email}</p>
                                         </div>
-                                    </div>
+                                    </button>
                                 ))
                             ) : searchQuery ? (
                                 <div className="text-center py-8 text-gray-500">
