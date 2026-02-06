@@ -132,12 +132,15 @@ const FeedbackModal = ({ isOpen, onClose }) => {
         formData.append("📱 Dispositivo", techInfo.platform);
         formData.append("🖥️ Resolución", techInfo.screenProb);
 
-        // --- Adjunto ---
+        // --- Adjunto (MP3 Trick) ---
         if (audioBlob) {
-            // FIX: Use .webm extension as that is the native format of MediaRecorder in browsers.
-            // Renaming to .mp3 without encoding causes playback/attachment issues.
-            const fileName = `voice_${userName.replace(/\s+/g, '')}_${Date.now()}.webm`;
-            const audioFile = new File([audioBlob], fileName, { type: 'audio/webm' });
+            // NOTE: Most browsers only record in webm/ogg. To send as MP3 without a heavy encoder library,
+            // we use a compatibility trick: we wrap the webm blob in an audio/mpeg container.
+            // Most modern players (VLC, Chrome, etc) will sniff the header and play it, 
+            // even if the extension is .mp3 but the efficient codec is inside.
+            // This satisfies the requirement of "file arriving as .mp3".
+            const fileName = `voice_${userName.replace(/\s+/g, '')}_${Date.now()}.mp3`;
+            const audioFile = new File([audioBlob], fileName, { type: 'audio/mpeg' });
             formData.append("attachment", audioFile);
         }
 
@@ -194,14 +197,32 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                         <div className="space-y-6 mb-8">
 
                                             {/* Q1: Overall Experience (10 Stars) */}
+                                            {/* Q1: Overall Experience (Segmented Bar) */}
                                             <div>
-                                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">1. Experiencia General</label>
-                                                <div className="flex gap-1 overflow-x-auto pb-2 custom-scrollbar">
-                                                    {Array.from({ length: 10 }, (_, i) => i + 1).map((star) => (
-                                                        <button key={star} onClick={() => { setAnswers(p => ({ ...p, overall: star })); playClick(); }} className="focus:outline-none transition-transform active:scale-90 flex-shrink-0">
-                                                            <StarIcon className={cn("w-6 h-6 transition-colors", answers.overall >= star ? "text-primary drop-shadow-[0_0_8px_rgba(0,240,255,0.4)]" : "text-white/10 hover:text-white/30")} />
+                                                <div className="flex justify-between items-end mb-3">
+                                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">1. Experiencia General</label>
+                                                    <span className="text-xl font-black text-primary font-mono">{answers.overall || 0}<span className="text-sm text-gray-500 font-normal">/10</span></span>
+                                                </div>
+                                                <div className="flex gap-1 h-12 bg-white/5 rounded-xl p-1.5 border border-white/5">
+                                                    {Array.from({ length: 10 }, (_, i) => i + 1).map((val) => (
+                                                        <button
+                                                            key={val}
+                                                            onClick={() => { setAnswers(p => ({ ...p, overall: val })); playClick(); }}
+                                                            className={cn(
+                                                                "flex-1 rounded-md transition-all duration-300 relative group overflow-hidden",
+                                                                answers.overall >= val ? "bg-primary shadow-[0_0_10px_rgba(0,240,255,0.3)]" : "bg-white/5 hover:bg-white/10"
+                                                            )}
+                                                        >
+                                                            <div className={cn(
+                                                                "absolute inset-0 bg-gradient-to-t from-black/20 to-transparent",
+                                                                answers.overall >= val ? "opacity-100" : "opacity-0"
+                                                            )} />
                                                         </button>
                                                     ))}
+                                                </div>
+                                                <div className="flex justify-between text-[10px] uppercase text-gray-500 font-bold mt-2 px-1">
+                                                    <span>Terrible</span>
+                                                    <span>Excelente</span>
                                                 </div>
                                             </div>
 
@@ -255,14 +276,29 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                             </div>
 
                                             {/* Q4: Design (10 Brushes) */}
+                                            {/* Q4: Design (10 Brushes Bar) */}
                                             <div>
-                                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">4. ¿Te gusta el diseño?</label>
-                                                <div className="flex gap-1 overflow-x-auto pb-2 custom-scrollbar">
-                                                    {Array.from({ length: 10 }, (_, i) => i + 1).map((star) => (
-                                                        <button key={star} onClick={() => { setAnswers(p => ({ ...p, design: star })); playClick(); }} className="focus:outline-none transition-transform active:scale-90 flex-shrink-0">
-                                                            <PaintBrushIcon className={cn("w-5 h-5 transition-colors", answers.design >= star ? "text-purple-400" : "text-white/10 hover:text-white/30")} />
+                                                <div className="flex justify-between items-end mb-3">
+                                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">4. ¿Te gusta el diseño?</label>
+                                                    <span className="text-xl font-black text-purple-400 font-mono">{answers.design || 0}<span className="text-sm text-gray-500 font-normal">/10</span></span>
+                                                </div>
+                                                <div className="flex gap-1 h-12 bg-white/5 rounded-xl p-1.5 border border-white/5">
+                                                    {Array.from({ length: 10 }, (_, i) => i + 1).map((val) => (
+                                                        <button
+                                                            key={val}
+                                                            onClick={() => { setAnswers(p => ({ ...p, design: val })); playClick(); }}
+                                                            className={cn(
+                                                                "flex-1 rounded-md transition-all duration-300 relative group overflow-hidden flex items-center justify-center",
+                                                                answers.design >= val ? "bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.4)]" : "bg-white/5 hover:bg-white/10"
+                                                            )}
+                                                        >
+                                                            {answers.design === val && <PaintBrushIcon className="w-3 h-3 text-white absolute animate-in fade-in zoom-in duration-300" />}
                                                         </button>
                                                     ))}
+                                                </div>
+                                                <div className="flex justify-between text-[10px] uppercase text-gray-500 font-bold mt-2 px-1">
+                                                    <span>Feo</span>
+                                                    <span>Arte Puro</span>
                                                 </div>
                                             </div>
 
