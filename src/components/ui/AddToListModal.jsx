@@ -6,32 +6,14 @@ import { cn } from '../../lib/utils';
 import { useSound } from '../../contexts/SoundContext';
 
 const AddToListModal = ({ isOpen, onClose, movie }) => {
-    const { myLists, createList, addMovieToList, removeMovieFromList, loading } = useLists();
+    const { myLists, addMovieToList, removeMovieFromList } = useLists();
     const { playClick, playSuccess } = useSound();
-
-    const [isCreating, setIsCreating] = useState(false);
-    const [newListName, setNewListName] = useState('');
-    const [newListPrivacy, setNewListPrivacy] = useState('public');
+    // Removed local creation state
 
     // Filter lists where movie is already present vs not
     const isMovieInList = (list) => list.movies?.some(m => m.id === movie.id);
 
-    const handleCreate = async (e) => {
-        e.preventDefault();
-        if (!newListName.trim()) return;
 
-        playClick();
-        const newListId = await createList(newListName, '', newListPrivacy);
-
-        // Auto add current movie to new list
-        if (movie && newListId) {
-            await addMovieToList(newListId, movie);
-            playSuccess();
-        }
-
-        setIsCreating(false);
-        setNewListName('');
-    };
 
     const toggleList = async (list) => {
         playClick();
@@ -71,7 +53,7 @@ const AddToListModal = ({ isOpen, onClose, movie }) => {
                         {/* Content */}
                         <div className="p-2 max-h-[60vh] overflow-y-auto custom-scrollbar">
                             {/* List Items */}
-                            {myLists.length === 0 && !isCreating && (
+                            {myLists.length === 0 && (
                                 <div className="text-center py-8 text-gray-500">
                                     <p className="text-sm">No tienes listas personalizadas aún.</p>
                                 </div>
@@ -97,9 +79,7 @@ const AddToListModal = ({ isOpen, onClose, movie }) => {
                                                     <p className={cn("text-sm font-semibold transition-colors", active ? "text-primary" : "text-white")}>{list.name}</p>
                                                     <p className="text-[10px] text-gray-500 flex items-center gap-1">
                                                         {list.movieCount || 0} películas •
-                                                        {list.privacy === 'private' ? <LockClosedIcon className="w-3 h-3" /> :
-                                                            list.privacy === 'friends' ? <UserGroupIcon className="w-3 h-3" /> :
-                                                                <GlobeAltIcon className="w-3 h-3" />}
+                                                        <GlobeAltIcon className="w-3 h-3" />
                                                     </p>
                                                 </div>
                                             </div>
@@ -109,52 +89,15 @@ const AddToListModal = ({ isOpen, onClose, movie }) => {
                             </div>
                         </div>
 
-                        {/* Create New List Form */}
-                        <div className="p-4 border-t border-white/5 bg-surface-elevated">
-                            {!isCreating ? (
-                                <button
-                                    onClick={() => setIsCreating(true)}
-                                    className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white font-medium flex items-center justify-center gap-2 transition-all"
-                                >
-                                    <PlusIcon className="w-4 h-4" /> Nueva Lista
-                                </button>
-                            ) : (
-                                <form onSubmit={handleCreate} className="animate-fade-in space-y-3">
-                                    <input
-                                        autoFocus
-                                        type="text"
-                                        placeholder="Nombre de la lista..."
-                                        className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-primary outline-none"
-                                        value={newListName}
-                                        onChange={(e) => setNewListName(e.target.value)}
-                                    />
-                                    <div className="flex gap-2">
-                                        <select
-                                            value={newListPrivacy}
-                                            onChange={(e) => setNewListPrivacy(e.target.value)}
-                                            className="bg-black/50 border border-white/10 rounded-lg px-2 py-2 text-xs text-gray-400 focus:text-white outline-none"
-                                        >
-                                            <option value="public">Pública</option>
-                                            <option value="private">Privada</option>
-                                            <option value="friends">Amigos</option>
-                                        </select>
-                                        <button
-                                            type="submit"
-                                            disabled={!newListName.trim()}
-                                            className="flex-1 bg-primary text-black font-bold rounded-lg text-xs hover:opacity-90 disabled:opacity-50"
-                                        >
-                                            Crear
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsCreating(false)}
-                                            className="px-3 bg-white/10 text-white rounded-lg text-xs hover:bg-white/20"
-                                        >
-                                            Cancelar
-                                        </button>
-                                    </div>
-                                </form>
-                            )}
+                        {/* Footer / Call to Action */}
+                        <div className="p-4 border-t border-white/5 bg-surface-elevated text-center">
+                            <p className="text-[10px] text-gray-500 mb-2">¿Quieres una nueva colección?</p>
+                            <a
+                                href="/library"
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-full text-xs font-semibold text-white transition-colors"
+                            >
+                                <PlusIcon className="w-3 h-3" /> Crear en Mis Listas
+                            </a>
                         </div>
                     </motion.div>
                 </div>

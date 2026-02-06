@@ -92,7 +92,7 @@ const LibraryView = ({ onSelectMovie }) => {
             </header>
 
             {/* CONTROLS (Sticky Tabs Only) */}
-            <div className="sticky top-20 z-[90] bg-[#0A0A0A] py-4 -mx-4 px-4 border-b border-white/5 mb-6 shadow-xl">
+            <div className="sticky top-20 z-30 bg-[#0A0A0A] py-4 -mx-4 px-4 border-b border-white/5 mb-6 shadow-xl">
                 {/* 1. TABS */}
                 <div className="flex p-1 bg-surface rounded-xl relative overflow-hidden">
                     <button onClick={() => setActiveTab('watchlist')} className={cn("flex-1 flex items-center justify-center gap-2 py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all z-10", activeTab === 'watchlist' ? "text-white" : "text-gray-500 hover:text-gray-300")}>
@@ -114,37 +114,48 @@ const LibraryView = ({ onSelectMovie }) => {
             <div className="space-y-4 mb-6">
                 {/* 2. LIST SELECTOR */}
                 {activeTab === 'watchlist' && (
-                    <div className="flex items-center gap-3">
-                        <div className="relative flex-1">
+                    <div className="relative z-10">
+                        {/* Custom Dropdown Trigger */}
+                        <div className="relative">
                             <select
                                 value={selectedListId}
                                 onChange={(e) => {
                                     if (e.target.value === 'new') {
                                         setIsCreateListOpen(true);
-                                        return;
+                                        // Reset to previous value or keep current? 
+                                        // Ideally just trigger modal and don't change selection yet until created.
+                                        // But native select needs a value.
+                                        // Let's keep it simple: if 'new' is selected, open modal, select stays on what it was effectively because we don't update state to 'new' unless we want to show a 'creating...' state.
+                                        // Actually, let's use a trick: Value is selectedListId. 
+                                        // If user selects 'new', e.target.value is 'new'. We explicitly handle it.
+                                    } else {
+                                        setSelectedListId(e.target.value);
                                     }
-                                    setSelectedListId(e.target.value);
                                 }}
-                                className="w-full appearance-none bg-surface-elevated border border-white/10 text-white rounded-xl py-3 pl-4 pr-10 text-sm font-medium focus:ring-1 focus:ring-primary focus:border-primary cursor-pointer hover:bg-white/5 transition-colors"
+                                className="w-full appearance-none bg-[#111] border border-white/10 text-white rounded-xl py-3 pl-4 pr-10 text-sm font-medium focus:ring-1 focus:ring-primary focus:border-primary cursor-pointer hover:bg-white/5 transition-colors"
                             >
-                                <option value="watchlist">🎬 Mi Watchlist (General)</option>
-                                <optgroup label="Mis Colecciones">
+                                <option value="watchlist" className="bg-[#111] text-white">🎬 Mi Watchlist (General)</option>
+                                <optgroup label="Mis Colecciones" className="bg-[#111] text-gray-400">
                                     {allListsDisplay.map(list => (
-                                        <option key={list.id} value={list.id}>
+                                        <option key={list.id} value={list.id} className="bg-[#111] text-white">
                                             📑 {list.name} {list.ownerId !== user.uid ? '(Colaboración)' : ''}
                                         </option>
                                     ))}
                                 </optgroup>
-                                <option value="new" className="text-primary font-bold">+ Crear Nueva Lista...</option>
+                                <option value="new" className="bg-[#111] text-primary font-bold">+ Crear Nueva Lista...</option>
                             </select>
                             <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                         </div>
 
                         {currentCustomList && currentCustomList.ownerId === user.uid && (
-                            <>
-                                <button onClick={() => setIsInviteModalOpen(true)} className="p-3 bg-surface-elevated border border-white/10 rounded-xl hover:bg-white/10 hover:text-primary transition-colors text-gray-400"><UserPlusIcon className="w-5 h-5" /></button>
-                                <button onClick={handleDeleteList} className="p-3 bg-surface-elevated border border-white/10 rounded-xl hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/50 transition-colors text-gray-400"><TrashIcon className="w-5 h-5" /></button>
-                            </>
+                            <div className="flex gap-2 mt-2">
+                                <button onClick={() => setIsInviteModalOpen(true)} className="flex-1 py-2 bg-surface-elevated border border-white/10 rounded-lg text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 flex items-center justify-center gap-2">
+                                    <UserPlusIcon className="w-4 h-4" /> Invitar
+                                </button>
+                                <button onClick={handleDeleteList} className="w-10 flex items-center justify-center bg-surface-elevated border border-white/10 rounded-lg hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/50 transition-colors text-gray-400">
+                                    <TrashIcon className="w-4 h-4" />
+                                </button>
+                            </div>
                         )}
                     </div>
                 )}
