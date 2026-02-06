@@ -72,17 +72,29 @@ export const ListProvider = ({ children }) => {
         fetchAllLists();
     }, [user]);
 
-    // 2. Create List
-    const createList = async (name, description, privacy = 'public') => {
+    // 2. Create List - Handles both (obj) and (name, desc, privacy) signatures
+    const createList = async (arg1, arg2, arg3) => {
         if (!user) return;
+
+        let name, description, privacy;
+
+        // Handle object signature
+        if (typeof arg1 === 'object' && arg1 !== null) {
+            ({ name, description, privacy = 'public' } = arg1);
+        } else {
+            // Handle legacy signature
+            name = arg1;
+            description = arg2;
+            privacy = arg3 || 'public';
+        }
 
         try {
             const newList = {
                 ownerId: user.uid,
                 ownerName: user.displayName || 'Anónimo',
                 name,
-                description,
-                privacy, // 'public', 'private', 'friends'
+                description: description || '',
+                privacy,
                 collaborators: [], // UIDs de colaboradores
                 movies: [],
                 movieCount: 0,
@@ -96,6 +108,7 @@ export const ListProvider = ({ children }) => {
 
             // Optimistic Update
             const createdList = { id: docRef.id, ...newList, createdAt: new Date() };
+            // Ensure we don't have duplicates just in case
             setMyLists(prev => [createdList, ...prev]);
 
             trackBehavior('listsCreated');
