@@ -92,7 +92,7 @@ const LibraryView = ({ onSelectMovie }) => {
             </header>
 
             {/* CONTROLS (Sticky Tabs Only) */}
-            <div className="sticky top-20 z-40 bg-[#0A0A0A] py-4 -mx-4 px-4 border-b border-white/5 mb-6 shadow-xl">
+            <div className="sticky top-20 z-[90] bg-[#0A0A0A] py-4 -mx-4 px-4 border-b border-white/5 mb-6 shadow-xl">
                 {/* 1. TABS */}
                 <div className="flex p-1 bg-surface rounded-xl relative overflow-hidden">
                     <button onClick={() => setActiveTab('watchlist')} className={cn("flex-1 flex items-center justify-center gap-2 py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all z-10", activeTab === 'watchlist' ? "text-white" : "text-gray-500 hover:text-gray-300")}>

@@ -153,7 +153,7 @@ const AppContent = () => {
         <div className="min-h-screen bg-background text-white font-sans selection:bg-primary selection:text-white">
             <SpotlightCursor />
             <PageTransitionOverlay />
-            <header className="sticky top-0 z-50 w-full backdrop-blur-xl bg-background/90 border-b border-white/5 transition-all duration-300">
+            <header className="sticky top-0 z-[100] w-full backdrop-blur-xl bg-background/90 border-b border-white/5 transition-all duration-300">
                 <div className="flex h-20 items-center w-full px-4 max-w-7xl mx-auto justify-between relative">
                     <a href="/" onClick={(e) => {
                         e.preventDefault();

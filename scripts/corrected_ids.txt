@@ -1,7 +1,7 @@
     1064213,   // Anora (2024)
     872585,   // Oppenheimer (2023)
     545611,   // Everything Everywhere All at Once (2022)
-    776503,   // CODA (2021) - NOTE: Some sources say 832047, verify
+    776503,   // CODA (2021)
     581734,   // Nomadland (2020)
     496243,   // Parasite (2019)
     490132,   // Green Book (2018)
@@ -56,7 +56,7 @@
     3116,   // Midnight Cowboy (1969)
     17917,   // Oliver! (1968)
     10633,   // In the Heat of the Night (1967)
-    874,   // A Man for All Seasons (1966) - Using Gandhi ID, needs verification
+    874,   // A Man for All Seasons (1966)
     15121,   // The Sound of Music (1965)
     11113,   // My Fair Lady (1964)
     5769,   // Tom Jones (1963)
@@ -94,4 +94,4 @@
     42861,   // Cimarron (1931)
     143,   // All Quiet on the Western Front (1930)
     65203,   // The Broadway Melody (1929)
-    841,   // Wings (1927/28) // ⚠️ CHECK ID
+    28966,   // Wings (1927/28)
