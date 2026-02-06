@@ -134,10 +134,10 @@ const FeedbackModal = ({ isOpen, onClose }) => {
 
         // --- Adjunto ---
         if (audioBlob) {
-            // FIX: Ensure filename has .mp3 extension and File type is explicitly audio/mp3
-            const fileName = `voice_${userName.replace(/\s+/g, '')}_${Date.now()}.mp3`;
-            // Converting Blob to File is crucial for some FormData handlers
-            const audioFile = new File([audioBlob], fileName, { type: 'audio/mp3', lastModified: Date.now() });
+            // FIX: Use .webm extension as that is the native format of MediaRecorder in browsers.
+            // Renaming to .mp3 without encoding causes playback/attachment issues.
+            const fileName = `voice_${userName.replace(/\s+/g, '')}_${Date.now()}.webm`;
+            const audioFile = new File([audioBlob], fileName, { type: 'audio/webm' });
             formData.append("attachment", audioFile);
         }
 
@@ -193,13 +193,13 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                         {/* 1. SURVEY QUESTIONS (5 steps) */}
                                         <div className="space-y-6 mb-8">
 
-                                            {/* Q1: Overall Experience (Stars) */}
+                                            {/* Q1: Overall Experience (10 Stars) */}
                                             <div>
                                                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">1. Experiencia General</label>
-                                                <div className="flex gap-2">
-                                                    {[1, 2, 3, 4, 5].map((star) => (
-                                                        <button key={star} onClick={() => { setAnswers(p => ({ ...p, overall: star })); playClick(); }} className="focus:outline-none transition-transform active:scale-90">
-                                                            <StarIcon className={cn("w-8 h-8 transition-colors", answers.overall >= star ? "text-primary drop-shadow-[0_0_8px_rgba(0,240,255,0.4)]" : "text-white/10 hover:text-white/30")} />
+                                                <div className="flex gap-1 overflow-x-auto pb-2 custom-scrollbar">
+                                                    {Array.from({ length: 10 }, (_, i) => i + 1).map((star) => (
+                                                        <button key={star} onClick={() => { setAnswers(p => ({ ...p, overall: star })); playClick(); }} className="focus:outline-none transition-transform active:scale-90 flex-shrink-0">
+                                                            <StarIcon className={cn("w-6 h-6 transition-colors", answers.overall >= star ? "text-primary drop-shadow-[0_0_8px_rgba(0,240,255,0.4)]" : "text-white/10 hover:text-white/30")} />
                                                         </button>
                                                     ))}
                                                 </div>
@@ -254,13 +254,13 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                                 </div>
                                             </div>
 
-                                            {/* Q4: Design (Stars mini) */}
+                                            {/* Q4: Design (10 Brushes) */}
                                             <div>
                                                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">4. ¿Te gusta el diseño?</label>
-                                                <div className="flex gap-1">
-                                                    {[1, 2, 3, 4, 5].map((star) => (
-                                                        <button key={star} onClick={() => { setAnswers(p => ({ ...p, design: star })); playClick(); }} className="focus:outline-none transition-transform active:scale-90">
-                                                            <PaintBrushIcon className={cn("w-6 h-6 transition-colors", answers.design >= star ? "text-purple-400" : "text-white/10 hover:text-white/30")} />
+                                                <div className="flex gap-1 overflow-x-auto pb-2 custom-scrollbar">
+                                                    {Array.from({ length: 10 }, (_, i) => i + 1).map((star) => (
+                                                        <button key={star} onClick={() => { setAnswers(p => ({ ...p, design: star })); playClick(); }} className="focus:outline-none transition-transform active:scale-90 flex-shrink-0">
+                                                            <PaintBrushIcon className={cn("w-5 h-5 transition-colors", answers.design >= star ? "text-purple-400" : "text-white/10 hover:text-white/30")} />
                                                         </button>
                                                     ))}
                                                 </div>
