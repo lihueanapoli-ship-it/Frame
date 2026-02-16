@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { getMovieDetails } from '../api/tmdb';
 import { db } from '../api/firebase';
 import {
     collection,
@@ -126,6 +127,68 @@ export const ListProvider = ({ children }) => {
                     }
                 }
 
+                // ---------------------------------------------------------
+                // REPAIR & DEDUPLICATE ALL LISTS (Fix missing metadata)
+                // ---------------------------------------------------------
+                for (let list of ownedData) {
+                    if (!list.movies || list.movies.length === 0) continue;
+
+                    // 1. Deduplicate by ID
+                    const uniqueMoviesMap = new Map();
+                    list.movies.forEach(m => {
+                        if (!uniqueMoviesMap.has(m.id)) {
+                            uniqueMoviesMap.set(m.id, m);
+                        }
+                    });
+                    let cleanedMovies = Array.from(uniqueMoviesMap.values());
+
+                    // 2. Check for broken data (missing release_date or vote_average)
+                    const brokenMovies = cleanedMovies.filter(m => (!m.release_date || m.vote_average === undefined) && m.id);
+
+                    if (brokenMovies.length > 0 || cleanedMovies.length !== list.movies.length) {
+                        console.log(`🛠️ Repairing/Deduplicating list: ${list.name}`);
+
+                        if (brokenMovies.length > 0) {
+                            const repairs = await Promise.all(brokenMovies.map(async (broken) => {
+                                try {
+                                    const details = await getMovieDetails(broken.id);
+                                    if (!details) return broken;
+                                    return {
+                                        ...broken,
+                                        title: details.title || broken.title,
+                                        poster_path: details.poster_path || broken.poster_path,
+                                        backdrop_path: details.backdrop_path || broken.backdrop_path || null,
+                                        release_date: details.release_date || null,
+                                        vote_average: details.vote_average || 0,
+                                        genre_ids: details.genres?.map(g => g.id) || broken.genre_ids || [],
+                                        overview: details.overview || null
+                                    };
+                                } catch (e) {
+                                    return broken;
+                                }
+                            }));
+
+                            cleanedMovies = cleanedMovies.map(m => {
+                                const repaired = repairs.find(r => r.id === m.id);
+                                return repaired || m;
+                            });
+                        }
+
+                        // Save updates
+                        try {
+                            const listRef = doc(db, 'lists', list.id);
+                            await updateDoc(listRef, {
+                                movies: cleanedMovies,
+                                movieCount: cleanedMovies.length,
+                                updatedAt: serverTimestamp()
+                            });
+                            // Update local reference
+                            list.movies = cleanedMovies;
+                            list.movieCount = cleanedMovies.length;
+                        } catch (e) { console.error("Repair failed", e); }
+                    }
+                }
+
                 // Sort: General always first, then by date desc
                 ownedData.sort((a, b) => {
                     if (a.name === 'General') return -1;
@@ -237,6 +300,13 @@ export const ListProvider = ({ children }) => {
     // 4. Add Movie to List
     const addMovieToList = async (listId, movie) => {
         try {
+            // Check for duplicates in local state to avoid adding same movie with diff timestamp
+            const currentList = [...myLists, ...collabLists].find(l => l.id === listId);
+            if (currentList && currentList.movies?.some(m => m.id === movie.id)) {
+                console.log("Movie already in list, skipping.");
+                return;
+            }
+
             const listRef = doc(db, 'lists', listId);
 
             // Ensure genres are saved as IDs
