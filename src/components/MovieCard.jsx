@@ -76,8 +76,16 @@ const MovieCard = ({ movie, onClick, rating, variant = 'default', onAddToWatchli
                 </h3>
 
                 <div className="flex justify-between items-center mt-1">
-                    <span className="text-secondary text-xs font-medium">
-                        {year}
+                    <span className="text-secondary text-xs font-medium flex items-center gap-2">
+                        <span>{year}</span>
+                        {!rating && movie.vote_average > 0 && (
+                            <>
+                                <span className="text-white/20">•</span>
+                                <span className="flex items-center gap-1 text-yellow-500/80">
+                                    <Star size={10} fill="currentColor" /> {movie.vote_average.toFixed(1)}
+                                </span>
+                            </>
+                        )}
                     </span>
 
                     {rating > 0 && (
