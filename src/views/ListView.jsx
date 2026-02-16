@@ -184,8 +184,13 @@ const ListView = ({ onSelectMovie }) => {
                     <div className="w-full h-full bg-gradient-to-br from-gray-900 to-black" />
                 )}
 
-                <button onClick={() => navigate(-1)} className="absolute top-24 left-4 md:left-8 z-30 p-2 bg-black/20 hover:bg-black/40 backdrop-blur-md rounded-full text-white transition-all">
-                    <ArrowLeftIcon className="w-6 h-6" />
+                {/* Fixed Back Button - Always visible and returns to Library */}
+                <button
+                    onClick={() => navigate('/library')}
+                    className="fixed top-24 left-4 md:left-8 z-50 p-3 bg-black/60 hover:bg-black/90 backdrop-blur-xl rounded-full text-white border border-white/10 shadow-2xl transition-all group hover:scale-105"
+                    title="Volver a mi Biblioteca"
+                >
+                    <ArrowLeftIcon className="w-6 h-6 group-hover:-translate-x-1 transition-transform" />
                 </button>
 
                 <div className="absolute bottom-0 left-0 w-full p-6 md:p-12 z-30 flex flex-col md:flex-row items-end gap-6">
@@ -267,8 +272,9 @@ const ListView = ({ onSelectMovie }) => {
                         )}
 
                         {isCollaborator && (
-                            <button onClick={handleLeaveList} className="p-3 bg-white/10 text-red-400 rounded-full hover:bg-red-500/20 backdrop-blur-md transition-colors" title="Abandonar lista">
-                                <ArrowLeftIcon className="w-5 h-5" />
+                            <button onClick={handleLeaveList} className="px-5 py-3 bg-red-500/10 text-red-500 border border-red-500/20 rounded-full hover:bg-red-500 font-bold hover:text-white backdrop-blur-md transition-all flex items-center gap-2" title="Dejar de colaborar en esta lista">
+                                <ArrowRightEndOnRectangleIcon className="w-5 h-5" />
+                                <span className="hidden sm:inline">Abandonar</span>
                             </button>
                         )}
 
