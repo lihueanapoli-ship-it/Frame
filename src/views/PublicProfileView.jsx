@@ -119,7 +119,10 @@ const PublicProfileView = ({ onSelectMovie }) => {
                         try {
                             const listsQuery = query(collection(db, 'lists'), where('ownerId', '==', targetUid));
                             const listSnap = await getDocs(listsQuery);
-                            setLists(listSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+                            console.log("DEBUG APP: Lists found:", listSnap.size);
+                            const fetchedLists = listSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                            console.log("DEBUG APP: First List Movies:", fetchedLists[0]?.movies?.length);
+                            setLists(fetchedLists);
                         } catch (err) {
                             console.error("Error fetching lists", err);
                         }
