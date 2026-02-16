@@ -245,6 +245,21 @@ export const ListProvider = ({ children }) => {
         }
     };
 
+    const leaveList = async (listId) => {
+        if (!user) return;
+        try {
+            const listRef = doc(db, 'lists', listId);
+            await updateDoc(listRef, {
+                collaborators: arrayRemove(user.uid)
+            });
+            // Update local state: remove from collabLists
+            setCollabLists(prev => prev.filter(l => l.id !== listId));
+        } catch (e) {
+            console.error("Error leaving list", e);
+            throw e;
+        }
+    };
+
     const value = {
         myLists,
         collabLists, // Expose collaborative lists
@@ -255,7 +270,8 @@ export const ListProvider = ({ children }) => {
         addMovieToList,
         removeMovieFromList,
         getListById,
-        addCollaborator
+        addCollaborator,
+        leaveList
     };
 
     return (

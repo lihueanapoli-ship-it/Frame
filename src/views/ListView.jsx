@@ -17,7 +17,7 @@ const ListView = ({ onSelectMovie }) => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
-    const { getListById, removeMovieFromList, deleteList, addCollaborator } = useLists();
+    const { getListById, removeMovieFromList, deleteList, addCollaborator, leaveList } = useLists();
 
     const [list, setList] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -45,6 +45,13 @@ const ListView = ({ onSelectMovie }) => {
     const handleDeleteList = async () => {
         if (window.confirm("¿Estás seguro de que quieres eliminar esta lista?")) {
             await deleteList(id);
+            navigate('/library');
+        }
+    };
+
+    const handleLeaveList = async () => {
+        if (window.confirm(`¿Seguro que quieres abandonar "${list.name}"?`)) {
+            await leaveList(id);
             navigate('/library');
         }
     };
@@ -162,6 +169,13 @@ const ListView = ({ onSelectMovie }) => {
                                 </button>
                             </>
                         )}
+
+                        {isCollaborator && (
+                            <button onClick={handleLeaveList} className="p-3 bg-white/10 text-red-400 rounded-full hover:bg-red-500/20 backdrop-blur-md transition-colors" title="Abandonar lista">
+                                <ArrowLeftIcon className="w-5 h-5" />
+                            </button>
+                        )}
+
                         <button onClick={() => setIsShareOpen(true)} className="p-3 bg-white/10 text-white rounded-full hover:bg-white/20 backdrop-blur-md transition-colors" title="Compartir">
                             <ShareIcon className="w-5 h-5" />
                         </button>

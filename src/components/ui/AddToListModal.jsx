@@ -6,7 +6,7 @@ import { cn } from '../../lib/utils';
 import { useSound } from '../../contexts/SoundContext';
 
 const AddToListModal = ({ isOpen, onClose, movie }) => {
-    const { myLists, addMovieToList, removeMovieFromList } = useLists();
+    const { allLists, addMovieToList, removeMovieFromList } = useLists();
     const { playClick, playSuccess } = useSound();
     // Removed local creation state
 
@@ -53,14 +53,14 @@ const AddToListModal = ({ isOpen, onClose, movie }) => {
                         {/* Content */}
                         <div className="p-2 max-h-[60vh] overflow-y-auto custom-scrollbar">
                             {/* List Items */}
-                            {myLists.length === 0 && (
+                            {allLists.length === 0 && (
                                 <div className="text-center py-8 text-gray-500">
                                     <p className="text-sm">No tienes listas personalizadas aún.</p>
                                 </div>
                             )}
 
                             <div className="space-y-1">
-                                {myLists.map(list => {
+                                {allLists.map(list => {
                                     const active = isMovieInList(list);
                                     return (
                                         <button

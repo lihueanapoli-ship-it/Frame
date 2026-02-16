@@ -34,7 +34,7 @@ const LibraryView = ({ onSelectMovie }) => {
 
     // Data
     const { watchlist, watched, updateMovieMetadata } = useMovies();
-    const { myLists, collabLists, addCollaborator, deleteList } = useLists();
+    const { myLists, collabLists, addCollaborator, deleteList, leaveList } = useLists();
     const { user, loginWithGoogle } = useAuth();
     const navigate = useNavigate();
 
@@ -61,6 +61,14 @@ const LibraryView = ({ onSelectMovie }) => {
         if (!currentCustomList) return;
         if (window.confirm("¿Estás seguro de que quieres eliminar esta lista?")) {
             await deleteList(currentCustomList.id);
+            setSelectedListId('watchlist');
+        }
+    };
+
+    const handleLeaveList = async () => {
+        if (!currentCustomList) return;
+        if (window.confirm(`¿Abandonar la lista "${currentCustomList.name}"?`)) {
+            await leaveList(currentCustomList.id);
             setSelectedListId('watchlist');
         }
     };
@@ -147,14 +155,22 @@ const LibraryView = ({ onSelectMovie }) => {
                             <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                         </div>
 
-                        {currentCustomList && currentCustomList.ownerId === user.uid && (
+                        {currentCustomList && (
                             <div className="flex gap-2 mt-2">
-                                <button onClick={() => setIsInviteModalOpen(true)} className="flex-1 py-2 bg-surface-elevated border border-white/10 rounded-lg text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 flex items-center justify-center gap-2">
-                                    <UserPlusIcon className="w-4 h-4" /> Invitar
-                                </button>
-                                <button onClick={handleDeleteList} className="w-10 flex items-center justify-center bg-surface-elevated border border-white/10 rounded-lg hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/50 transition-colors text-gray-400">
-                                    <TrashIcon className="w-4 h-4" />
-                                </button>
+                                {currentCustomList.ownerId === user.uid ? (
+                                    <>
+                                        <button onClick={() => setIsInviteModalOpen(true)} className="flex-1 py-2 bg-surface-elevated border border-white/10 rounded-lg text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 flex items-center justify-center gap-2">
+                                            <UserPlusIcon className="w-4 h-4" /> Invitar
+                                        </button>
+                                        <button onClick={handleDeleteList} className="w-10 flex items-center justify-center bg-surface-elevated border border-white/10 rounded-lg hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/50 transition-colors text-gray-400">
+                                            <TrashIcon className="w-4 h-4" />
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button onClick={handleLeaveList} className="flex-1 py-2 bg-surface-elevated border border-white/10 rounded-lg text-xs font-semibold text-red-400 hover:bg-red-500/10 hover:border-red-500/50 transition-colors flex items-center justify-center gap-2">
+                                        <ArrowLeftIcon className="w-4 h-4" /> Abandonar
+                                    </button>
+                                )}
                             </div>
                         )}
                     </div>
