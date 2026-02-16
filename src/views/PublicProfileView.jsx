@@ -128,17 +128,20 @@ const PublicProfileView = ({ onSelectMovie }) => {
                         try {
                             const userMoviesRef = collection(db, 'users', targetUid, 'movies');
                             const userMoviesSnap = await getDocs(userMoviesRef);
+                            console.log("DEBUG APP: User Movies docs found:", userMoviesSnap.size);
 
                             const newMovies = { watchlist: [], watched: [], favorites: [] };
                             userMoviesSnap.docs.forEach(doc => {
                                 const data = doc.data();
+                                // console.log("DEBUG APP: Movie Doc:", doc.id, data);
                                 if (data.isInWatchlist) newMovies.watchlist.push(data);
                                 if (data.isWatched) newMovies.watched.push(data);
                                 if (data.isFavorite) newMovies.favorites.push(data);
                             });
+                            console.log("DEBUG APP: Filtered Watchlist length:", newMovies.watchlist.length);
                             setUserMovies(newMovies);
                         } catch (err) {
-                            console.error("Error fetching user movies", err);
+                            console.error("DEBUG APP: Error fetching user movies", err);
                             // If this fails, it's likely a permission issue. 
                             // We don't want to alert the user aggressively, but we know it's failing.
                         }
