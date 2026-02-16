@@ -139,7 +139,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center sm:p-4">
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-4 sm:pt-24">
             {/* Backdrop */}
             <motion.div
                 variants={overlayVariants}
@@ -156,7 +156,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                 initial="hidden"
                 animate="visible"
                 exit="exit"
-                className="relative w-full max-w-6xl mx-auto bg-background rounded-t-xl sm:rounded-xl overflow-hidden shadow-2xl h-[90vh] flex flex-col border border-white/10"
+                className="relative w-full max-w-6xl mx-auto bg-background rounded-t-xl sm:rounded-xl overflow-hidden shadow-2xl h-[85vh] flex flex-col border border-white/10"
             >
                 {/* Close Button (Fixed relative to Container) */}
                 <button
