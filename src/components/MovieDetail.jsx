@@ -93,7 +93,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                 initial="hidden"
                 animate="visible"
                 exit="exit"
-                className="relative w-full max-w-4xl bg-background rounded-t-3xl sm:rounded-2xl overflow-hidden shadow-2xl max-h-[90vh] overflow-y-auto"
+                className="relative w-full max-w-2xl bg-background rounded-t-3xl sm:rounded-2xl overflow-hidden shadow-2xl max-h-[85vh] overflow-y-auto"
             >
                 {/* Close Button */}
                 <button
@@ -106,7 +106,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                 {/* Cinematic Header (Clickable for Full Video) */}
                 <div
                     className={cn(
-                        "relative h-[40vh] sm:h-[50vh] w-full bg-black overflow-hidden group",
+                        "relative h-[30vh] sm:h-[40vh] w-full bg-black overflow-hidden group",
                         videoKey && showVideo ? "cursor-pointer" : ""
                     )}
                     onClick={() => {

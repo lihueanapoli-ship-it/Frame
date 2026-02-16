@@ -62,6 +62,17 @@ const AddToListModal = ({ isOpen, onClose, movie }) => {
                             <div className="space-y-1">
                                 {allLists.map(list => {
                                     const active = isMovieInList(list);
+                                    const isCollab = list.ownerId !== useLists.user?.uid && list.collaborators?.includes(useLists.user?.uid);
+                                    // Use explicit check from context if needed, but list object has necessary info? 
+                                    // Actually allLists structure: {id, ...data}. 
+                                    // We need current user ID to check ownership vs collab properly here, 
+                                    // OR we can just check if we are owner.
+                                    // But hook user is not imported here. Let's fix that.
+
+                                    // Simplest: Check if ownerId is NOT me? 
+                                    // Wait, we don't have user in this component scope except via context hook call?
+                                    // Let's rely on list property if possible or import user.
+
                                     return (
                                         <button
                                             key={list.id}
@@ -76,7 +87,16 @@ const AddToListModal = ({ isOpen, onClose, movie }) => {
                                                     {active ? <CheckIcon className="w-6 h-6" /> : <PlusIcon className="w-5 h-5" />}
                                                 </div>
                                                 <div className="text-left">
-                                                    <p className={cn("text-sm font-semibold transition-colors", active ? "text-primary" : "text-white")}>{list.name}</p>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className={cn("text-sm font-semibold transition-colors", active ? "text-primary" : "text-white")}>{list.name}</p>
+                                                        {list.ownerName && list.ownerId && (
+                                                            // Heuristic: If I can't check user.uid easily without import, just show owner avatar/name if present?
+                                                            // Let's import useAuth to be precise.
+                                                            <span className="text-[10px] bg-white/10 px-1.5 rounded text-gray-400 flex items-center gap-1">
+                                                                {list.collaborators?.length > 0 && <UserGroupIcon className="w-3 h-3" />}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                     <p className="text-[10px] text-gray-500 flex items-center gap-1">
                                                         {list.movieCount || 0} películas •
                                                         <GlobeAltIcon className="w-3 h-3" />
