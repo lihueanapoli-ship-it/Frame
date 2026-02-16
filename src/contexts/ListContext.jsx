@@ -80,9 +80,14 @@ export const ListProvider = ({ children }) => {
                 }
 
                 // ---------------------------------------------------------
-                // MIGRATION: RESTORE LEGACY WATCHLIST IF GENERAL IS EMPTY
+                // MIGRATION: RESTORE & ENRICH LEGACY WATCHLIST
                 // ---------------------------------------------------------
-                if (general && (!general.movies || general.movies.length === 0)) {
+                // Check if we need migration OR repair (if data is incomplete)
+                const isGeneralEmpty = !general.movies || general.movies.length === 0;
+                // Heuristic: If movies exist but specific critical fields are missing (like release_date or genre_ids), it's a "bad" migration we need to fix.
+                const needsRepair = general.movies?.some(m => !m.release_date && !m.genre_ids && m.title);
+
+                if (general && (isGeneralEmpty || needsRepair)) {
                     try {
                         const userRef = doc(db, 'users', user.uid);
                         const userSnap = await getDoc(userRef);
@@ -91,12 +96,10 @@ export const ListProvider = ({ children }) => {
                             const legacyWatchlist = legacyData.watchlist || [];
 
                             if (legacyWatchlist.length > 0) {
-                                console.log("Found legacy watchlist. Migrating to General list...", legacyWatchlist.length);
+                                console.log(`Migrating/Repairing ${legacyWatchlist.length} movies in General list...`);
 
                                 const moviesToMigrate = legacyWatchlist.map(m => ({
-                                    id: m.id,
-                                    title: m.title,
-                                    poster_path: m.poster_path,
+                                    ...m, // ✨ VITAL: Keep ALL original metadata (genres, runtime, etc.)
                                     addedAt: m.addedAt || new Date().toISOString(),
                                     addedBy: user.uid
                                 }));
@@ -109,14 +112,17 @@ export const ListProvider = ({ children }) => {
                                     coverImage: moviesToMigrate[0]?.poster_path || null
                                 });
 
-                                // Update General Object in Memory
+                                // Update General Object in Memory immediately
                                 general.movies = moviesToMigrate;
                                 general.movieCount = moviesToMigrate.length;
                                 general.coverImage = moviesToMigrate[0]?.poster_path || null;
+
+                                // Force update of state to reflect changes in UI
+                                // We don't need explicit setMyLists here because ownedData (which contains general) is set via setMyLists(ownedData) at the end of this block.
                             }
                         }
                     } catch (e) {
-                        console.error("Migration failed", e);
+                        console.error("Migration/Repair failed", e);
                     }
                 }
 
