@@ -13,7 +13,6 @@ import { FilmIcon } from '@heroicons/react/24/solid';
 import { cn } from '../lib/utils';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
 import ManageListMembersModal from '../components/ui/ManageListMembersModal';
 import CreateListModal from '../components/ui/CreateListModal';
 
@@ -21,8 +20,6 @@ const LibraryView = ({ onSelectMovie }) => {
     // State
     const [activeTab, setActiveTab] = useState('watchlist'); // 'watchlist' | 'watched'
     const [selectedListId, setSelectedListId] = useState('watchlist');
-    const [isFilterOpen, setIsFilterOpen] = useState(false);
-    const [localSearch, setLocalSearch] = useState('');
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [localSearch, setLocalSearch] = useState('');
     const [isManageMembersOpen, setIsManageMembersOpen] = useState(false);
