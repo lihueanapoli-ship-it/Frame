@@ -16,8 +16,8 @@ const CollaboratorModal = ({ isOpen, onClose, listId, currentCollaborators = [] 
         if (!user || !isOpen) return;
 
         setLoading(true);
-        // Fetch friends
-        const unsub = onSnapshot(collection(db, 'users', user.uid, 'friends'), (snap) => {
+        // Fetch 'following' from UserProfiles (New Social System)
+        const unsub = onSnapshot(collection(db, 'userProfiles', user.uid, 'following'), (snap) => {
             const friendsData = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
             setFriends(friendsData);
             setLoading(false);
