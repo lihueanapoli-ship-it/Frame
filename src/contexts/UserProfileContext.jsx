@@ -252,6 +252,52 @@ export const UserProfileProvider = ({ children }) => {
         }
     };
 
+    // --- FRIEND REQUESTS (Added for Public Profile) ---
+    const sendFriendRequest = async (targetUser) => {
+        if (!user || user.uid === targetUser.uid) return;
+        try {
+            await setDoc(doc(db, 'friendRequests', `${user.uid}_${targetUser.uid}`), {
+                fromUid: user.uid,
+                fromName: user.displayName,
+                fromPhoto: user.photoURL,
+                toUid: targetUser.uid,
+                status: 'pending',
+                createdAt: new Date().toISOString() // Using ISO string for consistency or serverTimestamp if imported
+            });
+            // Using setDoc with composite ID prevents duplicates easily
+        } catch (e) {
+            console.error("Error sending friend request", e);
+            throw e;
+        }
+    };
+
+    const getFriendshipStatus = async (targetUid) => {
+        if (!user) return 'none';
+        try {
+            // 1. Check if Friends
+            const friendRef = doc(db, 'users', user.uid, 'friends', targetUid);
+            const friendSnap = await getDoc(friendRef);
+            if (friendSnap.exists()) return 'friend';
+
+            // 2. Check if I sent a request
+            // Note: Since we use composite IDs now, we can check directly if we know ID format, 
+            // but for query reliability:
+            const qSent = doc(db, 'friendRequests', `${user.uid}_${targetUid}`);
+            const sentSnap = await getDoc(qSent);
+            if (sentSnap.exists()) return 'sent';
+
+            // 3. Check if I received a request
+            const qReceived = doc(db, 'friendRequests', `${targetUid}_${user.uid}`);
+            const recSnap = await getDoc(qReceived);
+            if (recSnap.exists()) return 'received';
+
+            return 'none';
+        } catch (e) {
+            console.error("Error checking friendship", e);
+            return 'none';
+        }
+    };
+
     const value = {
         profile,
         loading,
@@ -262,7 +308,9 @@ export const UserProfileProvider = ({ children }) => {
         checkFeatureAccess,
         followUser,
         unfollowUser,
-        isUserFollowing
+        isUserFollowing,
+        sendFriendRequest,
+        getFriendshipStatus
     };
 
     return (

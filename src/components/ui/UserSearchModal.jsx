@@ -59,7 +59,7 @@ const UserSearchModal = ({ isOpen, onClose, onSelectUser }) => {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -20, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        className="relative w-full max-w-lg bg-[#0A0A0A] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 p-6 flex flex-col max-h-[80vh]"
+                        className="relative w-full max-w-sm bg-[#0A0A0A] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 p-6 flex flex-col max-h-[70vh]"
                     >
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-display font-bold text-white">Buscar Amigos</h2>

@@ -15,7 +15,7 @@ import MovieDetail from '../components/MovieDetail';
 const PublicProfileView = ({ onSelectMovie }) => {
     const { username } = useParams();
     const { user: currentUser } = useAuth();
-    const { followUser, unfollowUser, isUserFollowing } = useUserProfile();
+    const { sendFriendRequest, getFriendshipStatus, unfollowUser } = useUserProfile(); // Using getFriendshipStatus instead of isUserFollowing
     const navigate = useNavigate();
 
     const [profile, setProfile] = useState(null);
@@ -23,17 +23,17 @@ const PublicProfileView = ({ onSelectMovie }) => {
     const [error, setError] = useState(null);
     const [userMovies, setUserMovies] = useState({ watchlist: [], watched: [], favorites: [] });
 
-    const [isFollowing, setIsFollowing] = useState(false);
+    const [friendshipStatus, setFriendshipStatus] = useState('none'); // 'none' | 'friend' | 'sent' | 'received'
     const [isShareOpen, setIsShareOpen] = useState(false);
-    const [followLoading, setFollowLoading] = useState(false);
+    const [actionLoading, setActionLoading] = useState(false);
 
     // Edit Mode State
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState({ displayName: '', bio: '' });
 
-    const [lists, setLists] = useState([]); // Renamed from publicLists
-    const [activeFolder, setActiveFolder] = useState(null); // 'watchlist' | 'watched' | 'favorites' | null
-    const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
+    const [lists, setLists] = useState([]);
+    const [activeFolder, setActiveFolder] = useState(null);
+    const [viewMode, setViewMode] = useState('grid');
     const [selectedMovie, setSelectedMovie] = useState(null);
 
 
@@ -43,9 +43,7 @@ const PublicProfileView = ({ onSelectMovie }) => {
             setError(null);
             try {
                 let targetUid = null;
-                let profileData = null;
-
-                // 1. Resolve User ID
+                // ... (existing ID resolution logic remains same) ...
                 if (username === 'me' && currentUser) {
                     targetUid = currentUser.uid;
                 } else if (currentUser && username === currentUser.displayName?.replace(/\s+/g, '').toLowerCase()) {
@@ -58,107 +56,71 @@ const PublicProfileView = ({ onSelectMovie }) => {
                         if (!querySnapshot.empty) {
                             const userDoc = querySnapshot.docs[0];
                             targetUid = userDoc.id;
-                            profileData = userDoc.data();
                         } else {
                             const docRef = doc(db, 'userProfiles', username);
                             const docSnap = await getDoc(docRef);
                             if (docSnap.exists()) {
                                 targetUid = docSnap.id;
-                                profileData = docSnap.data();
                             }
                         }
-                    } catch (e) {
-                        console.warn("User fetch failed", e);
-                    }
+                    } catch (e) { console.warn("User fetch failed", e); }
                 }
 
-                // 2. Fetch Profile Data (Try userProfiles first, then users fallback)
                 if (targetUid) {
+                    // ... (fetch logic same as before, simplified for brevity here, reused existing) ...
                     try {
-                        // Parallel fetch for best data availability
                         const [profileSnap, userSnap] = await Promise.all([
                             getDoc(doc(db, 'userProfiles', targetUid)),
                             getDoc(doc(db, 'users', targetUid))
                         ]);
 
                         let finalProfile = { uid: targetUid };
-
-                        // Legacy User Data (Auth/Social basics)
                         if (userSnap.exists()) {
-                            const userData = userSnap.data();
-                            finalProfile = {
-                                ...finalProfile,
-                                displayName: userData.displayName,
-                                photoURL: userData.photoURL,
-                                ...userData
-                            };
+                            finalProfile = { ...finalProfile, ...userSnap.data() };
                         }
-
-                        // New Profile Data (Bio, Stats, Overrides)
                         if (profileSnap.exists()) {
-                            const profileData = profileSnap.data();
+                            const pData = profileSnap.data();
                             finalProfile = {
                                 ...finalProfile,
-                                ...profileData, // Overwrite with explicit profile settings
-                                // Prefer profile photo/name if set, otherwise keep legacy
-                                displayName: profileData.displayName || finalProfile.displayName,
-                                photoURL: profileData.photoURL || finalProfile.photoURL,
-                                bio: profileData.bio || finalProfile.bio || ''
+                                ...pData,
+                                displayName: pData.displayName || finalProfile.displayName,
+                                photoURL: pData.photoURL || finalProfile.photoURL,
+                                bio: pData.bio || finalProfile.bio || ''
                             };
                         }
-
                         setProfile(finalProfile);
-                        setEditForm({
-                            displayName: finalProfile.displayName || '',
-                            bio: finalProfile.bio || ''
-                        });
+                        setEditForm({ displayName: finalProfile.displayName || '', bio: finalProfile.bio || '' });
 
-                        // 3. Fetch Content (Independent Try/Catches for robustness)
-
-                        // A. Lists
+                        // Lists
                         try {
                             const listsQuery = query(collection(db, 'lists'), where('ownerId', '==', targetUid));
                             const listSnap = await getDocs(listsQuery);
-                            console.log("DEBUG APP: Lists found:", listSnap.size);
-                            const fetchedLists = listSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-                            console.log("DEBUG APP: First List Movies:", fetchedLists[0]?.movies?.length);
-                            setLists(fetchedLists);
-                        } catch (err) {
-                            console.error("Error fetching lists", err);
-                        }
+                            setLists(listSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+                        } catch (err) { console.error(err); }
 
-                        // B. User Movies (Watchlist/Watched) - Fix: Read from document fields, not subcollection
+                        // User Movies
                         if (userSnap.exists()) {
-                            const userData = userSnap.data();
-                            console.log("DEBUG APP: Setting User Movies from Doc:", {
-                                w: userData.watchlist?.length,
-                                v: userData.watched?.length
-                            });
-
+                            const uData = userSnap.data();
                             setUserMovies({
-                                watchlist: userData.watchlist || [],
-                                watched: userData.watched || [],
-                                favorites: userData.favorites || []
+                                watchlist: uData.watchlist || [],
+                                watched: uData.watched || [],
+                                favorites: uData.favorites || []
                             });
-                        } else {
-                            setUserMovies({ watchlist: [], watched: [], favorites: [] });
                         }
+                    } catch (e) { console.error(e); }
 
-                    } catch (e) {
-                        console.error("Profile fetch failed", e);
-                        setError("Error cargando perfil");
+                    // Check Friendship Status
+                    if (currentUser && targetUid !== currentUser.uid) {
+                        try {
+                            const status = await getFriendshipStatus(targetUid);
+                            setFriendshipStatus(status); // 'none', 'friend', 'sent', 'received'
+                        } catch (e) {
+                            console.error("Status check failed", e);
+                        }
                     }
-                } else {
-                    // FALLBACK if no targetUid found (e.g. invalid username)
-                    setError("Usuario no encontrado.");
-                }
 
-                // Check Follow Status
-                if (currentUser && targetUid && currentUser.uid !== targetUid) {
-                    try {
-                        const following = await isUserFollowing(targetUid);
-                        setIsFollowing(following);
-                    } catch (e) { }
+                } else {
+                    setError("Usuario no encontrado.");
                 }
 
             } catch (err) {
@@ -170,35 +132,23 @@ const PublicProfileView = ({ onSelectMovie }) => {
         };
 
         fetchPublicProfile();
-    }, [username, currentUser, isUserFollowing]);
+    }, [username, currentUser, getFriendshipStatus]); // Removed isUserFollowing dep
 
-    const handleFollowToggle = async () => {
+    const handleConnectClick = async () => {
         if (!currentUser || !profile) return;
-        setFollowLoading(true);
+        setActionLoading(true);
         try {
-            if (isFollowing) {
-                await unfollowUser(profile.uid);
-                setIsFollowing(false);
-                setProfile(prev => ({
-                    ...prev,
-                    social: { ...prev.social, followersCount: (prev.social?.followersCount || 1) - 1 }
-                }));
-            } else {
-                await followUser({
-                    uid: profile.uid,
-                    displayName: profile.displayName,
-                    photoURL: profile.photoURL
-                });
-                setIsFollowing(true);
-                setProfile(prev => ({
-                    ...prev,
-                    social: { ...prev.social, followersCount: (prev.social?.followersCount || 0) + 1 }
-                }));
+            if (friendshipStatus === 'none') {
+                await sendFriendRequest(profile);
+                setFriendshipStatus('sent');
+            } else if (friendshipStatus === 'friend') {
+                // Option to unfriend? For now, maybe navigate to chat or just do nothing/show toast
+                // navigate('/friends');
             }
         } catch (error) {
-            console.error("Follow action failed", error);
+            console.error("Connect action failed", error);
         } finally {
-            setFollowLoading(false);
+            setActionLoading(false);
         }
     };
 
