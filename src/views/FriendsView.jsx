@@ -32,9 +32,25 @@ import {
 } from 'firebase/firestore';
 import UserSearchModal from '../components/ui/UserSearchModal';
 import { cn } from '../lib/utils';
-import { formatDistanceToNow } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { Toaster, toast } from 'sonner';
+
+const CINEMA_RANKS = [
+    { min: 0, title: "Turista de Estudio" },
+    { min: 10, title: "Extra de Fondo" },
+    { min: 25, title: "Claquetista" },
+    { min: 50, title: "Focus Puller" },
+    { min: 100, title: "Montajista" },
+    { min: 200, title: "Director de Fotografía" },
+    { min: 300, title: "Guionista Auteur" },
+    { min: 400, title: "Productor Visionario" },
+    { min: 480, title: "Arquitecto de Sueños" },
+    { min: 500, title: "Lumière Renacido" }
+];
+
+const getRankTitle = (count) => {
+    const rank = [...CINEMA_RANKS].reverse().find(r => (count || 0) >= r.min);
+    return rank ? rank.title.toUpperCase() : "TURISTA DE ESTUDIO";
+};
 
 const FriendsView = () => {
     const { user } = useAuth();
@@ -75,8 +91,22 @@ const FriendsView = () => {
         // OR a 'friendships' collection. 
         // Let's go with a subcollection `users/{uid}/friends` for scalability and realtime listening.
         const qFriends = collection(db, 'users', user.uid, 'friends');
-        const unsubFriends = onSnapshot(qFriends, (snap) => {
-            setFriends(snap.docs.map(d => ({ uid: d.id, ...d.data() })));
+        const unsubFriends = onSnapshot(qFriends, async (snap) => {
+            const basicFriends = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+
+            // Fetch watched count for each friend to display Rank
+            const friendsWithStats = await Promise.all(basicFriends.map(async (f) => {
+                try {
+                    const userSnap = await getDoc(doc(db, 'users', f.uid));
+                    const watchedCount = userSnap.exists() ? (userSnap.data().watched?.length || 0) : 0;
+                    return { ...f, watchedCount };
+                } catch (e) {
+                    console.error("Error fetching friend stats", e);
+                    return { ...f, watchedCount: 0 };
+                }
+            }));
+
+            setFriends(friendsWithStats);
         });
 
         // 4. Listen to List Requests (Received)
@@ -296,11 +326,9 @@ const FriendsView = () => {
                                     </div>
                                     <div className="flex-1">
                                         <h3 className="font-bold text-white group-hover:text-primary transition-colors">{friend.displayName}</h3>
-                                        {friend.since && (
-                                            <p className="text-[10px] text-gray-500 font-mono">
-                                                Amigos hace {formatDistanceToNow(friend.since.toDate(), { addSuffix: false, locale: es })}
-                                            </p>
-                                        )}
+                                        <p className="text-[10px] text-primary font-mono font-bold tracking-wider">
+                                            {getRankTitle(friend.watchedCount)}
+                                        </p>
                                     </div>
                                     <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                                         {/* Remove Friend */}
