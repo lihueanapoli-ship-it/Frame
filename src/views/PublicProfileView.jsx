@@ -255,16 +255,35 @@ const PublicProfileView = ({ onSelectMovie }) => {
                             </div>
                         </div>
                         <div className="flex-1 text-center md:text-left">
-                            <h1 className="text-3xl md:text-5xl font-display font-bold text-white mb-2">{profile.displayName}</h1>
-                            <p className="text-gray-400 font-mono text-sm max-w-lg mx-auto md:mx-0">
-                                {profile.bio || "Amante del cine. Sin biografía aún."}
-                            </p>
-                            {/* Stats Row */}
-                            <div className="flex items-center justify-center md:justify-start gap-6 mt-4 text-sm font-medium text-gray-400">
-                                <div><span className="text-white font-bold">{lists.length}</span> Listas</div>
-                                <div><span className="text-white font-bold">{userMovies.watched?.length || 0}</span> Vistas</div>
-                                <div><span className="text-white font-bold">{userMovies.watchlist?.length || 0}</span> Por Ver</div>
-                            </div>
+                            {isEditing ? (
+                                <div className="space-y-3 w-full max-w-md mx-auto md:mx-0">
+                                    <input
+                                        type="text"
+                                        value={editForm.displayName}
+                                        onChange={(e) => setEditForm(prev => ({ ...prev, displayName: e.target.value }))}
+                                        className="w-full bg-transparent border-b border-white/20 text-3xl md:text-5xl font-display font-bold text-white placeholder-gray-600 focus:outline-none focus:border-primary transition-colors text-center md:text-left"
+                                        placeholder="Tu nombre"
+                                    />
+                                    <textarea
+                                        value={editForm.bio}
+                                        onChange={(e) => setEditForm(prev => ({ ...prev, bio: e.target.value }))}
+                                        className="w-full bg-surface-elevated border border-white/10 rounded-xl p-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all resize-none h-24 custom-scrollbar"
+                                        placeholder="Escribe algo sobre ti..."
+                                    />
+                                </div>
+                            ) : (
+                                <>
+                                    <h1 className="text-3xl md:text-5xl font-display font-bold text-white mb-2">{profile.displayName}</h1>
+                                    <p className="text-gray-400 font-mono text-sm max-w-lg mx-auto md:mx-0 whitespace-pre-wrap">
+                                        {profile.bio || "Amante del cine. Sin biografía aún."}
+                                    </p>
+                                    {/* Stats Row */}
+                                    <div className="flex items-center justify-center md:justify-start gap-6 mt-4 text-sm font-medium text-gray-400">
+                                        <div><span className="text-white font-bold">{lists.length}</span> Listas</div>
+                                        <div><span className="text-white font-bold">{userMovies.watched?.length || 0}</span> Vistas</div>
+                                    </div>
+                                </>
+                            )}
                         </div>
                         {/* Action Buttons */}
                         <div className="flex items-center gap-3 flex-wrap justify-center md:justify-end mt-4 md:mt-0">
@@ -360,14 +379,7 @@ const PublicProfileView = ({ onSelectMovie }) => {
                             exit={{ opacity: 0, y: -20 }}
                             className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
                         >
-                            {/* 1. Watchlist (System) - ALWAYS FIRST */}
-                            {renderCollectionCard(
-                                "Por Ver",
-                                userMovies.watchlist?.length || 0,
-                                'watchlist',
-                                userMovies.watchlist?.[0] ? `https://image.tmdb.org/t/p/w500${userMovies.watchlist[0].poster_path}` : null,
-                                () => setActiveFolder('watchlist')
-                            )}
+
 
                             {/* 2. Custom Lists (Treating them as part of the 'Watchlist' ecosystem as requested) */}
                             {lists.map(list => (
