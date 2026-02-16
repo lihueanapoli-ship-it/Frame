@@ -65,7 +65,24 @@ export const getMovieDetails = async (id) => {
         const response = await tmdbClient.get(`/movie/${id}`, {
             params: { append_to_response: 'credits,recommendations' }
         });
-        return response.data;
+
+        let data = response.data;
+
+        // Fallback for overview if empty (fetch English)
+        if (!data.overview) {
+            try {
+                const enResponse = await tmdbClient.get(`/movie/${id}`, {
+                    params: { language: 'en-US' }
+                });
+                if (enResponse?.data?.overview) {
+                    data.overview = enResponse.data.overview;
+                }
+            } catch (e) {
+                // Ignore fallback error
+            }
+        }
+
+        return data;
     } catch (error) {
         console.error("Error getting movie details:", error);
         return null;
@@ -256,10 +273,13 @@ export const getMovieVideos = async (id) => {
         const response = await tmdbClient.get(`/movie/${id}/videos`);
         let results = response.data.results;
 
-        // If no results or only featurettes (no trailer), try English fallback
-        // Note: TMDB API behavior depends on params. To get fallback, one might need separate call or use 'include_video_language'
-        // For simplicity, if empty, we might try querying without lang param or en-US, 
-        // but let's stick to default for now to match UI language context.
+        // Fallback: If no results, try English (en-US)
+        if (!results || results.length === 0) {
+            const fallback = await tmdbClient.get(`/movie/${id}/videos`, {
+                params: { language: 'en-US' }
+            });
+            results = fallback.data.results;
+        }
         return results;
     } catch (error) {
         console.error(`Error getting videos for ${id}:`, error);
