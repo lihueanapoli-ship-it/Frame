@@ -8,7 +8,7 @@ import { ClockIcon, TrophyIcon, FireIcon, BookmarkIcon, UserPlusIcon } from '@he
 import { cn } from '../lib/utils';
 import { getGenresForMovies } from '../utils/genreCache';
 import { OSCAR_BEST_PICTURE_WINNERS } from '../constants/oscarWinners';
-import UserSearchModal from '../components/ui/UserSearchModal';
+
 
 // ==========================================
 // CONSTANTS & CONFIG
@@ -76,7 +76,7 @@ const StatsView = () => {
     const [showAllRanks, setShowAllRanks] = useState(false);
 
     // Modal State for Friend Search
-    const [isSearchOpen, setIsSearchOpen] = useState(false);
+
 
     // Genre Fetching
     useEffect(() => {
@@ -171,15 +171,7 @@ const StatsView = () => {
                     </p>
                 </div>
                 <div className="flex items-center gap-4">
-                    {/* Add Friends Button - Minimalist addition */}
-                    <button
-                        onClick={() => setIsSearchOpen(true)}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-surface border border-white/10 rounded-full text-xs font-mono text-gray-400 hover:text-white hover:border-white/30 transition-all"
-                        title="Buscar Amigos"
-                    >
-                        <UserPlusIcon className="w-4 h-4" />
-                        <span className="hidden md:inline">AÑADIR AMIGOS</span>
-                    </button>
+
 
                     <div className="hidden md:block text-right">
                         <div className="font-mono text-xs text-primary">{new Date().toLocaleDateString()}</div>
@@ -297,8 +289,7 @@ const StatsView = () => {
                 </div>
             </div>
 
-            {/* Friend Search Modal */}
-            <UserSearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+
         </div>
     );
 };
