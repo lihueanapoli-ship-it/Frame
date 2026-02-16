@@ -72,27 +72,49 @@ const PublicProfileView = ({ onSelectMovie }) => {
                     }
                 }
 
-                if (targetUid && !profileData) {
+                // 2. Fetch Profile Data (Try userProfiles first, then users fallback)
+                if (targetUid) {
                     try {
-                        const docRef = doc(db, 'userProfiles', targetUid);
-                        const docSnap = await getDoc(docRef);
-                        if (docSnap.exists()) {
-                            profileData = docSnap.data();
+                        // Parallel fetch for best data availability
+                        const [profileSnap, userSnap] = await Promise.all([
+                            getDoc(doc(db, 'userProfiles', targetUid)),
+                            getDoc(doc(db, 'users', targetUid))
+                        ]);
+
+                        let finalProfile = { uid: targetUid };
+
+                        // Legacy User Data (Auth/Social basics)
+                        if (userSnap.exists()) {
+                            const userData = userSnap.data();
+                            finalProfile = {
+                                ...finalProfile,
+                                displayName: userData.displayName,
+                                photoURL: userData.photoURL,
+                                ...userData
+                            };
                         }
-                    } catch (e) { console.error("Direct profile fetch failed", e); }
-                }
 
-                if (profileData) {
-                    setProfile({ ...profileData, uid: targetUid || profileData.uid });
-                    setEditForm({
-                        displayName: profileData.displayName || '',
-                        bio: profileData.bio || ''
-                    });
+                        // New Profile Data (Bio, Stats, Overrides)
+                        if (profileSnap.exists()) {
+                            const profileData = profileSnap.data();
+                            finalProfile = {
+                                ...finalProfile,
+                                ...profileData, // Overwrite with explicit profile settings
+                                // Prefer profile photo/name if set, otherwise keep legacy
+                                displayName: profileData.displayName || finalProfile.displayName,
+                                photoURL: profileData.photoURL || finalProfile.photoURL,
+                                bio: profileData.bio || finalProfile.bio || ''
+                            };
+                        }
 
-                    // Fetch Lists - NOW SHOWING ALL LISTS REGARDLESS OF PRIVACY FIELD
-                    if (targetUid) {
+                        setProfile(finalProfile);
+                        setEditForm({
+                            displayName: finalProfile.displayName || '',
+                            bio: finalProfile.bio || ''
+                        });
+
+                        // Fetch Lists (Public/All based on rules)
                         try {
-                            // Fetch Lists - All lists are public now
                             const listsQuery = query(collection(db, 'lists'), where('ownerId', '==', targetUid));
                             const listSnap = await getDocs(listsQuery);
                             setLists(listSnap.docs.map(d => ({ id: d.id, ...d.data() })));
@@ -104,6 +126,7 @@ const PublicProfileView = ({ onSelectMovie }) => {
                             const newMovies = { watchlist: [], watched: [], favorites: [] };
                             userMoviesSnap.docs.forEach(doc => {
                                 const data = doc.data();
+                                // Loose check for boolean or existence
                                 if (data.isInWatchlist) newMovies.watchlist.push(data);
                                 if (data.isWatched) newMovies.watched.push(data);
                                 if (data.isFavorite) newMovies.favorites.push(data);
@@ -111,28 +134,14 @@ const PublicProfileView = ({ onSelectMovie }) => {
                             setUserMovies(newMovies);
 
                         } catch (err) { console.error("Error fetching user content", err); }
+
+                    } catch (e) {
+                        console.error("Profile fetch failed", e);
+                        setError("Error cargando perfil");
                     }
                 } else {
-                    // FALLBACK
-                    if (currentUser && (username === 'me' || targetUid === currentUser.uid)) {
-                        setProfile({
-                            uid: currentUser.uid,
-                            displayName: currentUser.displayName || 'Usuario',
-                            username: 'me',
-                            photoURL: currentUser.photoURL,
-                            bio: '',
-                            social: { followersCount: 0, followingCount: 0 },
-                            stats: { moviesWatched: 0 },
-                            isPro: false
-                        });
-                        setEditForm({
-                            displayName: currentUser.displayName || 'Usuario',
-                            bio: ''
-                        });
-                        setLists([]);
-                    } else if (username !== 'me') {
-                        setError("Usuario no encontrado.");
-                    }
+                    // FALLBACK if no targetUid found (e.g. invalid username)
+                    setError("Usuario no encontrado.");
                 }
 
                 // Check Follow Status
