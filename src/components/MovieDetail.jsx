@@ -78,7 +78,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                 initial="hidden"
                 animate="visible"
                 exit="exit"
-                className="relative w-full max-w-2xl bg-background rounded-t-3xl sm:rounded-2xl overflow-hidden shadow-2xl max-h-[75vh] overflow-y-auto"
+                className="relative w-full max-w-6xl mx-4 bg-background rounded-t-3xl sm:rounded-2xl overflow-hidden shadow-2xl max-h-[90vh] overflow-y-auto border border-white/10"
             >
                 {/* Close Button */}
                 <button
