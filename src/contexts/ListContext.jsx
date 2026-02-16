@@ -58,27 +58,66 @@ export const ListProvider = ({ children }) => {
 
                 if (!general) {
                     console.log("No 'General' list found. Creating one...");
-                    // OPTIONAL: Migrate legacy watchlist here if we read user profile
-                    // For now, just create empty General list
                     const newList = {
                         ownerId: user.uid,
                         ownerName: user.displayName || 'Anónimo',
                         name: 'General',
                         description: 'Lista principal de películas por ver',
-                        privacy: 'private', // Default to private or public? User said "Functionalities same".
+                        privacy: 'private',
                         collaborators: [],
-                        movies: [], // Start empty. Data migration is complex without reading user doc.
+                        movies: [],
                         movieCount: 0,
                         createdAt: serverTimestamp(),
                         updatedAt: serverTimestamp(),
                         likes: 0,
                         coverImage: null,
-                        isDefault: true // Marker
+                        isDefault: true
                     };
                     const docRef = await addDoc(collection(db, 'lists'), newList);
-                    const createdList = { id: docRef.id, ...newList };
-                    ownedData.push(createdList);
-                    general = createdList;
+                    // Add ID to object
+                    general = { id: docRef.id, ...newList };
+                    ownedData.push(general);
+                }
+
+                // ---------------------------------------------------------
+                // MIGRATION: RESTORE LEGACY WATCHLIST IF GENERAL IS EMPTY
+                // ---------------------------------------------------------
+                if (general && (!general.movies || general.movies.length === 0)) {
+                    try {
+                        const userRef = doc(db, 'users', user.uid);
+                        const userSnap = await getDoc(userRef);
+                        if (userSnap.exists()) {
+                            const legacyData = userSnap.data();
+                            const legacyWatchlist = legacyData.watchlist || [];
+
+                            if (legacyWatchlist.length > 0) {
+                                console.log("Found legacy watchlist. Migrating to General list...", legacyWatchlist.length);
+
+                                const moviesToMigrate = legacyWatchlist.map(m => ({
+                                    id: m.id,
+                                    title: m.title,
+                                    poster_path: m.poster_path,
+                                    addedAt: m.addedAt || new Date().toISOString(),
+                                    addedBy: user.uid
+                                }));
+
+                                // Update Firestore
+                                const listRef = doc(db, 'lists', general.id);
+                                await updateDoc(listRef, {
+                                    movies: moviesToMigrate,
+                                    movieCount: moviesToMigrate.length,
+                                    coverImage: moviesToMigrate[0]?.poster_path || null
+                                });
+
+                                // Update General Object in Memory
+                                general.movies = moviesToMigrate;
+                                general.movieCount = moviesToMigrate.length;
+                                general.coverImage = moviesToMigrate[0]?.poster_path || null;
+                            }
+                        }
+                    } catch (e) {
+                        console.error("Migration failed", e);
+                    }
                 }
 
                 // Sort: General always first, then by date desc

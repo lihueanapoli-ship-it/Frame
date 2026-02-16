@@ -162,7 +162,7 @@ const LibraryView = ({ onSelectMovie }) => {
                                 <optgroup label="Mis Listas">
                                     {allListsDisplay.map(list => (
                                         <option key={list.id} value={list.id} className="bg-[#111] text-white">
-                                            {list.name === 'General' ? '🎬 General (Por ver)' : `📑 ${list.name}`}
+                                            {list.name === 'General' ? '🎬 General' : `📑 ${list.name}`}
                                             {list.ownerId !== user.uid ? ' (Compartida)' : ''}
                                         </option>
                                     ))}
