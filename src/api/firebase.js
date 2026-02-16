@@ -17,7 +17,7 @@ let app, db, auth;
 
 // Check if configuration is present to avoid crash
 if (!firebaseConfig.apiKey) {
-    console.warn("⚠️ Advertencia: No se encontraron las claves de Firebase en .env. La aplicación funcionará en MODO LOCAL.");
+    console.error("❌ ERROR CRÍTICO: No se encontraron las claves de Firebase (VITE_FIREBASE_API_KEY está vacía). Verifica tus variables de entorno en Vercel.");
     db = null;
     auth = null;
 } else {
@@ -25,6 +25,7 @@ if (!firebaseConfig.apiKey) {
         app = initializeApp(firebaseConfig);
         db = getFirestore(app);
         auth = getAuth(app);
+        console.log("✅ Firebase inicializado correctamente desde " + window.location.hostname);
     } catch (e) {
         console.error("Error inicializando Firebase (Verifica tus claves):", e);
         db = null;
