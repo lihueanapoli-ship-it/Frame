@@ -13,7 +13,8 @@ import { FilmIcon } from '@heroicons/react/24/solid';
 import { cn } from '../lib/utils';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import UserSearchModal from '../components/ui/UserSearchModal';
+import { useNavigate } from 'react-router-dom';
+import ManageListMembersModal from '../components/ui/ManageListMembersModal';
 import CreateListModal from '../components/ui/CreateListModal';
 
 const LibraryView = ({ onSelectMovie }) => {
@@ -22,7 +23,9 @@ const LibraryView = ({ onSelectMovie }) => {
     const [selectedListId, setSelectedListId] = useState('watchlist');
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [localSearch, setLocalSearch] = useState('');
-    const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [localSearch, setLocalSearch] = useState('');
+    const [isManageMembersOpen, setIsManageMembersOpen] = useState(false);
     const [isCreateListOpen, setIsCreateListOpen] = useState(false);
 
     // Filter States
@@ -59,11 +62,7 @@ const LibraryView = ({ onSelectMovie }) => {
     }, [activeTab, currentCustomList, watched]);
 
     // Handlers
-    const handleInviteUser = async (selectedUser) => {
-        if (!currentCustomList) return;
-        await addCollaborator(currentCustomList.id, selectedUser.uid);
-        alert(`¡${selectedUser.displayName} ahora puede editar esta lista!`);
-    };
+    // Invite/Manage logic moved to Modal.
 
     const handleDeleteList = async () => {
         if (!currentCustomList) return;
@@ -145,7 +144,7 @@ const LibraryView = ({ onSelectMovie }) => {
             <div className="space-y-4 mb-6">
                 {/* 2. LIST SELECTOR (Unified) */}
                 {activeTab === 'watchlist' && (
-                    <div className="relative z-10">
+                    <div className="relative z-10 space-y-4">
                         {/* Custom Dropdown Trigger */}
                         <div className="relative">
                             <select
@@ -160,34 +159,91 @@ const LibraryView = ({ onSelectMovie }) => {
                                 className="w-full appearance-none bg-[#111] border border-white/10 text-white rounded-xl py-3 pl-4 pr-10 text-sm font-medium focus:ring-1 focus:ring-primary focus:border-primary cursor-pointer hover:bg-white/5 transition-colors"
                             >
                                 <optgroup label="Mis Listas">
-                                    {allListsDisplay.map(list => (
+                                    {myLists.map(list => (
                                         <option key={list.id} value={list.id} className="bg-[#111] text-white">
                                             {list.name === 'General' ? '🎬 General' : `📑 ${list.name}`}
-                                            {list.ownerId !== user.uid ? ' (Compartida)' : ''}
                                         </option>
                                     ))}
                                 </optgroup>
+                                {collabLists.length > 0 && (
+                                    <optgroup label="Compartidas Conmigo">
+                                        {collabLists.map(list => (
+                                            <option key={list.id} value={list.id} className="bg-[#111] text-white">
+                                                👥 {list.name} (de {list.ownerName || 'Usuario'})
+                                            </option>
+                                        ))}
+                                    </optgroup>
+                                )}
                                 <option value="new" className="bg-[#111] text-primary font-bold">+ Crear Nueva Lista...</option>
                             </select>
                             <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                         </div>
 
+                        {/* RICH LIST HEADER BANNER */}
                         {currentCustomList && currentCustomList.name !== 'General' && (
-                            <div className="flex gap-2 mt-2">
-                                {currentCustomList.ownerId === user.uid ? (
-                                    <>
-                                        <button onClick={() => setIsInviteModalOpen(true)} className="flex-1 py-2 bg-surface-elevated border border-white/10 rounded-lg text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 flex items-center justify-center gap-2">
-                                            <UserPlusIcon className="w-4 h-4" /> Invitar
-                                        </button>
-                                        <button onClick={handleDeleteList} className="w-10 flex items-center justify-center bg-surface-elevated border border-white/10 rounded-lg hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/50 transition-colors text-gray-400">
-                                            <TrashIcon className="w-4 h-4" />
-                                        </button>
-                                    </>
-                                ) : (
-                                    <button onClick={handleLeaveList} className="flex-1 py-2 bg-surface-elevated border border-white/10 rounded-lg text-xs font-semibold text-red-400 hover:bg-red-500/10 hover:border-red-500/50 transition-colors flex items-center justify-center gap-2">
-                                        <ArrowLeftIcon className="w-4 h-4" /> Abandonar
-                                    </button>
-                                )}
+                            <div className="bg-gradient-to-r from-surface-elevated to-surface border border-white/5 rounded-2xl p-5 relative overflow-hidden group animate-fade-in">
+                                {/* Background Glow */}
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+
+                                <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-3 mb-1">
+                                            <h2 className="text-2xl font-display font-bold text-white truncate">
+                                                {currentCustomList.name}
+                                            </h2>
+                                            {currentCustomList.collaborators?.length > 0 && (
+                                                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border bg-blue-500/10 text-blue-400 border-blue-500/20 flex items-center gap-1">
+                                                    Compartida
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-gray-400 line-clamp-1 mb-3">
+                                            {currentCustomList.description || "Sin descripción"}
+                                        </p>
+
+                                        {/* MEMBERS & ACTIONS ROW */}
+                                        <div className="flex items-center gap-4">
+                                            <button onClick={() => setIsManageMembersOpen(true)} className="flex items-center gap-2 group/members hover:bg-white/5 p-1.5 rounded-lg transition-colors -ml-1.5">
+                                                <div className="flex -space-x-2">
+                                                    {/* Owner Avatar Placeholder */}
+                                                    <div className="w-6 h-6 rounded-full border border-[#121212] bg-indigo-500 flex items-center justify-center text-[10px] font-bold text-white" title={`Dueño: ${currentCustomList.ownerName}`}>
+                                                        {currentCustomList.ownerName?.[0]?.toUpperCase() || 'O'}
+                                                    </div>
+                                                    {/* Collabs Count */}
+                                                    {(currentCustomList.collaborators?.length || 0) > 0 && (
+                                                        <div className="w-6 h-6 rounded-full border border-[#121212] bg-surface-elevated flex items-center justify-center text-[9px] font-bold text-gray-400">
+                                                            +{currentCustomList.collaborators.length}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <span className="text-xs text-gray-400 group-hover/members:text-primary transition-colors">
+                                                    {currentCustomList.ownerId === user.uid ? "Gestionar miembros" : "Ver miembros"}
+                                                </span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* PRIMARY ACTIONS */}
+                                    <div className="flex items-center gap-2 self-end md:self-center">
+                                        {currentCustomList.ownerId === user.uid ? (
+                                            <>
+                                                <button
+                                                    onClick={() => setIsManageMembersOpen(true)}
+                                                    className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5"
+                                                >
+                                                    <UserPlusIcon className="w-3.5 h-3.5" /> Invitar
+                                                </button>
+                                                <button onClick={handleDeleteList} className="w-8 h-8 flex items-center justify-center bg-surface-elevated border border-white/10 rounded-lg hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/50 transition-colors text-gray-400" title="Eliminar lista">
+                                                    <TrashIcon className="w-3.5 h-3.5" />
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <button onClick={handleLeaveList} className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5">
+                                                <XMarkIcon className="w-3.5 h-3.5" /> Abandonar
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </div>
@@ -263,7 +319,11 @@ const LibraryView = ({ onSelectMovie }) => {
                 )
             }
 
-            <UserSearchModal isOpen={isInviteModalOpen} onClose={() => setIsInviteModalOpen(false)} onSelectUser={handleInviteUser} />
+            <ManageListMembersModal
+                isOpen={isManageMembersOpen}
+                onClose={() => setIsManageMembersOpen(false)}
+                list={currentCustomList}
+            />
 
             <CreateListModal
                 isOpen={isCreateListOpen}
