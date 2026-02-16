@@ -127,26 +127,21 @@ const PublicProfileView = ({ onSelectMovie }) => {
                             console.error("Error fetching lists", err);
                         }
 
-                        // B. User Movies (Watchlist)
-                        try {
-                            const userMoviesRef = collection(db, 'users', targetUid, 'movies');
-                            const userMoviesSnap = await getDocs(userMoviesRef);
-                            console.log("DEBUG APP: User Movies docs found:", userMoviesSnap.size);
-
-                            const newMovies = { watchlist: [], watched: [], favorites: [] };
-                            userMoviesSnap.docs.forEach(doc => {
-                                const data = doc.data();
-                                // console.log("DEBUG APP: Movie Doc:", doc.id, data);
-                                if (data.isInWatchlist) newMovies.watchlist.push(data);
-                                if (data.isWatched) newMovies.watched.push(data);
-                                if (data.isFavorite) newMovies.favorites.push(data);
+                        // B. User Movies (Watchlist/Watched) - Fix: Read from document fields, not subcollection
+                        if (userSnap.exists()) {
+                            const userData = userSnap.data();
+                            console.log("DEBUG APP: Setting User Movies from Doc:", {
+                                w: userData.watchlist?.length,
+                                v: userData.watched?.length
                             });
-                            console.log("DEBUG APP: Filtered Watchlist length:", newMovies.watchlist.length);
-                            setUserMovies(newMovies);
-                        } catch (err) {
-                            console.error("DEBUG APP: Error fetching user movies", err);
-                            // If this fails, it's likely a permission issue. 
-                            // We don't want to alert the user aggressively, but we know it's failing.
+
+                            setUserMovies({
+                                watchlist: userData.watchlist || [],
+                                watched: userData.watched || [],
+                                favorites: userData.favorites || []
+                            });
+                        } else {
+                            setUserMovies({ watchlist: [], watched: [], favorites: [] });
                         }
 
                     } catch (e) {
