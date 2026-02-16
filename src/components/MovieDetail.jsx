@@ -93,12 +93,12 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                 initial="hidden"
                 animate="visible"
                 exit="exit"
-                className="relative w-full max-w-2xl bg-background rounded-t-3xl sm:rounded-2xl overflow-hidden shadow-2xl max-h-[85vh] overflow-y-auto"
+                className="relative w-full max-w-2xl bg-background rounded-t-3xl sm:rounded-2xl overflow-hidden shadow-2xl max-h-[75vh] overflow-y-auto"
             >
                 {/* Close Button */}
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 z-50 p-2 bg-black/40 hover:bg-black/60 backdrop-blur-md rounded-full text-white transition-colors cursor-pointer"
+                    className="absolute top-4 right-4 z-50 p-2.5 bg-black/60 hover:bg-black/80 backdrop-blur-md rounded-full text-white transition-colors cursor-pointer shadow-lg border border-white/10"
                 >
                     <XMarkIcon className="w-6 h-6" />
                 </button>
