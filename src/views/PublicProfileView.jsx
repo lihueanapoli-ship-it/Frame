@@ -309,20 +309,17 @@ const PublicProfileView = ({ onSelectMovie }) => {
                         </div>
                         {/* Action Buttons */}
                         <div className="flex items-center gap-3 flex-wrap justify-center md:justify-end mt-4 md:mt-0">
-                            {!isOwnProfile ? (
+                            {!isOwnProfile && !isFollowing && (
                                 <button
                                     onClick={handleFollowToggle}
                                     disabled={followLoading}
-                                    className={cn(
-                                        "px-8 py-2.5 rounded-full font-bold text-sm transition-all shadow-lg active:scale-95",
-                                        isFollowing
-                                            ? "bg-surface border border-white/10 text-white hover:bg-white/5"
-                                            : "bg-white text-black hover:bg-gray-200"
-                                    )}
+                                    className="px-8 py-2.5 bg-white text-black rounded-full font-bold text-sm transition-all shadow-lg hover:bg-gray-200 active:scale-95"
                                 >
-                                    {followLoading ? '...' : isFollowing ? 'Siguiendo' : 'Seguir'}
+                                    {followLoading ? '...' : 'Seguir'}
                                 </button>
-                            ) : (
+                            )}
+
+                            {isOwnProfile && (
                                 <>
                                     {isEditing ? (
                                         <div className="flex gap-2">
@@ -347,18 +344,6 @@ const PublicProfileView = ({ onSelectMovie }) => {
                                             <PencilIcon className="w-4 h-4" /> Editar
                                         </button>
                                     )}
-                                </>
-                            )}
-
-                            {!isEditing && (
-                                <>
-                                    <button
-                                        onClick={() => setIsShareOpen(true)}
-                                        className="p-2.5 bg-surface border border-white/10 rounded-full text-white hover:bg-white/5 transition-all"
-                                        title="Compartir"
-                                    >
-                                        <ShareIcon className="w-5 h-5" />
-                                    </button>
                                 </>
                             )}
                         </div>

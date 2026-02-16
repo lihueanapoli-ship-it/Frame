@@ -170,10 +170,10 @@ const ListView = ({ onSelectMovie }) => {
                             <button
                                 onClick={handleRequestJoin}
                                 disabled={requestLoading}
-                                className="p-3 bg-white/10 text-white rounded-full hover:bg-white/20 backdrop-blur-md transition-colors disabled:opacity-50"
-                                title="Solicitar Unirme"
+                                className="px-6 py-3 bg-white/10 text-white font-bold rounded-full hover:bg-white hover:text-black backdrop-blur-md transition-all flex items-center gap-2 disabled:opacity-50"
                             >
                                 <UserPlusIcon className="w-5 h-5" />
+                                {requestLoading ? 'Enviando...' : 'Solicitar Colaboración'}
                             </button>
                         )}
                     </div>
