@@ -271,7 +271,7 @@ const LibraryView = ({ onSelectMovie }) => {
             {/* GRID */}
             <div>
                 <div className="text-xs text-gray-500 font-medium uppercase tracking-wider flex justify-between items-center mb-3">
-                    <span>{totalCount} Películas {currentCustomList ? `en ${currentCustomList.name}` : ''}</span>
+                    <span>{totalCount} Películas</span>
                     {activeFilterCount > 0 && <button onClick={clearFilters} className="text-primary flex items-center gap-1 hover:underline"><XMarkIcon className="w-3 h-3" /> Limpiar filtros</button>}
                 </div>
                 {/* ... Grid logic same as before ... */}
