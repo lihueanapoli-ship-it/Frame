@@ -81,14 +81,8 @@ service cloud.firestore {
     // --- LISTS (Core Social Feature) ---
     match /lists/{listId} {
       // READ RULES:
-      // 1. Owner can always read
-      // 2. Public lists can be read by anyone
-      // 3. Collaborators can read
-      allow read: if resource.data.privacy == 'public' || 
-                  (request.auth != null && (
-                    resource.data.ownerId == request.auth.uid || 
-                    resource.data.collaborators.hasAny([request.auth.uid])
-                  ));
+      // SIMPLIFIED: All lists are public for authenticated users
+      allow read: if request.auth != null;
 
       // WRITE RULES:
       // 1. Create: Anyone authenticated

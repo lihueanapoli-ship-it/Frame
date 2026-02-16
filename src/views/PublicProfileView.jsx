@@ -92,18 +92,8 @@ const PublicProfileView = ({ onSelectMovie }) => {
                     // Fetch Lists - NOW SHOWING ALL LISTS REGARDLESS OF PRIVACY FIELD
                     if (targetUid) {
                         try {
-                            // Fetch Lists - Filter by privacy if not own profile to avoid permission errors
-                            let listsQuery;
-                            if (currentUser && targetUid === currentUser.uid) {
-                                listsQuery = query(collection(db, 'lists'), where('ownerId', '==', targetUid));
-                            } else {
-                                listsQuery = query(
-                                    collection(db, 'lists'),
-                                    where('ownerId', '==', targetUid),
-                                    where('privacy', '==', 'public')
-                                );
-                            }
-
+                            // Fetch Lists - All lists are public now
+                            const listsQuery = query(collection(db, 'lists'), where('ownerId', '==', targetUid));
                             const listSnap = await getDocs(listsQuery);
                             setLists(listSnap.docs.map(d => ({ id: d.id, ...d.data() })));
 
