@@ -270,16 +270,20 @@ const PublicProfileView = ({ onSelectMovie }) => {
                         <div className="flex items-center gap-3 flex-wrap justify-center md:justify-end mt-4 md:mt-0">
                             {!isOwnProfile && (
                                 <button
-                                    onClick={handleFollowToggle}
-                                    disabled={followLoading}
+                                    onClick={handleConnectClick}
+                                    disabled={actionLoading || friendshipStatus === 'sent' || friendshipStatus === 'received'}
                                     className={cn(
                                         "px-8 py-2.5 rounded-full font-bold text-sm transition-all shadow-lg active:scale-95",
-                                        isFollowing
-                                            ? "bg-surface border border-white/10 text-white hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/50"
+                                        friendshipStatus === 'friend' || friendshipStatus === 'sent'
+                                            ? "bg-surface border border-white/10 text-white"
                                             : "bg-white text-black hover:bg-gray-200"
                                     )}
                                 >
-                                    {followLoading ? '...' : (isFollowing ? 'Conectado' : 'Conectar')}
+                                    {actionLoading ? '...' :
+                                        friendshipStatus === 'friend' ? 'Amigos' :
+                                            friendshipStatus === 'sent' ? 'Pendiente' :
+                                                friendshipStatus === 'received' ? 'Te invitó' :
+                                                    'Conectar'}
                                 </button>
                             )}
 
