@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeftIcon, LockClosedIcon, GlobeAltIcon, UserGroupIcon, TrashIcon, ShareIcon, PencilIcon, UserPlusIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, LockClosedIcon, GlobeAltIcon, UserGroupIcon, TrashIcon, ShareIcon, PencilIcon, UserPlusIcon, ArrowRightEndOnRectangleIcon } from '@heroicons/react/24/outline';
 import { PlayIcon } from '@heroicons/react/24/solid';
 import { useLists } from '../contexts/ListContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -9,9 +9,54 @@ import MovieCard from '../components/MovieCard';
 import { cn } from '../lib/utils';
 import ShareModal from '../components/ui/ShareModal';
 import CollaboratorModal from '../components/ui/CollaboratorModal';
-import { db } from '../api/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { toast } from 'sonner';
+import AddToListModal from '../components/ui/AddToListModal';
+// Reuse AddToListModal logic? No, move is specific. Let's create a small inline modal or reuse AddTo with a twist.
+// Actually `AddToListModal` just adds/removes. 
+// If I use `AddToListModal`, I can just check the new list and uncheck the current one manually?
+// User asked for "Move". Automated "Add to New + Remove from Old".
+// Let's create a specialized `MoveMovieModal` locally or reused.
+
+const MoveMovieModal = ({ isOpen, onClose, movie, currentListId }) => {
+    const { allLists, moveMovieBetweenLists } = useLists();
+
+    if (!isOpen) return null;
+
+    const targetLists = allLists.filter(l => l.id !== currentListId);
+
+    return (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={onClose}>
+            <div className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-sm overflow-hidden" onClick={e => e.stopPropagation()}>
+                <div className="p-4 border-b border-white/5">
+                    <h3 className="text-white font-bold">Mover a...</h3>
+                </div>
+                <div className="max-h-[60vh] overflow-y-auto p-2">
+                    {targetLists.length === 0 ? (
+                        <p className="text-center text-gray-500 py-4">No hay otras listas disponibles.</p>
+                    ) : (
+                        <div className="space-y-1">
+                            {targetLists.map(list => (
+                                <button
+                                    key={list.id}
+                                    onClick={async () => {
+                                        await moveMovieBetweenLists(currentListId, list.id, movie);
+                                        toast.success(`Movida a ${list.name}`);
+                                        onClose();
+                                    }}
+                                    className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 text-left transition-colors"
+                                >
+                                    <div className="w-8 h-8 rounded bg-white/5 flex items-center justify-center text-xs border border-white/10">
+                                        {list.name[0]}
+                                    </div>
+                                    <span className="text-sm font-medium text-gray-200">{list.name}</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const ListView = ({ onSelectMovie }) => {
     const { id } = useParams();
@@ -25,6 +70,9 @@ const ListView = ({ onSelectMovie }) => {
     const [isCollaborator, setIsCollaborator] = useState(false);
     const [isShareOpen, setIsShareOpen] = useState(false);
     const [isCollaboratorModalOpen, setIsCollaboratorModalOpen] = useState(false);
+
+    // Move Logic
+    const [movieToMove, setMovieToMove] = useState(null);
 
     useEffect(() => {
         const fetchList = async () => {
@@ -201,13 +249,22 @@ const ListView = ({ onSelectMovie }) => {
                             <div className="relative group" key={movie.id}>
                                 <MovieCard movie={movie} onClick={onSelectMovie} />
                                 {canEdit && (
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); handleRemoveMovie(movie.id); }}
-                                        className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 shadow-lg z-20"
-                                        title="Quitar"
-                                    >
-                                        <TrashIcon className="w-3 h-3" />
-                                    </button>
+                                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); setMovieToMove(movie); }}
+                                            className="p-1.5 bg-black/60 backdrop-blur-md text-white rounded-full hover:bg-white hover:text-black transition-colors shadow-lg"
+                                            title="Mover a otra lista"
+                                        >
+                                            <ArrowRightEndOnRectangleIcon className="w-3 h-3" />
+                                        </button>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); handleRemoveMovie(movie.id); }}
+                                            className="p-1.5 bg-red-500 text-white rounded-full hover:scale-110 transition-transform shadow-lg"
+                                            title="Quitar"
+                                        >
+                                            <TrashIcon className="w-3 h-3" />
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                         ))}
@@ -241,6 +298,16 @@ const ListView = ({ onSelectMovie }) => {
                     onClose={() => setIsCollaboratorModalOpen(false)}
                     listId={list.id}
                     currentCollaborators={list.collaborators || []}
+                />
+            )}
+
+            {/* Move Movie Modal */}
+            {movieToMove && (
+                <MoveMovieModal
+                    isOpen={!!movieToMove}
+                    onClose={() => setMovieToMove(null)}
+                    movie={movieToMove}
+                    currentListId={list.id}
                 />
             )}
         </div>

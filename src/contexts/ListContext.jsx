@@ -260,6 +260,23 @@ export const ListProvider = ({ children }) => {
         }
     };
 
+    const moveMovieBetweenLists = async (sourceListId, targetListId, movie) => {
+        try {
+            // 1. Add to target list
+            await addMovieToList(targetListId, movie);
+
+            // 2. Remove from source list (if not watchlist/watched handled differently elsewhere, but here assumes Custom List ID)
+            // Note: If sourceListId is 'watchlist', this function might need adaptation if used from general view, 
+            // but for custom-to-custom move, this is correct.
+            // If the intention is to move from a Custom List to another Custom List:
+            await removeMovieFromList(sourceListId, movie.id);
+
+        } catch (error) {
+            console.error("Error moving movie:", error);
+            throw error;
+        }
+    };
+
     const value = {
         myLists,
         collabLists, // Expose collaborative lists
@@ -269,6 +286,7 @@ export const ListProvider = ({ children }) => {
         deleteList,
         addMovieToList,
         removeMovieFromList,
+        moveMovieBetweenLists,
         getListById,
         addCollaborator,
         leaveList
