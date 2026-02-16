@@ -406,20 +406,8 @@ const FriendsView = () => {
                 isOpen={isSearchOpen}
                 onClose={() => setIsSearchOpen(false)}
                 onSelectUser={(user) => {
-                    const status = getRelationshipStatus(user.uid);
-                    if (status === 'friend') {
-                        toast.info("¡Ya son amigos!");
-                    } else if (status === 'sent') {
-                        toast.info("Ya enviaste una solicitud a este usuario.");
-                    } else if (status === 'received') {
-                        toast.info("¡Esta persona ya te envió una solicitud! Revisa tus pendientes.");
-                    } else {
-                        // Custom confirm using toast promise or just direct action?
-                        // For UX, let's just trigger it or use a simple confirm UI inside modal.
-                        // Ideally we would replace window.confirm with a custom modal, 
-                        // but for now let's just send it. It's low risk.
-                        sendRequest(user);
-                    }
+                    navigate(`/u/${user.username || user.uid}`); // Prefer username if available
+                    setIsSearchOpen(false);
                 }}
             />
             <Toaster theme="dark" position="bottom-center" />

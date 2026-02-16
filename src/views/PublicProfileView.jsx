@@ -318,13 +318,18 @@ const PublicProfileView = ({ onSelectMovie }) => {
                         </div>
                         {/* Action Buttons */}
                         <div className="flex items-center gap-3 flex-wrap justify-center md:justify-end mt-4 md:mt-0">
-                            {!isOwnProfile && !isFollowing && (
+                            {!isOwnProfile && (
                                 <button
                                     onClick={handleFollowToggle}
                                     disabled={followLoading}
-                                    className="px-8 py-2.5 bg-white text-black rounded-full font-bold text-sm transition-all shadow-lg hover:bg-gray-200 active:scale-95"
+                                    className={cn(
+                                        "px-8 py-2.5 rounded-full font-bold text-sm transition-all shadow-lg active:scale-95",
+                                        isFollowing
+                                            ? "bg-surface border border-white/10 text-white hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/50"
+                                            : "bg-white text-black hover:bg-gray-200"
+                                    )}
                                 >
-                                    {followLoading ? '...' : 'Seguir'}
+                                    {followLoading ? '...' : (isFollowing ? 'Conectado' : 'Conectar')}
                                 </button>
                             )}
 
