@@ -44,24 +44,63 @@ export const ListProvider = ({ children }) => {
         const fetchAllLists = async () => {
             setLoading(true);
 
-            // 1. Fetch Owned Lists (Should always work if logged in)
+            // 1. Fetch Owned Lists
             try {
                 const qOwned = query(collection(db, 'lists'), where('ownerId', '==', user.uid));
                 const ownedSnap = await getDocs(qOwned);
-                const ownedData = ownedSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                let ownedData = ownedSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                // ---------------------------------------------------------
+                // AUTO-CREATE "GENERAL" LIST IF MISSING
+                // ---------------------------------------------------------
+                // Check if "General" list exists
+                let general = ownedData.find(l => l.name === 'General');
+
+                if (!general) {
+                    console.log("No 'General' list found. Creating one...");
+                    // OPTIONAL: Migrate legacy watchlist here if we read user profile
+                    // For now, just create empty General list
+                    const newList = {
+                        ownerId: user.uid,
+                        ownerName: user.displayName || 'Anónimo',
+                        name: 'General',
+                        description: 'Lista principal de películas por ver',
+                        privacy: 'private', // Default to private or public? User said "Functionalities same".
+                        collaborators: [],
+                        movies: [], // Start empty. Data migration is complex without reading user doc.
+                        movieCount: 0,
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp(),
+                        likes: 0,
+                        coverImage: null,
+                        isDefault: true // Marker
+                    };
+                    const docRef = await addDoc(collection(db, 'lists'), newList);
+                    const createdList = { id: docRef.id, ...newList };
+                    ownedData.push(createdList);
+                    general = createdList;
+                }
+
+                // Sort: General always first, then by date desc
+                ownedData.sort((a, b) => {
+                    if (a.name === 'General') return -1;
+                    if (b.name === 'General') return 1;
+                    return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
+                });
+
                 setMyLists(ownedData);
+
             } catch (error) {
                 console.error("Error fetching my lists:", error);
             }
 
-            // 2. Fetch Collaborating Lists (Might fail if Rules are strict)
+            // 2. Fetch Collaborating Lists
             try {
                 const qCollab = query(collection(db, 'lists'), where('collaborators', 'array-contains', user.uid));
                 const collabSnap = await getDocs(qCollab);
                 const collabData = collabSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 setCollabLists(collabData);
             } catch (error) {
-                // Silently fail or warn, but don't break the app
                 console.warn("⚠️ Could not fetch collaborative lists (Check Permissions). Ignoring.");
                 setCollabLists([]);
             } finally {
@@ -71,6 +110,25 @@ export const ListProvider = ({ children }) => {
 
         fetchAllLists();
     }, [user]);
+
+    // Helpers for General List
+    const generalList = myLists.find(l => l.name === 'General');
+
+    const addToGeneralList = async (movie) => {
+        if (!generalList) return;
+        // Check if already in
+        if (generalList.movies?.some(m => m.id === movie.id)) return;
+        await addMovieToList(generalList.id, movie);
+    };
+
+    const removeFromGeneralList = async (movieId) => {
+        if (!generalList) return;
+        await removeMovieFromList(generalList.id, movieId);
+    };
+
+    const isInGeneralList = (movieId) => {
+        return generalList?.movies?.some(m => m.id === movieId) || false;
+    };
 
     // 2. Create List - Handles both (obj) and (name, desc, privacy) signatures
     const createList = async (arg1, arg2, arg3) => {
@@ -328,7 +386,11 @@ export const ListProvider = ({ children }) => {
         getListById,
         addCollaborator,
         removeCollaborator,
-        leaveList
+        leaveList,
+        generalList,
+        addToGeneralList,
+        removeFromGeneralList,
+        isInGeneralList
     };
 
     return (

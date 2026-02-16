@@ -5,6 +5,7 @@ import { StarIcon as StarIconSolid, PlusIcon, CheckIcon, StarIcon, PlayIcon } fr
 import { getBackdropUrl, getPosterUrl, getMovieDetails, getMovieVideos } from '../api/tmdb';
 import { useMovies } from '../contexts/MovieContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useLists } from '../contexts/ListContext';
 import { useSound } from '../contexts/SoundContext';
 import { cn } from '../lib/utils';
 import { triggerConfetti, triggerSmallConfetti } from '../lib/confetti';
@@ -19,7 +20,13 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
     const [hoverRating, setHoverRating] = useState(0);
 
     // Contexts
-    const { addToWatchlist, addToWatched, removeMovie, isWatched, isInWatchlist, moveFromWatchlistToWatched, watched } = useMovies();
+    const { addToWatched, isWatched, removeMovie, watched } = useMovies(); // removeMovie is tricky, it removes from BOTH in MovieContext. We only want to remove from Watched if needed.
+    // Actually, MovieContext.removeMovie removes from BOTH.
+    // If we migrate watchlist to ListContext, `removeMovie` in MovieContext only cleans up Watched (and the legacy watchlist array).
+    // Use `removeFromGeneralList` for the new system.
+
+    const { addToGeneralList, removeFromGeneralList, isInGeneralList } = useLists();
+
     const { user, loginWithGoogle } = useAuth();
     const { playSuccess, playClick } = useSound();
 
@@ -27,40 +34,18 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
     const userMovie = watched.find(m => m.id === movie.id);
     const userRating = userMovie?.rating || 0;
 
-    // Fetch Details & Video
-    useEffect(() => {
-        let timer;
-        const loadData = async () => {
-            if (initialMovie.id) {
-                // 1. Full Details
-                const data = await getMovieDetails(initialMovie.id);
-                if (data) setMovie(data);
-
-                // 2. Video
-                const videos = await getMovieVideos(initialMovie.id);
-                // Prioritize Trailer, then Teaser
-                const trailer = videos.find(v => v.site === 'YouTube' && v.type === 'Trailer') ||
-                    videos.find(v => v.site === 'YouTube' && v.type === 'Teaser');
-
-                if (trailer) {
-                    setVideoKey(trailer.key);
-                    // Delay video appearance for smooth entry
-                    timer = setTimeout(() => setShowVideo(true), 2000);
-                }
-            }
-        };
-        loadData();
-
-        // Lock body scroll
-        document.body.style.overflow = 'hidden';
-        return () => {
-            document.body.style.overflow = '';
-            if (timer) clearTimeout(timer);
-        };
-    }, [initialMovie.id]);
+    // ... useEffects ...
 
     const watchedState = isWatched(movie.id);
-    const watchlistState = isInWatchlist(movie.id);
+    const watchlistState = isInGeneralList(movie.id);
+
+    // Helper for "Move to Watched"
+    const handleMoveToWatched = async () => {
+        triggerConfetti();
+        playSuccess();
+        addToWatched(movie, 0); // Add to History
+        await removeFromGeneralList(movie.id); // Remove from General List (Por Ver)
+    };
 
     // Variants
     const overlayVariants = {
@@ -243,7 +228,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                             (rect.left + rect.width / 2) / window.innerWidth,
                                             (rect.top + rect.height / 2) / window.innerHeight
                                         );
-                                        addToWatchlist(movie);
+                                        addToGeneralList(movie);
                                     }}
                                     className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-semibold transition-all border border-white/10 backdrop-blur-md cursor-pointer active:scale-95 group"
                                 >
@@ -284,7 +269,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            removeMovie(movie.id);
+                                            removeFromGeneralList(movie.id);
                                             onClose();
                                         }}
                                         className="text-xs text-red-400 hover:text-white bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 rounded-full transition-colors"
@@ -295,9 +280,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        triggerConfetti();
-                                        playSuccess();
-                                        moveFromWatchlistToWatched(movie.id);
+                                        handleMoveToWatched();
                                     }}
                                     className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gradient-to-r from-primary to-purple-600 text-white font-bold transition-all shadow-lg shadow-primary/20 hover:shadow-primary/40 cursor-pointer active:scale-95"
                                 >
@@ -314,7 +297,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            removeMovie(movie.id);
+                                            removeMovie(movie.id); // From Watched (uses MovieContext still, which is correct for History)
                                             onClose();
                                         }}
                                         className="text-xs text-red-500 hover:text-red-400 font-mono tracking-wide opacity-70 hover:opacity-100 transition-opacity"
