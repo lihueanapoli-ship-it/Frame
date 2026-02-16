@@ -71,6 +71,8 @@ const UserSearchModal = ({ isOpen, onClose, onSelectUser }) => {
                         <div className="relative mb-6">
                             <input
                                 type="text"
+                                name="searchUsers"
+                                id="search-users-input"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="Escribe un nombre y apellido..."

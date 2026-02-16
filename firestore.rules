@@ -47,15 +47,16 @@ service cloud.firestore {
       allow create: if request.auth != null && request.resource.data.fromUid == request.auth.uid;
       
       // Read: Users can see requests sent TO them or BY them
+      // Using .get() prevents crashes if fields are missing in old docs
       allow read: if request.auth != null && (
-        resource.data.toUid == request.auth.uid || 
-        resource.data.fromUid == request.auth.uid
+        resource.data.get('toUid', '') == request.auth.uid || 
+        resource.data.get('fromUid', '') == request.auth.uid
       );
       
       // Delete: Users can cancel their own requests OR reject/accept requests sent to them
       allow delete: if request.auth != null && (
-        resource.data.fromUid == request.auth.uid || 
-        resource.data.toUid == request.auth.uid
+        resource.data.get('fromUid', '') == request.auth.uid || 
+        resource.data.get('toUid', '') == request.auth.uid
       );
     }
     
@@ -66,14 +67,14 @@ service cloud.firestore {
       
       // Read: Sender and Receiver (List Owner) can see
       allow read: if request.auth != null && (
-        resource.data.fromUid == request.auth.uid || 
-        resource.data.toUid == request.auth.uid
+        resource.data.get('fromUid', '') == request.auth.uid || 
+        resource.data.get('toUid', '') == request.auth.uid
       );
       
       // Delete: Sender (cancel) or Receiver (accept/reject)
       allow delete: if request.auth != null && (
-        resource.data.fromUid == request.auth.uid || 
-        resource.data.toUid == request.auth.uid
+        resource.data.get('fromUid', '') == request.auth.uid || 
+        resource.data.get('toUid', '') == request.auth.uid
       );
     }
 

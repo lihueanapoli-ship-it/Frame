@@ -60,6 +60,8 @@ const CreateListModal = ({ isOpen, onClose, onCreated }) => {
                         <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nombre</label>
                         <input
                             type="text"
+                            name="listName"
+                            id="list-name-input"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             placeholder="Ej: Favoritas 2024"

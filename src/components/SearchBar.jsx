@@ -59,6 +59,8 @@ const SearchBar = ({ onSelectMovie, onSearchCallback }) => {
                 </div>
                 <input
                     type="text"
+                    name="searchMovies"
+                    id="search-movies-input"
                     className="block w-full pl-10 pr-10 py-3 border border-gray-700 rounded-full leading-5 bg-surface text-gray-100 placeholder-gray-400 focus:outline-none focus:bg-background focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm transition-all duration-300 shadow-md"
                     placeholder="Buscar películas..."
                     value={query}
