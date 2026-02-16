@@ -1,0 +1,283 @@
+/**
+ * FRAME Design System - Tokens
+ * 
+ * Este archivo define todos los tokens de diseño como CSS variables.
+ * Estos tokens son la única fuente de verdad para colores, spacing, tipografía, etc.
+ * 
+ * Beneficios:
+ * - Cambios globales en un solo lugar
+ * - Preparado para light mode (data-theme="light")
+ * - Preparado para temas custom (futuro monetización)
+ * - Performance: CSS variables son más rápidas que clases inline
+ */
+
+:root {
+    /* ========================================
+     COLORS - Semantic Naming
+     ======================================== */
+
+    /* Backgrounds */
+    --color-bg-primary: #050505;
+    /* Onyx Black - fondo principal */
+    --color-bg-secondary: #121212;
+    /* Surface - cards, modals */
+    --color-bg-elevated: #1F1F1F;
+    /* Elevated surfaces - dropdowns, tooltips */
+    --color-bg-interactive: rgba(0, 240, 255, 0.08);
+    /* Hover states */
+    --color-bg-interactive-hover: rgba(0, 240, 255, 0.15);
+
+    /* Text */
+    --color-text-primary: #E0E0E0;
+    /* Nitrate White - texto principal */
+    --color-text-secondary: #A1A1AA;
+    /* Metadata, labels */
+    --color-text-tertiary: #6B7280;
+    /* Placeholders, disabled */
+    --color-text-inverse: #050505;
+    /* Texto sobre fondos claros */
+
+    /* Brand */
+    --color-brand-primary: #00F0FF;
+    /* Anamorphic Blue - CTA principal */
+    --color-brand-hover: #00C2CF;
+    /* Hover state */
+    --color-brand-muted: rgba(0, 240, 255, 0.2);
+    /* Backgrounds sutiles */
+
+    /* Semantic Colors */
+    --color-success: #10b981;
+    /* Acciones exitosas */
+    --color-success-bg: rgba(16, 185, 129, 0.1);
+    --color-danger: #ef4444;
+    /* Acciones destructivas */
+    --color-danger-bg: rgba(239, 68, 68, 0.1);
+    --color-warning: #f59e0b;
+    /* Advertencias */
+    --color-warning-bg: rgba(245, 158, 11, 0.1);
+    --color-info: #3b82f6;
+    /* Información */
+    --color-info-bg: rgba(59, 130, 246, 0.1);
+
+    /* Borders */
+    --color-border-subtle: rgba(255, 255, 255, 0.05);
+    --color-border-default: rgba(255, 255, 255, 0.1);
+    --color-border-strong: rgba(255, 255, 255, 0.2);
+
+    /* Glassmorphism */
+    --glass-bg: rgba(18, 18, 18, 0.7);
+    --glass-bg-strong: rgba(18, 18, 18, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-blur: 12px;
+    --glass-blur-strong: 20px;
+
+    /* ========================================
+     SPACING - 4px Base Grid
+     ======================================== */
+    --space-0: 0;
+    --space-1: 0.25rem;
+    /* 4px */
+    --space-2: 0.5rem;
+    /* 8px */
+    --space-3: 0.75rem;
+    /* 12px */
+    --space-4: 1rem;
+    /* 16px - base unit */
+    --space-5: 1.25rem;
+    /* 20px */
+    --space-6: 1.5rem;
+    /* 24px */
+    --space-8: 2rem;
+    /* 32px */
+    --space-10: 2.5rem;
+    /* 40px */
+    --space-12: 3rem;
+    /* 48px */
+    --space-16: 4rem;
+    /* 64px */
+    --space-20: 5rem;
+    /* 80px */
+    --space-24: 6rem;
+    /* 96px */
+
+    /* ========================================
+     TYPOGRAPHY
+     ======================================== */
+
+    /* Font Families */
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-display: 'Bebas Neue', sans-serif;
+    --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+
+    /* Font Sizes - Modular Scale (1.2 ratio) */
+    --font-size-xs: 0.75rem;
+    /* 12px */
+    --font-size-sm: 0.875rem;
+    /* 14px */
+    --font-size-base: 1rem;
+    /* 16px */
+    --font-size-lg: 1.125rem;
+    /* 18px */
+    --font-size-xl: 1.25rem;
+    /* 20px */
+    --font-size-2xl: 1.5rem;
+    /* 24px */
+    --font-size-3xl: 1.875rem;
+    /* 30px */
+    --font-size-4xl: 2.25rem;
+    /* 36px */
+    --font-size-5xl: 3rem;
+    /* 48px */
+    --font-size-6xl: 3.75rem;
+    /* 60px */
+
+    /* Line Heights */
+    --line-height-tight: 1.25;
+    --line-height-normal: 1.5;
+    --line-height-relaxed: 1.75;
+
+    /* Font Weights */
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+
+    /* ========================================
+     SHADOWS - Depth Hierarchy
+     ======================================== */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+    --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.6);
+    --shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.7);
+
+    /* Glow Effects (para brand elements) */
+    --glow-brand: 0 0 20px rgba(0, 240, 255, 0.3);
+    --glow-brand-strong: 0 0 30px rgba(0, 240, 255, 0.5);
+
+    /* ========================================
+     BORDER RADIUS
+     ======================================== */
+    --radius-sm: 0.25rem;
+    /* 4px */
+    --radius-md: 0.5rem;
+    /* 8px */
+    --radius-lg: 0.75rem;
+    /* 12px */
+    --radius-xl: 1rem;
+    /* 16px */
+    --radius-2xl: 1.5rem;
+    /* 24px */
+    --radius-full: 9999px;
+    /* Círculos */
+
+    /* ========================================
+     Z-INDEX - Stack Order
+     ======================================== */
+    --z-base: 0;
+    --z-dropdown: 1000;
+    --z-sticky: 1100;
+    --z-fixed: 1200;
+    --z-modal-backdrop: 1300;
+    --z-modal: 1400;
+    --z-popover: 1500;
+    --z-tooltip: 1600;
+    --z-notification: 1700;
+
+    /* ========================================
+     MOTION - Animation Durations & Easings
+     ======================================== */
+    --duration-instant: 100ms;
+    --duration-fast: 150ms;
+    --duration-normal: 250ms;
+    --duration-slow: 350ms;
+    --duration-slower: 500ms;
+
+    /* Easing Functions */
+    --ease-linear: linear;
+    --ease-in: cubic-bezier(0.4, 0, 1, 1);
+    --ease-out: cubic-bezier(0, 0, 0.2, 1);
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-bounce: cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    --ease-elastic: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    /* ========================================
+     BREAKPOINTS (para JS)
+     ======================================== */
+    --breakpoint-sm: 640px;
+    --breakpoint-md: 768px;
+    --breakpoint-lg: 1024px;
+    --breakpoint-xl: 1280px;
+    --breakpoint-2xl: 1536px;
+}
+
+/* ========================================
+   ACCESSIBILITY - Reduced Motion
+   ======================================== */
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --duration-instant: 0ms;
+        --duration-fast: 0ms;
+        --duration-normal: 0ms;
+        --duration-slow: 0ms;
+        --duration-slower: 0ms;
+
+        /* Mantener easings pero duración 0 */
+    }
+
+    * {
+        animation-duration: 0ms !important;
+        transition-duration: 0ms !important;
+    }
+}
+
+/* ========================================
+   FUTURE: Light Mode Support
+   ======================================== */
+[data-theme="light"] {
+    /* Backgrounds */
+    --color-bg-primary: #ffffff;
+    --color-bg-secondary: #f9fafb;
+    --color-bg-elevated: #ffffff;
+    --color-bg-interactive: rgba(0, 240, 255, 0.1);
+
+    /* Text */
+    --color-text-primary: #111827;
+    --color-text-secondary: #6b7280;
+    --color-text-tertiary: #9ca3af;
+    --color-text-inverse: #ffffff;
+
+    /* Borders */
+    --color-border-subtle: rgba(0, 0, 0, 0.05);
+    --color-border-default: rgba(0, 0, 0, 0.1);
+    --color-border-strong: rgba(0, 0, 0, 0.2);
+
+    /* Glassmorphism */
+    --glass-bg: rgba(255, 255, 255, 0.8);
+    --glass-bg-strong: rgba(255, 255, 255, 0.95);
+    --glass-border: rgba(0, 0, 0, 0.1);
+
+    /* Shadows ajustadas para light mode */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+    --shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.25);
+}
+
+/* ========================================
+   FUTURE: Custom Themes (Pro Feature)
+   ======================================== */
+[data-theme="neon"] {
+    --color-brand-primary: #FF00FF;
+    --color-brand-hover: #CC00CC;
+    /* ... más overrides */
+}
+
+[data-theme="forest"] {
+    --color-brand-primary: #10b981;
+    --color-brand-hover: #059669;
+    /* ... */
+}

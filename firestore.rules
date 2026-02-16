@@ -1,0 +1,106 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // --- USER PROFILES (New Social Structure) ---
+    // Anyone can read profiles (needed for social discovery)
+    // Only the user themselves can write/edit their profile
+    match /userProfiles/{userId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+
+      // Subcollections (followers/following)
+      match /followers/{followerId} {
+         allow read: if true;
+         // Allow users to add themselves to someone's followers (Follow action)
+         allow write: if request.auth != null; 
+      }
+      match /following/{followingId} {
+         allow read: if true;
+         allow write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // --- LEGACY USER DATA (MovieContext: Watchlist/Watched) ---
+    // This collection is strictly private to the user
+    // --- USERS (Social Data & Search) ---
+    // Previously strict private, now needs to be readable for Search/Social
+    match /users/{userId} {
+      allow read: if request.auth != null; // Authenticated users can search others
+      allow write: if request.auth != null && request.auth.uid == userId; // Only owner can edit their profile
+      
+      // Friends Subcollection (Bi-directional check ideally, but we trust client logic for MVP)
+      match /friends/{friendId} {
+         allow read, write: if request.auth != null; // Simplified for MVP: Users write to each other's friends list on acceptance. 
+      }
+      
+      // Movies Subcollection (Watchlist / Watched / Favorites)
+      match /movies/{movieId} {
+        allow read: if request.auth != null; // Publicly readable for profiles
+        allow write: if request.auth != null && request.auth.uid == userId; // Only owner can add/remove movies
+      }
+    }
+
+    // --- FRIEND REQUESTS ---
+    match /friendRequests/{requestId} {
+      // Create: Authenticated users can create requests coming FROM them
+      allow create: if request.auth != null && request.resource.data.fromUid == request.auth.uid;
+      
+      // Read: Users can see requests sent TO them or BY them
+      allow read: if request.auth != null && (
+        resource.data.toUid == request.auth.uid || 
+        resource.data.fromUid == request.auth.uid
+      );
+      
+      // Delete: Users can cancel their own requests OR reject/accept requests sent to them
+      allow delete: if request.auth != null && (
+        resource.data.fromUid == request.auth.uid || 
+        resource.data.toUid == request.auth.uid
+      );
+    }
+    
+    // --- LIST COLLABORATION REQUESTS ---
+    match /listRequests/{requestId} {
+      // Create: Any authenticated user can request to join a list
+      allow create: if request.auth != null && request.resource.data.fromUid == request.auth.uid;
+      
+      // Read: Sender and Receiver (List Owner) can see
+      allow read: if request.auth != null && (
+        resource.data.fromUid == request.auth.uid || 
+        resource.data.toUid == request.auth.uid
+      );
+      
+      // Delete: Sender (cancel) or Receiver (accept/reject)
+      allow delete: if request.auth != null && (
+        resource.data.fromUid == request.auth.uid || 
+        resource.data.toUid == request.auth.uid
+      );
+    }
+
+    // --- LISTS (Core Social Feature) ---
+    match /lists/{listId} {
+      // READ RULES:
+      // 1. Owner can always read
+      // 2. Public lists can be read by anyone
+      // 3. Collaborators can read
+      allow read: if resource.data.privacy == 'public' || 
+                  (request.auth != null && (
+                    resource.data.ownerId == request.auth.uid || 
+                    resource.data.collaborators.hasAny([request.auth.uid])
+                  ));
+
+      // WRITE RULES:
+      // 1. Create: Anyone authenticated
+      allow create: if request.auth != null;
+      
+      // 2. Update: Owner OR Collaborator
+      allow update: if request.auth != null && (
+        resource.data.ownerId == request.auth.uid ||
+        resource.data.collaborators.hasAny([request.auth.uid])
+      );
+      
+      // 3. Delete: Only Owner
+      allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+    }
+  }
+}
