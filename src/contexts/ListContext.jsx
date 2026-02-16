@@ -238,10 +238,21 @@ export const ListProvider = ({ children }) => {
     const addMovieToList = async (listId, movie) => {
         try {
             const listRef = doc(db, 'lists', listId);
+
+            // Ensure genres are saved as IDs
+            let genre_ids = movie.genre_ids || [];
+            if ((!genre_ids || genre_ids.length === 0) && movie.genres) {
+                genre_ids = movie.genres.map(g => g.id);
+            }
+
             const moviePreview = {
                 id: movie.id,
                 title: movie.title,
-                poster_path: movie.poster_path,
+                poster_path: movie.poster_path || null,
+                backdrop_path: movie.backdrop_path || null,
+                release_date: movie.release_date || null,
+                vote_average: movie.vote_average || 0,
+                genre_ids: genre_ids,
                 addedAt: new Date().toISOString(),
                 addedBy: user.uid // Track who added it
             };
