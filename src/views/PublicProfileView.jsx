@@ -407,7 +407,7 @@ const PublicProfileView = ({ onSelectMovie }) => {
                             exit={{ opacity: 0, y: -20 }}
                             className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
                         >
-                            {/* 1. Watchlist (System) */}
+                            {/* 1. Watchlist (System) - ALWAYS FIRST */}
                             {renderCollectionCard(
                                 "Por Ver",
                                 userMovies.watchlist?.length || 0,
@@ -416,25 +416,7 @@ const PublicProfileView = ({ onSelectMovie }) => {
                                 () => setActiveFolder('watchlist')
                             )}
 
-                            {/* 2. Watched (System) */}
-                            {renderCollectionCard(
-                                "Vistas",
-                                userMovies.watched?.length || 0,
-                                'watched',
-                                userMovies.watched?.[0] ? `https://image.tmdb.org/t/p/w500${userMovies.watched[0].poster_path}` : null,
-                                () => setActiveFolder('watched')
-                            )}
-
-                            {/* 3. Favorites (System) */}
-                            {renderCollectionCard(
-                                "Favoritos",
-                                userMovies.favorites?.length || 0,
-                                'favorites',
-                                userMovies.favorites?.[0] ? `https://image.tmdb.org/t/p/w500${userMovies.favorites[0].poster_path}` : null,
-                                () => setActiveFolder('favorites')
-                            )}
-
-                            {/* 4. Custom Lists */}
+                            {/* 2. Custom Lists (Treating them as part of the 'Watchlist' ecosystem as requested) */}
                             {lists.map(list => (
                                 renderCollectionCard(
                                     list.name,
@@ -445,10 +427,10 @@ const PublicProfileView = ({ onSelectMovie }) => {
                                 )
                             ))}
 
-                            {lists.length === 0 && !userMovies.watchlist?.length && !userMovies.watched?.length && !userMovies.favorites?.length && (
+                            {lists.length === 0 && !userMovies.watchlist?.length && (
                                 <div className="col-span-full py-12 text-center text-gray-500 border border-white/5 border-dashed rounded-2xl">
                                     <RectangleStackIcon className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                                    <p>Este usuario aún no tiene listas públicas.</p>
+                                    <p>Este usuario aún no tiene listas ni películas por ver.</p>
                                 </div>
                             )}
 
