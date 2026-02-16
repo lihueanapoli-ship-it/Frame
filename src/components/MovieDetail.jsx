@@ -34,7 +34,44 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
     const userMovie = watched.find(m => m.id === movie.id);
     const userRating = userMovie?.rating || 0;
 
-    // ... useEffects ...
+    // Fetch Full Details & Video
+    useEffect(() => {
+        const loadData = async () => {
+            // 1. Fetch Full Details if missing crucial info (like runtime or genres are empty)
+            // Even if we have some info, refreshing ensures up-to-date data (e.g. vote average)
+            const details = await getMovieDetails(movie.id);
+            if (details) {
+                // Merge details into local state, preferring new details but keeping existing ID/local props if needed
+                setMovie(prev => ({
+                    ...prev,
+                    ...details,
+                    // Ensure we keep local flags if any
+                }));
+            }
+
+            // 2. Fetch Video
+            const videos = await getMovieVideos(movie.id);
+            const trailer = videos.find(v => v.type === 'Trailer' && v.site === 'YouTube');
+            const teaser = videos.find(v => v.type === 'Teaser' && v.site === 'YouTube');
+            const bestVideo = trailer || teaser || videos[0];
+
+            if (bestVideo) {
+                setVideoKey(bestVideo.key);
+                // Delay video show for cinematic effect
+                setTimeout(() => setShowVideo(true), 800);
+            }
+        };
+
+        loadData();
+    }, [movie.id]);
+
+    // Scroll Lock
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
 
     const watchedState = isWatched(movie.id);
     const watchlistState = isInGeneralList(movie.id);
