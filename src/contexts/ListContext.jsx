@@ -228,20 +228,58 @@ export const ListProvider = ({ children }) => {
     };
 
     // 7. Manage Collaborators
-    const addCollaborator = async (listId, collaboratorUid) => {
+    const addCollaborator = async (listId, friendUid) => {
+        if (!user) return;
+
+        // Validation: Verify if 'friendUid' is actually a friend/follower
+        // We can do a quick check here or rely on the UI not showing non-friends.
+        // For robustness, let's assume the UI handles the filtering, but we could add a check.
+
+        try {
+            const listRef = doc(db, 'lists', listId);
+
+            // Check if user is already a collaborator
+            const list = myLists.find(l => l.id === listId);
+            if (list && list.collaborators.includes(friendUid)) {
+                return; // Already added
+            }
+
+            await updateDoc(listRef, {
+                collaborators: arrayUnion(friendUid)
+            });
+
+            setMyLists(prev => prev.map(l => {
+                if (l.id === listId) {
+                    return { ...l, collaborators: [...(l.collaborators || []), friendUid] };
+                }
+                return l;
+            }));
+
+        } catch (e) {
+            console.error("Error adding collaborator", e);
+            throw e;
+        }
+    };
+
+    const removeCollaborator = async (listId, collaboratorUid) => {
         try {
             const listRef = doc(db, 'lists', listId);
             await updateDoc(listRef, {
-                collaborators: arrayUnion(collaboratorUid)
+                collaborators: arrayRemove(collaboratorUid)
             });
-            // Update local state if I own the list
-            setMyLists(prev => prev.map(l =>
-                l.id === listId
-                    ? { ...l, collaborators: [...(l.collaborators || []), collaboratorUid] }
-                    : l
-            ));
+
+            setMyLists(prev => prev.map(l => {
+                if (l.id === listId) {
+                    return {
+                        ...l,
+                        collaborators: (l.collaborators || []).filter(uid => uid !== collaboratorUid)
+                    };
+                }
+                return l;
+            }));
         } catch (e) {
-            console.error("Error adding collaborator", e);
+            console.error("Error removing collaborator", e);
+            throw e;
         }
     };
 
@@ -289,6 +327,7 @@ export const ListProvider = ({ children }) => {
         moveMovieBetweenLists,
         getListById,
         addCollaborator,
+        removeCollaborator,
         leaveList
     };
 

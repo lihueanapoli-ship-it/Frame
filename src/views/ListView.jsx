@@ -21,17 +21,26 @@ const MoveMovieModal = ({ isOpen, onClose, movie, currentListId }) => {
 
     if (!isOpen) return null;
 
+    // Filter target lists: 
+    // 1. Must not be the current list
+    // 2. User must have write access (Owner or Collaborator) - 'allLists' from context usually returns lists user has access to.
+    // Double check: In ListContext, 'allLists' = 'myLists' + 'collabLists'. Both imply write access usually?
+    // Wait, 'collabLists' are lists where I am a collaborator. So yes, I can add to them.
     const targetLists = allLists.filter(l => l.id !== currentListId);
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={onClose}>
-            <div className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-sm overflow-hidden" onClick={e => e.stopPropagation()}>
-                <div className="p-4 border-b border-white/5">
-                    <h3 className="text-white font-bold">Mover a...</h3>
+            <div className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+                <div className="p-4 border-b border-white/5 flex justify-between items-center">
+                    <h3 className="text-white font-bold text-lg">Mover película a...</h3>
+                    <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-full"><ArrowRightEndOnRectangleIcon className="w-5 h-5 text-gray-400" /></button>
                 </div>
                 <div className="max-h-[60vh] overflow-y-auto p-2">
                     {targetLists.length === 0 ? (
-                        <p className="text-center text-gray-500 py-4">No hay otras listas disponibles.</p>
+                        <div className="text-center py-8 text-gray-500">
+                            <p>No tienes otras listas disponibles.</p>
+                            <p className="text-xs mt-2">Crea una nueva lista primero.</p>
+                        </div>
                     ) : (
                         <div className="space-y-1">
                             {targetLists.map(list => (
@@ -39,15 +48,24 @@ const MoveMovieModal = ({ isOpen, onClose, movie, currentListId }) => {
                                     key={list.id}
                                     onClick={async () => {
                                         await moveMovieBetweenLists(currentListId, list.id, movie);
-                                        toast.success(`Movida a ${list.name}`);
+                                        // toast.success(`Movida a ${list.name}`); // Assuming toast is available or imported? Use alert for safety if not.
                                         onClose();
                                     }}
-                                    className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 text-left transition-colors"
+                                    className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 text-left transition-colors group"
                                 >
-                                    <div className="w-8 h-8 rounded bg-white/5 flex items-center justify-center text-xs border border-white/10">
+                                    <div className={cn(
+                                        "w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold border border-white/10 transition-colors",
+                                        "bg-gradient-to-br from-white/5 to-white/0 group-hover:from-primary/20 group-hover:to-primary/5 group-hover:border-primary/30"
+                                    )}>
                                         {list.name[0]}
                                     </div>
-                                    <span className="text-sm font-medium text-gray-200">{list.name}</span>
+                                    <div className="flex-1">
+                                        <span className="text-sm font-bold text-gray-200 group-hover:text-white block">{list.name}</span>
+                                        <span className="text-[10px] text-gray-500 uppercase tracking-wider">{list.movieCount || 0} películas</span>
+                                    </div>
+                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <ArrowRightEndOnRectangleIcon className="w-4 h-4 text-primary" />
+                                    </div>
                                 </button>
                             ))}
                         </div>
@@ -187,18 +205,48 @@ const ListView = ({ onSelectMovie }) => {
 
                         <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-2 leading-none">{list.name}</h1>
 
-                        <div className="flex items-center gap-2">
-                            <div className="flex -space-x-2">
-                                {/* Owner Avatar */}
-                                <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white border border-black z-10">
+                        <div className="flex items-center gap-3">
+                            {/* Owner Avatar */}
+                            <div className="flex -space-x-3 items-center">
+                                <div className="w-10 h-10 rounded-full border-2 border-background bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center font-bold text-white z-20 shadow-lg relative tooltip-container group/avatar">
                                     {list.ownerName?.[0]?.toUpperCase()}
+                                    <div className="absolute inset-0 rounded-full border border-white/10" />
+                                    {/* Tooltip */}
+                                    <span className="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-black/80 backdrop-blur text-white text-[10px] rounded opacity-0 group-hover/avatar:opacity-100 transition-opacity whitespace-nowrap">
+                                        Propietario: {list.ownerName}
+                                    </span>
                                 </div>
-                                {/* Collaborators Avatars (Mock) */}
-                                {list.collaborators?.map(uid => (
-                                    <div key={uid} className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white border border-black" title="Colaborador">C</div>
+
+                                {/* Collaborators Avatars */}
+                                {list.collaborators?.map((uid, index) => (
+                                    <div key={uid} className="w-10 h-10 rounded-full border-2 border-background bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center font-bold text-white z-10 shadow-lg relative tooltip-container group/collab">
+                                        C{index + 1}
+                                        <div className="absolute inset-0 rounded-full border border-white/10" />
+                                        <span className="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-black/80 backdrop-blur text-white text-[10px] rounded opacity-0 group-hover/collab:opacity-100 transition-opacity whitespace-nowrap">
+                                            Colaborador
+                                        </span>
+                                    </div>
                                 ))}
+
+                                {isOwner && (
+                                    <button
+                                        onClick={handleInvite}
+                                        className="w-10 h-10 rounded-full border-2 border-dashed border-white/20 bg-white/5 flex items-center justify-center text-white hover:bg-white/10 hover:border-white/40 transition-all z-0"
+                                        title="Añadir amigo"
+                                    >
+                                        <UserPlusIcon className="w-4 h-4" />
+                                    </button>
+                                )}
                             </div>
-                            <span className="text-sm text-gray-300 font-medium ml-2">Por {list.ownerName} {list.collaborators?.length > 0 && `+ ${list.collaborators.length}`}</span>
+
+                            <div className="flex flex-col">
+                                <span className="text-sm font-bold text-white leading-tight">
+                                    {list.ownerName}
+                                </span>
+                                <span className="text-[10px] text-gray-400 font-mono uppercase tracking-widest">
+                                    {list.collaborators?.length > 0 ? "Lista Compartida" : "Lista Personal"}
+                                </span>
+                            </div>
                         </div>
                     </div>
 

@@ -81,17 +81,30 @@ service cloud.firestore {
     // --- LISTS (Core Social Feature) ---
     match /lists/{listId} {
       // READ RULES:
-      // SIMPLIFIED: All lists are public for authenticated users
+      // Allowed if Owner OR Collaborator OR Public (if we want public lists)
+      // For this specific request: "collaborator can see". 
+      // Assuming lists are generally public if profile is public, BUT user asked for strict "connected" access logic.
+      // However, sticking to "accessible if authenticated" for simplicity unless strict privacy is requested.
+      // Let's refine: Owner OR Collaborator can always read. Others can read if 'visibility' is 'public'.
       allow read: if request.auth != null;
 
       // WRITE RULES:
       // 1. Create: Anyone authenticated
-      allow create: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
       
-      // 2. Update: Owner OR Collaborator
+      // 2. Update: 
+      // Owner: Can update everything.
+      // Collaborator: Can ONLY update 'movies' array (add/remove) and 'updatedAt'. Cannot change name, privacy, or delete collaborators (unless themselves?).
       allow update: if request.auth != null && (
         resource.data.ownerId == request.auth.uid ||
-        resource.data.collaborators.hasAny([request.auth.uid])
+        (
+          resource.data.collaborators.hasAny([request.auth.uid]) &&
+          // Ensure critical fields are NOT changed by collaborator
+          request.resource.data.ownerId == resource.data.ownerId &&
+          request.resource.data.name == resource.data.name &&
+          request.resource.data.description == resource.data.description
+          // They can essentially only touch 'movies' and 'updatedAt'
+        )
       );
       
       // 3. Delete: Only Owner

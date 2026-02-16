@@ -244,6 +244,42 @@ export const UserProfileProvider = ({ children }) => {
             const theirProfileRef = doc(db, 'userProfiles', targetUserId);
             batch.update(theirProfileRef, { 'social.followersCount': increment(-1) });
 
+            // 4. CRITICAL: Remove ME from any lists owned by THEM (lose access to shared lists)
+            // Query lists owned by targetUserId where I am a collaborator
+            const sharedListsQuery = query(
+                collection(db, 'lists'),
+                where('ownerId', '==', targetUserId),
+                where('collaborators', 'array-contains', user.uid)
+            );
+
+            const sharedSnap = await getDocs(sharedListsQuery);
+            sharedSnap.forEach(listDoc => {
+                batch.update(listDoc.ref, {
+                    collaborators: arrayRemove(user.uid)
+                });
+            });
+
+            // 5. OPTIONAL: Remove THEM from any lists owned by ME?
+            // "If they stop following..." -> usually implies mutual break.
+            // If I unfollow them, I definitely stop seeing THEIR lists. 
+            // Should they stop seeing MINE? The prompt says "if they stop following... the list remains with the creator".
+            // Typically if *I* initiate the break (unfollow), I might still let them see mine if they follow me?
+            // BUT for "Shared Lists" usually implies mutual connection. 
+            // User request: "The lists are always made with friends who follow each other, if they stop following..."
+            // impliying mutual requirement.
+            // Let's remove THEM from MY lists too, to be safe and strict.
+            const myListsSharedQuery = query(
+                collection(db, 'lists'),
+                where('ownerId', '==', user.uid),
+                where('collaborators', 'array-contains', targetUserId)
+            );
+            const myListsSnap = await getDocs(myListsSharedQuery);
+            myListsSnap.forEach(listDoc => {
+                batch.update(listDoc.ref, {
+                    collaborators: arrayRemove(targetUserId)
+                });
+            });
+
             await batch.commit();
             return true;
         } catch (error) {
