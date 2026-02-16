@@ -432,11 +432,52 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                 {Array.from({ length: 10 }, (_, i) => i + 1).map(star => {
                                     const isActive = (hoverRating || userRating) >= star;
                                     return (
-                                        <button key={star} onMouseEnter={() => setHoverRating(star)} onClick={() => addToWatched(movie, star)} className="group p-1 transition-transform hover:scale-125 focus:outline-none">
+                                        <button key={star} onMouseEnter={() => setHoverRating(star)} onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (!user) { loginWithGoogle(); return; }
+                                            triggerConfetti();
+                                            playSuccess();
+                                            addToWatched(movie, star);
+                                        }} className="group p-1 sm:p-1.5 transition-transform hover:scale-125 focus:outline-none">
                                             {isActive ? <StarIconSolid className={cn("w-6 h-6 sm:w-8 sm:h-8 transition-colors duration-200", star <= 4 ? "text-red-500" : star <= 7 ? "text-yellow-500" : "text-primary")} /> : <StarIcon className="w-6 h-6 sm:w-8 sm:h-8 text-gray-700 group-hover:text-gray-500 transition-colors" />}
                                         </button>
                                     );
                                 })}
+                            </div>
+
+                            <div className="h-8 flex flex-col items-center justify-center mt-2">
+                                {(hoverRating || userRating) > 0 ? (
+                                    <motion.div
+                                        key={hoverRating || userRating}
+                                        initial={{ opacity: 0, y: 5 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="text-center"
+                                    >
+                                        <span className={cn(
+                                            "font-display text-lg font-bold tracking-wide",
+                                            (hoverRating || userRating) <= 4 ? "text-red-400" :
+                                                (hoverRating || userRating) <= 7 ? "text-yellow-400" :
+                                                    "text-primary"
+                                        )}>
+                                            {(hoverRating || userRating)}/10 • {
+                                                (hoverRating || userRating) === 1 ? "Horrible" :
+                                                    (hoverRating || userRating) === 2 ? "Muy mala" :
+                                                        (hoverRating || userRating) === 3 ? "Mala" :
+                                                            (hoverRating || userRating) === 4 ? "Por debajo del promedio" :
+                                                                (hoverRating || userRating) === 5 ? "Regular" :
+                                                                    (hoverRating || userRating) === 6 ? "Decente" :
+                                                                        (hoverRating || userRating) === 7 ? "Buena" :
+                                                                            (hoverRating || userRating) === 8 ? "Muy buena" :
+                                                                                (hoverRating || userRating) === 9 ? "Excelente" :
+                                                                                    "Obra maestra"
+                                            }
+                                        </span>
+                                    </motion.div>
+                                ) : (
+                                    <span className="text-xs text-gray-600 font-mono">
+                                        Toca las estrellas para calificar
+                                    </span>
+                                )}
                             </div>
                         </div>
                     )}
