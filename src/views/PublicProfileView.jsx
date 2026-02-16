@@ -113,27 +113,35 @@ const PublicProfileView = ({ onSelectMovie }) => {
                             bio: finalProfile.bio || ''
                         });
 
-                        // Fetch Lists (Public/All based on rules)
+                        // 3. Fetch Content (Independent Try/Catches for robustness)
+
+                        // A. Lists
                         try {
                             const listsQuery = query(collection(db, 'lists'), where('ownerId', '==', targetUid));
                             const listSnap = await getDocs(listsQuery);
                             setLists(listSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+                        } catch (err) {
+                            console.error("Error fetching lists", err);
+                        }
 
-                            // Fetch User Movies (Watchlist/Watched/Favorites)
+                        // B. User Movies (Watchlist)
+                        try {
                             const userMoviesRef = collection(db, 'users', targetUid, 'movies');
                             const userMoviesSnap = await getDocs(userMoviesRef);
 
                             const newMovies = { watchlist: [], watched: [], favorites: [] };
                             userMoviesSnap.docs.forEach(doc => {
                                 const data = doc.data();
-                                // Loose check for boolean or existence
                                 if (data.isInWatchlist) newMovies.watchlist.push(data);
                                 if (data.isWatched) newMovies.watched.push(data);
                                 if (data.isFavorite) newMovies.favorites.push(data);
                             });
                             setUserMovies(newMovies);
-
-                        } catch (err) { console.error("Error fetching user content", err); }
+                        } catch (err) {
+                            console.error("Error fetching user movies", err);
+                            // If this fails, it's likely a permission issue. 
+                            // We don't want to alert the user aggressively, but we know it's failing.
+                        }
 
                     } catch (e) {
                         console.error("Profile fetch failed", e);
