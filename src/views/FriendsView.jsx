@@ -8,6 +8,7 @@ import {
     UserPlusIcon,
     MagnifyingGlassIcon,
     ChatBubbleLeftEllipsisIcon,
+    ChatBubbleOvalLeftEllipsisIcon,
     CheckIcon,
     XMarkIcon,
     TrashIcon,
@@ -33,6 +34,7 @@ import {
 import UserSearchModal from '../components/ui/UserSearchModal';
 import { cn } from '../lib/utils';
 import { Toaster, toast } from 'sonner';
+import { useChat } from '../contexts/ChatContext';
 
 const CINEMA_RANKS = [
     { min: 0, title: "Turista de Estudio" },
@@ -55,7 +57,8 @@ const getRankTitle = (count) => {
 const FriendsView = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState('friends'); // 'friends' | 'requests' | 'suggestions'
+    const { openChatWith } = useChat();
+    const [activeTab, setActiveTab] = useState('friends');
     const [friends, setFriends] = useState([]);
     const [requests, setRequests] = useState([]); // Pending received
     const [listRequests, setListRequests] = useState([]); // Pending list join requests
@@ -331,6 +334,17 @@ const FriendsView = () => {
                                         </p>
                                     </div>
                                     <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                                        {/* Message */}
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                openChatWith(friend);
+                                            }}
+                                            className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg group/btn"
+                                            title="Enviar mensaje"
+                                        >
+                                            <ChatBubbleOvalLeftEllipsisIcon className="w-5 h-5 group-hover/btn:scale-110 transition-transform" />
+                                        </button>
                                         {/* Remove Friend */}
                                         <button
                                             onClick={(e) => {

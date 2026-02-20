@@ -10,6 +10,8 @@ import { cn } from '../lib/utils';
 import ShareModal from '../components/ui/ShareModal';
 import CollaboratorModal from '../components/ui/CollaboratorModal';
 import AddToListModal from '../components/ui/AddToListModal';
+import ShareWithFriendModal from '../components/ui/ShareWithFriendModal';
+import { useChat } from '../contexts/ChatContext';
 // Reuse AddToListModal logic? No, move is specific. Let's create a small inline modal or reuse AddTo with a twist.
 // Actually `AddToListModal` just adds/removes. 
 // If I use `AddToListModal`, I can just check the new list and uncheck the current one manually?
@@ -137,6 +139,8 @@ const ListView = ({ onSelectMovie }) => {
     };
 
     const [requestLoading, setRequestLoading] = useState(false);
+    const [isShareFriendOpen, setIsShareFriendOpen] = useState(false);
+    const { openChatWith } = useChat();
 
     const handleRequestJoin = async () => {
         if (!user) return;
@@ -275,6 +279,10 @@ const ListView = ({ onSelectMovie }) => {
                             </button>
                         )}
 
+                        <button onClick={() => setIsShareFriendOpen(true)} className="p-3 bg-white/10 text-white rounded-full hover:bg-white/20 backdrop-blur-md transition-colors" title="Compartir con amigo">
+                            <UserGroupIcon className="w-5 h-5" />
+                        </button>
+
                         <button onClick={() => setIsShareOpen(true)} className="p-3 bg-white/10 text-white rounded-full hover:bg-white/20 backdrop-blur-md transition-colors" title="Compartir">
                             <ShareIcon className="w-5 h-5" />
                         </button>
@@ -361,6 +369,13 @@ const ListView = ({ onSelectMovie }) => {
                     currentListId={list.id}
                 />
             )}
+
+            <ShareWithFriendModal
+                isOpen={isShareFriendOpen}
+                onClose={() => setIsShareFriendOpen(false)}
+                type="list"
+                payload={list}
+            />
         </div>
     );
 };

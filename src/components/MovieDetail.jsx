@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { XMarkIcon, CalendarIcon, ClockIcon, ListBulletIcon, ChevronDownIcon, EllipsisHorizontalIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, CalendarIcon, ClockIcon, ListBulletIcon, ChevronDownIcon, EllipsisHorizontalIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid, PlusIcon, CheckIcon, StarIcon, PlayIcon, FolderIcon } from '@heroicons/react/24/solid';
 import { getBackdropUrl, getPosterUrl, getMovieDetails, getMovieVideos } from '../api/tmdb';
 import { useMovies } from '../contexts/MovieContext';
@@ -10,15 +10,17 @@ import { useSound } from '../contexts/SoundContext';
 import { cn } from '../lib/utils';
 import { triggerConfetti, triggerSmallConfetti } from '../lib/confetti';
 import AddToListModal from './ui/AddToListModal';
+import ShareWithFriendModal from './ui/ShareWithFriendModal';
 
 const MovieDetail = ({ movie: initialMovie, onClose }) => {
     const [movie, setMovie] = useState(initialMovie);
-    const [showListModal, setShowListModal] = useState(false); // Legacy modal, maybe keep for "New List"?
+    const [showListModal, setShowListModal] = useState(false);
     const [showDropdown, setShowDropdown] = useState(false);
     const [videoKey, setVideoKey] = useState(null);
     const [showVideo, setShowVideo] = useState(false);
     const [isFullVideoOpen, setIsFullVideoOpen] = useState(false);
     const [hoverRating, setHoverRating] = useState(0);
+    const [showShareFriend, setShowShareFriend] = useState(false);
     const dropdownRef = useRef(null);
 
     // Contexts
@@ -299,6 +301,18 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
 
                 {/* Actions Sticky Footer (Inside Flex Col) */}
                 <div className="p-4 bg-surface-elevated/95 backdrop-blur-xl border-t border-white/10 z-50">
+                    {/* Recommend to friend — always visible if logged in */}
+                    {user && (
+                        <div className="flex justify-end mb-3">
+                            <button
+                                onClick={() => setShowShareFriend(true)}
+                                className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-primary transition-colors group"
+                            >
+                                <UserGroupIcon className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                Recomendar a un amigo
+                            </button>
+                        </div>
+                    )}
                     {!watchedState && !watchlistState && (
                         <div className="flex gap-3 max-w-4xl mx-auto">
                             {/* ADD BUTTON WITH DROPDOWN */}
@@ -514,6 +528,13 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
             </AnimatePresence>
 
             <AddToListModal isOpen={showListModal} onClose={() => setShowListModal(false)} movie={movie} />
+
+            <ShareWithFriendModal
+                isOpen={showShareFriend}
+                onClose={() => setShowShareFriend(false)}
+                type="movie"
+                payload={movie}
+            />
         </div>
     );
 };

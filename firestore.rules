@@ -110,5 +110,30 @@ service cloud.firestore {
       // 3. Delete: Only Owner
       allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
     }
+
+    // --- CHATS (Direct Messaging) ---
+    match /chats/{chatId} {
+      // Only participants can read/write the chat document
+      allow read, write: if request.auth != null &&
+        resource.data.participants.hasAny([request.auth.uid]);
+
+      // Allow create if the user is one of the participants
+      allow create: if request.auth != null &&
+        request.resource.data.participants.hasAny([request.auth.uid]);
+
+      // Messages subcollection
+      match /messages/{messageId} {
+        // Only participants of the parent chat can read messages
+        allow read: if request.auth != null &&
+          get(/databases/$(database)/documents/chats/$(chatId)).data.participants.hasAny([request.auth.uid]);
+
+        // Only participants can create messages, and senderId must match auth
+        allow create: if request.auth != null &&
+          request.resource.data.senderId == request.auth.uid &&
+          get(/databases/$(database)/documents/chats/$(chatId)).data.participants.hasAny([request.auth.uid]);
+
+        allow update, delete: if false; // Messages are immutable
+      }
+    }
   }
 }

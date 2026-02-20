@@ -9,6 +9,8 @@ import { SoundProvider } from './contexts/SoundContext';
 import { UserProfileProvider, useUserProfile } from './contexts/UserProfileContext';
 import { ListProvider } from './contexts/ListContext';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { ChatProvider, useChat } from './contexts/ChatContext';
+import ChatWindow from './components/ui/ChatWindow';
 
 import DiscoverView from './views/DiscoverView';
 import LibraryView from './views/LibraryView';
@@ -61,6 +63,16 @@ const AppContent = () => {
     }
 
     // 3. Authenticated App UI
+    const FriendsBadge = () => {
+        const { totalUnread } = useChat();
+        if (!totalUnread) return null;
+        return (
+            <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-primary text-black text-[9px] font-black rounded-full flex items-center justify-center px-1 shadow-lg shadow-primary/40 z-10">
+                {totalUnread > 9 ? '9+' : totalUnread}
+            </span>
+        );
+    };
+
     const UserMenu = () => {
         const firstName = user.displayName?.split(' ')[0] || 'Cinéfilo';
 
@@ -200,6 +212,7 @@ const AppContent = () => {
                                         <item.icon className={`w-4 h-4 ${isActive ? "hidden" : "block transition-transform group-hover:scale-110"}`} />
                                         <item.activeIcon className={`w-4 h-4 text-primary ${isActive ? "block scale-110" : "hidden"}`} />
                                         <span className={isActive ? "font-bold text-white shadow-primary/20 drop-shadow-md" : ""}>{item.name}</span>
+                                        {item.name === 'Amigos' && <span className="relative"><FriendsBadge /></span>}
                                         {isActive && (
                                             <motion.div
                                                 layoutId="desktop-nav-active"
@@ -268,6 +281,10 @@ const AppContent = () => {
                 onClose={() => setIsFeedbackOpen(false)}
             />
 
+            <AnimatePresence>
+                <ChatWindow />
+            </AnimatePresence>
+
         </div >
     );
 }
@@ -281,7 +298,9 @@ function App() {
                         <ListProvider>
                             <MovieProvider>
                                 <SoundProvider>
-                                    <AppContent />
+                                    <ChatProvider>
+                                        <AppContent />
+                                    </ChatProvider>
                                 </SoundProvider>
                             </MovieProvider>
                         </ListProvider>
