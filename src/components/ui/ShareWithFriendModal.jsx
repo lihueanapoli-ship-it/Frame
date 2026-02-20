@@ -49,14 +49,32 @@ const ShareWithFriendModal = ({ isOpen, onClose, type, payload }) => {
     const handleSend = async (friend) => {
         if (!payload) return;
 
+        // Sanitize payload to only include plain, serializable fields
+        // (TMDB movies have 20+ extra fields; Firestore lists have Timestamp objects)
+        const sanitizedMovie = payload && type === 'movie' ? {
+            id: payload.id ?? null,
+            title: payload.title ?? '',
+            poster_path: payload.poster_path ?? null,
+            release_date: payload.release_date ?? null,
+            vote_average: payload.vote_average ?? null,
+        } : null;
+
+        const sanitizedList = payload && type === 'list' ? {
+            id: payload.id ?? null,
+            name: payload.name ?? 'Lista sin nombre',
+            movieCount: Array.isArray(payload.movies)
+                ? payload.movies.length
+                : (payload.movieCount ?? 0),
+        } : null;
+
         const content = type === 'movie'
-            ? { type: 'movie_share', movie: payload, text: message.trim() || '' }
-            : { type: 'list_share', list: payload, text: message.trim() || '' };
+            ? { type: 'movie_share', movie: sanitizedMovie, text: message.trim() || '' }
+            : { type: 'list_share', list: sanitizedList, text: message.trim() || '' };
 
         await sendMessage(friend.uid, content);
         setSent(friend.uid);
 
-        // Open chat window with that friend
+        // Open chat window with that friend after a brief moment
         setTimeout(() => {
             openChatWith(friend);
             onClose();

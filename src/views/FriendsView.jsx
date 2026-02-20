@@ -57,7 +57,7 @@ const getRankTitle = (count) => {
 const FriendsView = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
-    const { openChatWith } = useChat();
+    const { openChatWith, unreadPerFriend } = useChat();
     const [activeTab, setActiveTab] = useState('friends');
     const [friends, setFriends] = useState([]);
     const [requests, setRequests] = useState([]); // Pending received
@@ -325,7 +325,21 @@ const FriendsView = () => {
                                 >
                                     <div className="relative">
                                         <img src={friend.photoURL || "/logo.png"} alt="" className="w-12 h-12 rounded-full object-cover" />
+                                        {/* Online dot */}
                                         <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#111]" />
+                                        {/* Unread messages dot */}
+                                        {unreadPerFriend[friend.uid] > 0 && (
+                                            <>
+                                                <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-primary rounded-full border-2 border-[#111] animate-ping opacity-75" />
+                                                <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-primary rounded-full border-2 border-[#111] flex items-center justify-center">
+                                                    {unreadPerFriend[friend.uid] > 9 ? (
+                                                        <span className="text-[7px] font-black text-black leading-none">9+</span>
+                                                    ) : (
+                                                        <span className="text-[7px] font-black text-black leading-none">{unreadPerFriend[friend.uid]}</span>
+                                                    )}
+                                                </span>
+                                            </>
+                                        )}
                                     </div>
                                     <div className="flex-1">
                                         <h3 className="font-bold text-white group-hover:text-primary transition-colors">{friend.displayName}</h3>

@@ -40,6 +40,7 @@ export const ChatProvider = ({ children }) => {
     const [openChat, setOpenChat] = useState(null);
     const openChatRef = useRef(null);
     const [totalUnread, setTotalUnread] = useState(0);
+    const [unreadPerFriend, setUnreadPerFriend] = useState({}); // { [friendUid]: count }
     const prevChatMeta = useRef({});
     const isFirstLoad = useRef(true);
 
@@ -59,11 +60,16 @@ export const ChatProvider = ({ children }) => {
 
         const unsub = onSnapshot(q, (snap) => {
             let count = 0;
+            const perFriend = {};
             snap.docs.forEach(d => {
                 const data = d.data();
                 const chatId = d.id;
                 const unread = data.unreadCount?.[user.uid] || 0;
                 count += unread;
+
+                // Derive the other participant's uid from chatId (uid1_uid2 sorted)
+                const otherUid = chatId.split('_').find(id => id !== user.uid);
+                if (otherUid && unread > 0) perFriend[otherUid] = unread;
 
                 const lastAt = data.lastMessageAt?.toMillis?.() || 0;
                 const lastSenderId = data.lastSenderId;
@@ -113,6 +119,7 @@ export const ChatProvider = ({ children }) => {
 
             isFirstLoad.current = false;
             setTotalUnread(count);
+            setUnreadPerFriend(perFriend);
         });
 
         return () => unsub();
@@ -210,7 +217,7 @@ export const ChatProvider = ({ children }) => {
     }, [user]);
 
     return (
-        <ChatContext.Provider value={{ openChat, openChatWith, closeChat, sendMessage, markAsRead, totalUnread }}>
+        <ChatContext.Provider value={{ openChat, openChatWith, closeChat, sendMessage, markAsRead, totalUnread, unreadPerFriend }}>
             {children}
         </ChatContext.Provider>
     );
