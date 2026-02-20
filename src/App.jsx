@@ -49,9 +49,14 @@ const AppContent = () => {
 
     // Auth Hooks
     const { user, loading, logout } = useAuth();
-    // Removed useLanguage usage for UI toggle
     const { profile, loading: profileLoading } = useUserProfile();
+    const { setOpenMovieDetailFn } = useChat();
     const navigate = useNavigate();
+
+    // Register setSelectedMovie so ChatWindow can open MovieDetail
+    useEffect(() => {
+        setOpenMovieDetailFn(setSelectedMovie);
+    }, [setOpenMovieDetailFn, setSelectedMovie]);
 
     // 1. Loading Guard
     if (loading) {

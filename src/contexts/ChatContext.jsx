@@ -43,6 +43,8 @@ export const ChatProvider = ({ children }) => {
     const [unreadPerFriend, setUnreadPerFriend] = useState({}); // { [friendUid]: count }
     const prevChatMeta = useRef({});
     const isFirstLoad = useRef(true);
+    // Injected by App.jsx to open the MovieDetail modal
+    const openMovieDetailRef = useRef(null);
 
     // Keep openChatRef in sync
     useEffect(() => {
@@ -133,6 +135,16 @@ export const ChatProvider = ({ children }) => {
         setOpenChat(null);
     }, []);
 
+    // Called by App.jsx to register the setSelectedMovie setter
+    const setOpenMovieDetailFn = useCallback((fn) => {
+        openMovieDetailRef.current = fn;
+    }, []);
+
+    // Used by ChatWindow to open a movie in the detail modal
+    const openMovieDetail = useCallback((movie) => {
+        openMovieDetailRef.current?.(movie);
+    }, []);
+
     /**
      * Send a message (text, movie_share, list_share) to a friend.
      * Flow:
@@ -217,7 +229,12 @@ export const ChatProvider = ({ children }) => {
     }, [user]);
 
     return (
-        <ChatContext.Provider value={{ openChat, openChatWith, closeChat, sendMessage, markAsRead, totalUnread, unreadPerFriend }}>
+        <ChatContext.Provider value={{
+            openChat, openChatWith, closeChat,
+            sendMessage, markAsRead,
+            totalUnread, unreadPerFriend,
+            openMovieDetail, setOpenMovieDetailFn
+        }}>
             {children}
         </ChatContext.Provider>
     );

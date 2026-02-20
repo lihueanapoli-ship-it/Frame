@@ -323,22 +323,15 @@ const FriendsView = () => {
                                     onClick={() => navigate(`/u/${friend.uid}`)}
                                     className="flex items-center gap-4 p-4 bg-surface-elevated border border-white/5 rounded-xl hover:border-white/20 transition-all group cursor-pointer hover:bg-white/5"
                                 >
-                                    <div className="relative">
+                                    <div className="relative overflow-visible flex-shrink-0">
                                         <img src={friend.photoURL || "/logo.png"} alt="" className="w-12 h-12 rounded-full object-cover" />
                                         {/* Online dot */}
                                         <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#111]" />
-                                        {/* Unread messages dot */}
+                                        {/* Unread messages badge — top-right of avatar */}
                                         {unreadPerFriend[friend.uid] > 0 && (
-                                            <>
-                                                <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-primary rounded-full border-2 border-[#111] animate-ping opacity-75" />
-                                                <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-primary rounded-full border-2 border-[#111] flex items-center justify-center">
-                                                    {unreadPerFriend[friend.uid] > 9 ? (
-                                                        <span className="text-[7px] font-black text-black leading-none">9+</span>
-                                                    ) : (
-                                                        <span className="text-[7px] font-black text-black leading-none">{unreadPerFriend[friend.uid]}</span>
-                                                    )}
-                                                </span>
-                                            </>
+                                            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-primary border-2 border-[#111] text-black text-[8px] font-black rounded-full flex items-center justify-center px-0.5 shadow-lg shadow-primary/50 animate-bounce">
+                                                {unreadPerFriend[friend.uid] > 9 ? '9+' : unreadPerFriend[friend.uid]}
+                                            </span>
                                         )}
                                     </div>
                                     <div className="flex-1">
