@@ -282,9 +282,7 @@ const AppContent = () => {
                 onClose={() => setIsFeedbackOpen(false)}
             />
 
-            <AnimatePresence>
-                <ChatWindow />
-            </AnimatePresence>
+            <ChatWindow />
 
             <Toaster
                 theme="dark"

@@ -161,9 +161,11 @@ const ChatWindow = () => {
         inputRef.current?.focus();
     };
 
-    return (
+    // Portal always mounted — AnimatePresence lives INSIDE the portal
+    // so Framer Motion can control the actual DOM element directly.
+    return createPortal(
         <AnimatePresence>
-            {openChat && createPortal(
+            {openChat && (
                 <motion.div
                     key={`chat-${openChat.uid}`}
                     initial={{ y: 80, opacity: 0, scale: 0.97 }}
@@ -270,10 +272,10 @@ const ChatWindow = () => {
                             </button>
                         </div>
                     )}
-                </motion.div>,
-                document.body
+                </motion.div>
             )}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 };
 
