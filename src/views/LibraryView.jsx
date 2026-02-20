@@ -8,13 +8,35 @@ import { getCachedGenres } from '../utils/genreCache';
 import MovieCard from '../components/MovieCard';
 import BottomSheet from '../components/ui/BottomSheet';
 import { createPortal } from 'react-dom';
-import { AdjustmentsHorizontalIcon, MagnifyingGlassIcon, XMarkIcon, UserPlusIcon, TrashIcon, ChevronDownIcon, CheckBadgeIcon } from '@heroicons/react/24/outline';
+import { AdjustmentsHorizontalIcon, MagnifyingGlassIcon, XMarkIcon, UserPlusIcon, TrashIcon, ChevronDownIcon, CheckBadgeIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { FilterChip } from '../components/ui/FilterChip';
 import { FilmIcon } from '@heroicons/react/24/solid';
 import { cn } from '../lib/utils';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import ManageListMembersModal from '../components/ui/ManageListMembersModal';
 import CreateListModal from '../components/ui/CreateListModal';
+
+const GENRES = [
+    { id: 28, name: "Acción", emoji: "💥" },
+    { id: 12, name: "Aventura", emoji: "🤠" },
+    { id: 16, name: "Animación", emoji: "🎨" },
+    { id: 35, name: "Comedia", emoji: "🤣" },
+    { id: 80, name: "Crimen", emoji: "🕵️" },
+    { id: 99, name: "Documental", emoji: "🌍" },
+    { id: 18, name: "Drama", emoji: "🎭" },
+    { id: 10751, name: "Familia", emoji: "👨‍👩‍👧‍👦" },
+    { id: 14, name: "Fantasía", emoji: "🐉" },
+    { id: 36, name: "Historia", emoji: "🏛️" },
+    { id: 27, name: "Terror", emoji: "👻" },
+    { id: 10402, name: "Música", emoji: "🎵" },
+    { id: 9648, name: "Misterio", emoji: "🔦" },
+    { id: 10749, name: "Romance", emoji: "💘" },
+    { id: 878, name: "Ciencia Ficción", emoji: "🚀" },
+    { id: 10770, name: "Película de TV", emoji: "📺" },
+    { id: 10752, name: "Bélica", emoji: "⚔️" },
+    { id: 37, name: "Western", emoji: "🌵" },
+];
 
 const LibraryView = ({ onSelectMovie }) => {
     // State
@@ -102,7 +124,7 @@ const LibraryView = ({ onSelectMovie }) => {
         setYearRange({ min: 1900, max: new Date().getFullYear() + 5 });
     };
 
-    const activeFilterCount = (selectedGenres.length > 0 ? 1 : 0) + (minRating > 0 ? 1 : 0) + (runtimeFilter !== 'any' ? 1 : 0) + (sortOption !== 'date_added' ? 1 : 0);
+    const activeFilterCount = (selectedGenres.length > 0 ? 1 : 0) + (minRating > 0 ? 1 : 0) + (runtimeFilter !== 'any' ? 1 : 0) + (sortOption !== 'date_added' ? 1 : 0) + (yearRange.min > 1900 ? 1 : 0);
 
     return (
         <div className="min-h-screen pb-24 px-4 pt-8">
@@ -296,9 +318,9 @@ const LibraryView = ({ onSelectMovie }) => {
             {/* MODALS */}
             {
                 createPortal(
-                    <BottomSheet isOpen={isFilterOpen} onClose={() => setIsFilterOpen(false)} title="Filtros">
-                        {/* Simplified Filter UI Content */}
+                    <BottomSheet isOpen={isFilterOpen} onClose={() => setIsFilterOpen(false)} title="Filtros Avanzados">
                         <div className="space-y-8 pb-8">
+                            {/* Sort */}
                             <div>
                                 <h4 className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-widest">Ordenar Por</h4>
                                 <div className="grid grid-cols-2 gap-3">
@@ -307,8 +329,59 @@ const LibraryView = ({ onSelectMovie }) => {
                                     ))}
                                 </div>
                             </div>
+
+                            {/* Rating */}
+                            <div>
+                                <div className="flex justify-between items-center mb-3">
+                                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Calificación Mínima</h4>
+                                    <span className="text-xs font-mono text-primary">{minRating > 0 ? `${minRating}+ Puntos` : 'Cualquiera'}</span>
+                                </div>
+                                <div className="grid grid-cols-8 gap-2 bg-surface-elevated p-3 rounded-xl border border-white/5">
+                                    {[2, 3, 4, 5, 6, 7, 8, 9].map(score => (
+                                        <button key={score} onClick={() => setMinRating(minRating === score ? 0 : score)} className={cn("aspect-square rounded-lg flex items-center justify-center text-sm font-bold transition-all border", minRating === score ? "bg-primary text-black border-primary" : "bg-transparent border-white/5 text-gray-400 hover:bg-white/10 hover:text-white")}>{score}</button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Runtime */}
+                            <div>
+                                <h4 className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-widest">Duración</h4>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {[{ id: 'short', label: 'Corta', sub: '< 90m' }, { id: 'medium', label: 'Media', sub: '90-120m' }, { id: 'long', label: 'Larga', sub: '> 120m' }].map(r => (
+                                        <button key={r.id} onClick={() => setRuntimeFilter(runtimeFilter === r.id ? 'any' : r.id)} className={cn("flex flex-col items-center justify-center p-3 rounded-xl border transition-all", runtimeFilter === r.id ? "bg-primary/20 border-primary text-primary" : "bg-surface border-white/5 text-gray-400 hover:bg-white/5")}><ClockIcon className="w-5 h-5 mb-1" /><span className="text-xs font-bold">{r.label}</span><span className="text-[10px] opacity-60 font-mono">{r.sub}</span></button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Decades */}
+                            <div>
+                                <h4 className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-widest">Década</h4>
+                                <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
+                                    <button onClick={() => setYearRange({ min: 1900, max: new Date().getFullYear() + 5 })} className={cn("px-4 py-2 rounded-full text-xs font-bold border whitespace-nowrap", yearRange.min === 1900 ? "bg-white text-black border-white" : "bg-surface border-white/10 text-gray-400")}>Todas</button>
+                                    {[2020, 2010, 2000, 1990, 1980, 1970].map(decade => { const isSelected = yearRange.min === decade && yearRange.max === decade + 9; return (<button key={decade} onClick={() => setYearRange(isSelected ? { min: 1900, max: new Date().getFullYear() + 5 } : { min: decade, max: decade + 9 })} className={cn("px-4 py-2 rounded-full text-xs font-bold border whitespace-nowrap", isSelected ? "bg-primary text-black border-primary" : "bg-surface border-white/10 text-gray-400 hover:text-white")}>{decade}s</button>); })}
+                                </div>
+                            </div>
+
+                            {/* Genres */}
+                            <div>
+                                <div className="flex justify-between items-center mb-3">
+                                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Géneros</h4>
+                                    {selectedGenres.length > 0 && <span className="text-xs text-primary">{selectedGenres.length} seleccionados</span>}
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {GENRES.map(g => (
+                                        <FilterChip
+                                            key={g.id}
+                                            label={`${g.emoji} ${g.name}`}
+                                            isSelected={selectedGenres.includes(g.id)}
+                                            onClick={() => setSelectedGenres(prev => prev.includes(g.id) ? prev.filter(id => id !== g.id) : [...prev, g.id])}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
                             <div className="pt-4 flex gap-3">
-                                <button onClick={clearFilters} className="flex-1 py-3.5 rounded-xl font-semibold text-gray-400 hover:text-white transition-colors border border-white/10">Limpiar todo</button>
+                                <button onClick={clearFilters} className="flex-1 py-3.5 rounded-xl font-semibold text-gray-400 hover:text-white transition-colors border border-white/10">Limpiar</button>
                                 <button onClick={() => setIsFilterOpen(false)} className="flex-[2] py-3.5 bg-primary text-black rounded-xl font-bold shadow-lg shadow-primary/25 active:scale-95 transition-all">Ver Resultados</button>
                             </div>
                         </div>
