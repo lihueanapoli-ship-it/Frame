@@ -113,26 +113,33 @@ service cloud.firestore {
 
     // --- CHATS (Direct Messaging) ---
     match /chats/{chatId} {
-      // Only participants can read/write the chat document
-      allow read, write: if request.auth != null &&
+      // Both participants can read
+      allow read: if request.auth != null &&
         resource.data.participants.hasAny([request.auth.uid]);
 
-      // Allow create if the user is one of the participants
+      // Create: user must be listed as a participant
       allow create: if request.auth != null &&
         request.resource.data.participants.hasAny([request.auth.uid]);
 
+      // Update: either participant can update (send messages, mark read, etc.)
+      allow update: if request.auth != null &&
+        resource.data.participants.hasAny([request.auth.uid]);
+
+      // Delete: not allowed from client
+      allow delete: if false;
+
       // Messages subcollection
       match /messages/{messageId} {
-        // Only participants of the parent chat can read messages
+        // Both participants can read messages
         allow read: if request.auth != null &&
           get(/databases/$(database)/documents/chats/$(chatId)).data.participants.hasAny([request.auth.uid]);
 
-        // Only participants can create messages, and senderId must match auth
+        // Sender must match auth and be a participant
         allow create: if request.auth != null &&
           request.resource.data.senderId == request.auth.uid &&
           get(/databases/$(database)/documents/chats/$(chatId)).data.participants.hasAny([request.auth.uid]);
 
-        allow update, delete: if false; // Messages are immutable
+        allow update, delete: if false;
       }
     }
   }

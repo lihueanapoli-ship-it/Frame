@@ -28,6 +28,7 @@ import DynamicLogo from './components/ui/DynamicLogo';
 import SpotlightCursor from './components/ui/SpotlightCursor';
 import PageTransitionOverlay from './components/ui/PageTransitionOverlay';
 import FeedbackModal from './components/ui/FeedbackModal';
+import { Toaster } from 'sonner';
 
 
 // Wrapper component to use Hooks like useNavigate
@@ -284,6 +285,12 @@ const AppContent = () => {
             <AnimatePresence>
                 <ChatWindow />
             </AnimatePresence>
+
+            <Toaster
+                theme="dark"
+                position="top-right"
+                toastOptions={{ style: { background: 'transparent', border: 'none', padding: 0, boxShadow: 'none' } }}
+            />
 
         </div >
     );
