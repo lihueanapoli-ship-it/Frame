@@ -112,32 +112,37 @@ service cloud.firestore {
     }
 
     // --- CHATS (Direct Messaging) ---
+    // chatId is always sorted([uid1, uid2]).join('_')
+    // So we can verify participation by checking if the user's uid appears in chatId.
     match /chats/{chatId} {
-      // Both participants can read
-      allow read: if request.auth != null &&
-        resource.data.participants.hasAny([request.auth.uid]);
 
-      // Create: user must be listed as a participant
-      allow create: if request.auth != null &&
+      // Helper: is the requesting user a participant? (checks the chatId string)
+      function isParticipant() {
+        return request.auth != null &&
+          (chatId.matches('.*_' + request.auth.uid) ||
+           chatId.matches(request.auth.uid + '_.*') ||
+           chatId == request.auth.uid);
+      }
+
+      allow read: if isParticipant();
+
+      // Create: user must be in participants array AND in chatId
+      allow create: if isParticipant() &&
         request.resource.data.participants.hasAny([request.auth.uid]);
 
-      // Update: either participant can update (send messages, mark read, etc.)
+      // Update: verify against stored participants (doc exists)
       allow update: if request.auth != null &&
         resource.data.participants.hasAny([request.auth.uid]);
 
-      // Delete: not allowed from client
       allow delete: if false;
 
-      // Messages subcollection
+      // Messages subcollection — use chatId string check, no get() needed
       match /messages/{messageId} {
-        // Both participants can read messages
-        allow read: if request.auth != null &&
-          get(/databases/$(database)/documents/chats/$(chatId)).data.participants.hasAny([request.auth.uid]);
+        allow read: if isParticipant();
 
-        // Sender must match auth and be a participant
-        allow create: if request.auth != null &&
-          request.resource.data.senderId == request.auth.uid &&
-          get(/databases/$(database)/documents/chats/$(chatId)).data.participants.hasAny([request.auth.uid]);
+        // Create: sender must match auth uid, and user must be participant
+        allow create: if isParticipant() &&
+          request.resource.data.senderId == request.auth.uid;
 
         allow update, delete: if false;
       }

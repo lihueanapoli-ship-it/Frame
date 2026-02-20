@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { db } from '../api/firebase';
 import {
-    collection, query, where, onSnapshot, orderBy,
-    addDoc, serverTimestamp, doc, setDoc, updateDoc, increment
+    collection, query, where, onSnapshot,
+    addDoc, serverTimestamp, doc, setDoc, getDoc, updateDoc, increment
 } from 'firebase/firestore';
 import { useAuth } from './AuthContext';
 import { toast } from 'sonner';
@@ -15,7 +15,6 @@ export const getChatId = (uid1, uid2) => [uid1, uid2].sort().join('_');
 const playNotificationChime = () => {
     try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
-
         const playTone = (freq, startTime, duration) => {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
@@ -29,30 +28,27 @@ const playNotificationChime = () => {
             osc.start(startTime);
             osc.stop(startTime + duration);
         };
-
         // Gentle two-note chime: G5 → B5
-        playTone(784, ctx.currentTime, 0.35);         // G5
-        playTone(988, ctx.currentTime + 0.12, 0.4);   // B5
-
+        playTone(784, ctx.currentTime, 0.35);
+        playTone(988, ctx.currentTime + 0.12, 0.4);
         setTimeout(() => ctx.close(), 1000);
     } catch (_) { /* AudioContext not supported */ }
 };
 
 export const ChatProvider = ({ children }) => {
     const { user } = useAuth();
-
-    // Which chat window is open (friend object: { uid, displayName, photoURL })
     const [openChat, setOpenChat] = useState(null);
-    const openChatRef = useRef(null); // sync ref for notification check
-
-    // Total unread count
+    const openChatRef = useRef(null);
     const [totalUnread, setTotalUnread] = useState(0);
-
-    // Track last known message timestamps per chat to detect new ones
     const prevChatMeta = useRef({});
     const isFirstLoad = useRef(true);
 
-    // Listen to all chats involving the current user
+    // Keep openChatRef in sync
+    useEffect(() => {
+        openChatRef.current = openChat;
+    }, [openChat]);
+
+    // Listen to all chats for unread count + new message notifications
     useEffect(() => {
         if (!user) { setTotalUnread(0); return; }
 
@@ -63,7 +59,6 @@ export const ChatProvider = ({ children }) => {
 
         const unsub = onSnapshot(q, (snap) => {
             let count = 0;
-
             snap.docs.forEach(d => {
                 const data = d.data();
                 const chatId = d.id;
@@ -73,22 +68,18 @@ export const ChatProvider = ({ children }) => {
                 const lastAt = data.lastMessageAt?.toMillis?.() || 0;
                 const lastSenderId = data.lastSenderId;
 
-                // Detect new message from another user (skip first snapshot)
                 if (!isFirstLoad.current && lastSenderId && lastSenderId !== user.uid) {
                     const prevAt = prevChatMeta.current[chatId]?.lastAt || 0;
                     if (lastAt > prevAt) {
-                        // Check if this chat is currently open and focused
-                        const currentOpenUid = openChatRef.current?.uid;
                         const otherUid = data.participants.find(p => p !== user.uid);
-                        const chatIsOpen = currentOpenUid === otherUid;
+                        const chatIsOpen = openChatRef.current?.uid === otherUid;
 
                         if (!chatIsOpen) {
                             playNotificationChime();
                             toast.custom(() => (
                                 <div
-                                    className="flex items-center gap-3 bg-[#1a1a1a] border border-white/10 rounded-2xl px-4 py-3 shadow-2xl cursor-pointer"
+                                    className="flex items-center gap-3 bg-[#1a1a1a] border border-white/10 rounded-2xl px-4 py-3 shadow-2xl cursor-pointer max-w-xs"
                                     onClick={() => {
-                                        // Find and open the chat with this friend
                                         setOpenChat({
                                             uid: otherUid,
                                             displayName: data.lastSenderName || 'Amigo',
@@ -103,15 +94,16 @@ export const ChatProvider = ({ children }) => {
                                             alt=""
                                             className="w-10 h-10 rounded-full object-cover border border-white/10"
                                         />
+                                        <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-primary rounded-full border-2 border-[#1a1a1a] animate-ping" />
                                         <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-primary rounded-full border-2 border-[#1a1a1a]" />
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-xs font-bold text-white">{data.lastSenderName || 'Nuevo mensaje'}</p>
                                         <p className="text-xs text-gray-400 truncate">{data.lastMessage || '...'}</p>
                                     </div>
-                                    <span className="text-[10px] text-primary font-mono">Ver</span>
+                                    <span className="text-[10px] text-primary font-mono shrink-0">Abrir →</span>
                                 </div>
-                            ), { duration: 5000, position: 'top-right' });
+                            ), { duration: 6000, position: 'top-right' });
                         }
                     }
                 }
@@ -128,71 +120,94 @@ export const ChatProvider = ({ children }) => {
 
     const openChatWith = useCallback((friend) => {
         setOpenChat(friend);
-        openChatRef.current = friend;
     }, []);
 
     const closeChat = useCallback(() => {
         setOpenChat(null);
-        openChatRef.current = null;
     }, []);
 
-    // Send a message — robust version with setDoc merge + increment
+    /**
+     * Send a message (text, movie_share, list_share) to a friend.
+     * Flow:
+     *   1. getDoc → check if chat exists
+     *   2. If not: setDoc to create it
+     *   3. addDoc to write the message to subcollection
+     *   4. updateDoc to update metadata + increment unread counter (supports dotted paths)
+     */
     const sendMessage = useCallback(async (toUid, content) => {
         if (!user || !toUid) return;
 
         const chatId = getChatId(user.uid, toUid);
         const chatRef = doc(db, 'chats', chatId);
 
-        const lastText = content.type === 'text'
-            ? content.text
-            : content.type === 'movie_share'
-                ? `🎬 ${content.movie?.title}`
-                : `📋 ${content.list?.name}`;
+        try {
+            // 1. Check if chat doc exists
+            const chatSnap = await getDoc(chatRef);
 
-        // 1. Ensure chat document exists (merge = non-destructive)
-        await setDoc(chatRef, {
-            participants: [user.uid, toUid],
-            createdAt: serverTimestamp(),
-            unreadCount: { [user.uid]: 0, [toUid]: 0 }, // initial values (merge won't overwrite existing)
-        }, { merge: true });
+            if (!chatSnap.exists()) {
+                // 2. Create the chat document
+                await setDoc(chatRef, {
+                    participants: [user.uid, toUid],
+                    createdAt: serverTimestamp(),
+                    lastMessage: '',
+                    lastMessageAt: serverTimestamp(),
+                    lastSenderId: '',
+                    lastSenderName: '',
+                    lastSenderPhoto: '',
+                    unreadCount: { [user.uid]: 0, [toUid]: 0 }
+                });
+            }
 
-        // 2. Add the message to subcollection
-        await addDoc(collection(db, 'chats', chatId, 'messages'), {
-            senderId: user.uid,
-            senderName: user.displayName || 'Usuario',
-            senderPhoto: user.photoURL || '',
-            ...content,
-            createdAt: serverTimestamp(),
-        });
+            // 3. Write the message to the subcollection
+            await addDoc(collection(db, 'chats', chatId, 'messages'), {
+                senderId: user.uid,
+                senderName: user.displayName || 'Usuario',
+                senderPhoto: user.photoURL || '',
+                ...content,
+                createdAt: serverTimestamp(),
+            });
 
-        // 3. Update chat metadata — use increment to avoid race conditions
-        await setDoc(chatRef, {
-            lastMessage: lastText,
-            lastMessageAt: serverTimestamp(),
-            lastSenderId: user.uid,
-            lastSenderName: user.displayName || 'Usuario',
-            lastSenderPhoto: user.photoURL || '',
-            [`unreadCount.${toUid}`]: increment(1),
-        }, { merge: true });
+            // Build preview text for the chat doc
+            const lastText = content.type === 'text'
+                ? content.text
+                : content.type === 'movie_share'
+                    ? `🎬 ${content.movie?.title}`
+                    : `📋 ${content.list?.name}`;
 
+            // 4. Update chat metadata
+            // updateDoc supports dotted field paths + FieldValue.increment natively
+            await updateDoc(chatRef, {
+                lastMessage: lastText,
+                lastMessageAt: serverTimestamp(),
+                lastSenderId: user.uid,
+                lastSenderName: user.displayName || 'Usuario',
+                lastSenderPhoto: user.photoURL || '',
+                [`unreadCount.${toUid}`]: increment(1),
+            });
+
+        } catch (error) {
+            console.error('[Chat] Error sending message:', error);
+            toast.error('No se pudo enviar el mensaje. Intentá de nuevo.');
+            throw error;
+        }
     }, [user]);
 
-    // Mark chat as read
+    // Mark chat as read (reset unread counter for current user)
     const markAsRead = useCallback(async (friendUid) => {
         if (!user || !friendUid) return;
         const chatId = getChatId(user.uid, friendUid);
         const chatRef = doc(db, 'chats', chatId);
         try {
-            await setDoc(chatRef, {
+            const snap = await getDoc(chatRef);
+            if (!snap.exists()) return; // Chat doesn't exist yet, nothing to mark
+            await updateDoc(chatRef, {
                 [`unreadCount.${user.uid}`]: 0
-            }, { merge: true });
-        } catch (_) { /* chat might not exist yet */ }
+            });
+        } catch (e) {
+            // Non-critical, ignore
+            console.warn('[Chat] markAsRead failed:', e.message);
+        }
     }, [user]);
-
-    // Keep openChatRef in sync when openChat state changes externally
-    useEffect(() => {
-        openChatRef.current = openChat;
-    }, [openChat]);
 
     return (
         <ChatContext.Provider value={{ openChat, openChatWith, closeChat, sendMessage, markAsRead, totalUnread }}>
