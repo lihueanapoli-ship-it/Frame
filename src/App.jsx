@@ -11,6 +11,7 @@ import { ListProvider } from './contexts/ListContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { ChatProvider, useChat } from './contexts/ChatContext';
 import ChatWindow from './components/ui/ChatWindow';
+import usePresence from './hooks/usePresence';
 
 import DiscoverView from './views/DiscoverView';
 import LibraryView from './views/LibraryView';
@@ -52,6 +53,9 @@ const AppContent = () => {
     const { profile, loading: profileLoading } = useUserProfile();
     const { setOpenMovieDetailFn } = useChat();
     const navigate = useNavigate();
+
+    // Track this user's online presence in Firestore
+    usePresence();
 
     // Register setSelectedMovie so ChatWindow can open MovieDetail
     useEffect(() => {

@@ -15,7 +15,8 @@ import { cn } from '../../lib/utils';
 const formatMsgTime = (ts) => {
     if (!ts?.toDate) return '';
     const d = ts.toDate();
-    return d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+    // 24-hour format, no am/pm
+    return d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
 };
 
 // ─── Movie Share Bubble ────────────────────────────────────────────────────────
@@ -187,10 +188,20 @@ const ChatWindow = () => {
     const [text, setText] = useState('');
     const [isMinimized, setIsMinimized] = useState(false);
     const [sending, setSending] = useState(false);
+    const [friendOnline, setFriendOnline] = useState(false); // real-time presence
     const bottomRef = useRef(null);
     const inputRef = useRef(null);
 
     const chatId = openChat && user ? getChatId(user.uid, openChat.uid) : null;
+
+    // Subscribe to friend's presence in real time
+    useEffect(() => {
+        if (!openChat?.uid) { setFriendOnline(false); return; }
+        const unsub = onSnapshot(doc(db, 'users', openChat.uid), (snap) => {
+            setFriendOnline(snap.data()?.isOnline === true);
+        });
+        return () => unsub();
+    }, [openChat?.uid]);
 
     // Subscribe to messages
     useEffect(() => {
@@ -274,11 +285,20 @@ const ChatWindow = () => {
                                 alt=""
                                 className="w-8 h-8 rounded-full object-cover border border-white/10"
                             />
-                            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-[#151515]" />
+                            {/* Presence dot: green = online, red = offline */}
+                            <span className={cn(
+                                "absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[#151515] transition-colors duration-700",
+                                friendOnline ? "bg-green-500" : "bg-red-500"
+                            )} />
                         </div>
                         <div className="flex-1 min-w-0">
                             <p className="text-sm font-bold text-white truncate leading-tight">{openChat.displayName}</p>
-                            <p className="text-[10px] text-green-400 font-mono">● Chat activo</p>
+                            <p className={cn(
+                                "text-[10px] font-mono transition-colors duration-700",
+                                friendOnline ? "text-green-400" : "text-red-400"
+                            )}>
+                                {friendOnline ? '● En línea' : '● Desconectado'}
+                            </p>
                         </div>
                         <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                             <button

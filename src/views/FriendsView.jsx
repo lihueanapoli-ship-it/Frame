@@ -60,10 +60,25 @@ const FriendsView = () => {
     const { openChatWith, unreadPerFriend } = useChat();
     const [activeTab, setActiveTab] = useState('friends');
     const [friends, setFriends] = useState([]);
-    const [requests, setRequests] = useState([]); // Pending received
-    const [listRequests, setListRequests] = useState([]); // Pending list join requests
-    const [sentRequests, setSentRequests] = useState([]); // Pending sent
+    const [requests, setRequests] = useState([]);
+    const [listRequests, setListRequests] = useState([]);
+    const [sentRequests, setSentRequests] = useState([]);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [onlineStatus, setOnlineStatus] = useState({}); // { [uid]: boolean }
+
+    // ── Real-time presence listener for each friend ──
+    useEffect(() => {
+        if (friends.length === 0) return;
+        const unsubs = friends.map(friend =>
+            onSnapshot(doc(db, 'users', friend.uid), (snap) => {
+                setOnlineStatus(prev => ({
+                    ...prev,
+                    [friend.uid]: snap.data()?.isOnline === true,
+                }));
+            })
+        );
+        return () => unsubs.forEach(u => u());
+    }, [friends.length]); // re-run when friend list size changes
 
     // --- REALTIME DATA FETCHING ---
     useEffect(() => {
@@ -325,9 +340,12 @@ const FriendsView = () => {
                                 >
                                     <div className="relative overflow-visible flex-shrink-0">
                                         <img src={friend.photoURL || "/logo.png"} alt="" className="w-12 h-12 rounded-full object-cover" />
-                                        {/* Online dot */}
-                                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#111]" />
-                                        {/* Unread messages badge — top-right of avatar */}
+                                        {/* Presence dot: green = online, red = offline */}
+                                        <div className={cn(
+                                            "absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#111] transition-colors duration-700",
+                                            onlineStatus[friend.uid] ? "bg-green-500" : "bg-red-500"
+                                        )} />
+                                        {/* Unread messages badge — top-right */}
                                         {unreadPerFriend[friend.uid] > 0 && (
                                             <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-primary border-2 border-[#111] text-black text-[8px] font-black rounded-full flex items-center justify-center px-0.5 shadow-lg shadow-primary/50 animate-bounce">
                                                 {unreadPerFriend[friend.uid] > 9 ? '9+' : unreadPerFriend[friend.uid]}
