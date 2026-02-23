@@ -80,9 +80,19 @@ const LibraryView = ({ onSelectMovie }) => {
     }, [selectedListId, allListsDisplay, generalList]);
 
     const rawMovies = useMemo(() => {
-        if (activeTab === 'watched') return watched;
-        // In 'watchlist' tab, we show the currently selected LIST (General or Custom)
-        return currentCustomList?.movies || [];
+        const moviesInCurrentList = currentCustomList?.movies || [];
+
+        if (activeTab === 'watched') {
+            // If viewing a specific custom list (not General), show only its watched movies
+            if (currentCustomList && currentCustomList.name !== 'General') {
+                return moviesInCurrentList.filter(m => m.watched);
+            }
+            // Otherwise, show user's global watched history
+            return watched;
+        }
+
+        // In 'watchlist' tab, we show movies in the selected list that are NOT yet watched
+        return moviesInCurrentList.filter(m => !m.watched);
     }, [activeTab, currentCustomList, watched]);
 
     // Handlers

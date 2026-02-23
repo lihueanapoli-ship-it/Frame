@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import { toast } from 'sonner';
 import { getMovieDetails } from '../api/tmdb';
 import { db } from '../api/firebase';
 import {
@@ -11,6 +12,7 @@ import {
     where,
     getDocs,
     getDoc,
+    onSnapshot,
     serverTimestamp,
     arrayUnion,
     arrayRemove
@@ -34,31 +36,28 @@ export const ListProvider = ({ children }) => {
     const [collabLists, setCollabLists] = useState([]); // Listas donde soy colaborador
     const [loading, setLoading] = useState(false);
 
-    // 1. Fetch User Lists (Owned & Collaborative)
+    const hasInitializedRef = useRef(false);
+    const prevWatchedRef = useRef({}); // { listId: Set of watched movie IDs }
+
+    // 1. Listen to My Lists (Owned)
     useEffect(() => {
         if (!user) {
             setMyLists([]);
-            setCollabLists([]);
             return;
         }
 
-        const fetchAllLists = async () => {
-            setLoading(true);
+        const qOwned = query(collection(db, 'lists'), where('ownerId', '==', user.uid));
 
-            // 1. Fetch Owned Lists
-            try {
-                const qOwned = query(collection(db, 'lists'), where('ownerId', '==', user.uid));
-                const ownedSnap = await getDocs(qOwned);
-                let ownedData = ownedSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const unsubscribe = onSnapshot(qOwned, async (snapshot) => {
+            let ownedData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                // ---------------------------------------------------------
-                // AUTO-CREATE "GENERAL" LIST IF MISSING
-                // ---------------------------------------------------------
-                // Check if "General" list exists
+            // --- ONE-TIME INITIALIZATION & REPAIR ---
+            if (!hasInitializedRef.current) {
+                setLoading(true);
                 let general = ownedData.find(l => l.name === 'General');
 
+                // Auto-create general if missing
                 if (!general) {
-                    console.log("No 'General' list found. Creating one...");
                     const newList = {
                         ownerId: user.uid,
                         ownerName: user.displayName || 'Anónimo',
@@ -75,148 +74,106 @@ export const ListProvider = ({ children }) => {
                         isDefault: true
                     };
                     const docRef = await addDoc(collection(db, 'lists'), newList);
-                    // Add ID to object
                     general = { id: docRef.id, ...newList };
                     ownedData.push(general);
                 }
 
-                // ---------------------------------------------------------
-                // MIGRATION: RESTORE & ENRICH LEGACY WATCHLIST
-                // ---------------------------------------------------------
-                // Check if we need migration OR repair (if data is incomplete)
-                const isGeneralEmpty = !general.movies || general.movies.length === 0;
-                // Heuristic: If movies exist but specific critical fields are missing (like release_date or genre_ids), it's a "bad" migration we need to fix.
-                const needsRepair = general.movies?.some(m => !m.release_date && !m.genre_ids && m.title);
-
-                if (general && (isGeneralEmpty || needsRepair)) {
-                    try {
+                // Repair/Migration Logic
+                try {
+                    const isGeneralEmpty = !general.movies || general.movies.length === 0;
+                    if (isGeneralEmpty) {
                         const userRef = doc(db, 'users', user.uid);
                         const userSnap = await getDoc(userRef);
                         if (userSnap.exists()) {
-                            const legacyData = userSnap.data();
-                            const legacyWatchlist = legacyData.watchlist || [];
-
+                            const legacyWatchlist = userSnap.data().watchlist || [];
                             if (legacyWatchlist.length > 0) {
-                                console.log(`Migrating/Repairing ${legacyWatchlist.length} movies in General list...`);
-
                                 const moviesToMigrate = legacyWatchlist.map(m => ({
-                                    ...m, // ✨ VITAL: Keep ALL original metadata (genres, runtime, etc.)
+                                    ...m,
                                     addedAt: m.addedAt || new Date().toISOString(),
                                     addedBy: user.uid
                                 }));
-
-                                // Update Firestore
-                                const listRef = doc(db, 'lists', general.id);
-                                await updateDoc(listRef, {
+                                await updateDoc(doc(db, 'lists', general.id), {
                                     movies: moviesToMigrate,
                                     movieCount: moviesToMigrate.length,
                                     coverImage: moviesToMigrate[0]?.poster_path || null
                                 });
-
-                                // Update General Object in Memory immediately
                                 general.movies = moviesToMigrate;
-                                general.movieCount = moviesToMigrate.length;
-                                general.coverImage = moviesToMigrate[0]?.poster_path || null;
-
-                                // Force update of state to reflect changes in UI
-                                // We don't need explicit setMyLists here because ownedData (which contains general) is set via setMyLists(ownedData) at the end of this block.
                             }
                         }
-                    } catch (e) {
-                        console.error("Migration/Repair failed", e);
                     }
-                }
 
-                // ---------------------------------------------------------
-                // REPAIR & DEDUPLICATE ALL LISTS (Fix missing metadata)
-                // ---------------------------------------------------------
-                for (let list of ownedData) {
-                    if (!list.movies || list.movies.length === 0) continue;
-
-                    // 1. Deduplicate by ID
-                    const uniqueMoviesMap = new Map();
-                    list.movies.forEach(m => {
-                        if (!uniqueMoviesMap.has(m.id)) {
-                            uniqueMoviesMap.set(m.id, m);
-                        }
-                    });
-                    let cleanedMovies = Array.from(uniqueMoviesMap.values());
-
-                    // 2. Check for broken data (missing release_date or vote_average)
-                    const brokenMovies = cleanedMovies.filter(m => (!m.release_date || m.vote_average === undefined) && m.id);
-
-                    if (brokenMovies.length > 0 || cleanedMovies.length !== list.movies.length) {
-                        console.log(`🛠️ Repairing/Deduplicating list: ${list.name}`);
-
-                        if (brokenMovies.length > 0) {
-                            const repairs = await Promise.all(brokenMovies.map(async (broken) => {
-                                try {
-                                    const details = await getMovieDetails(broken.id);
-                                    if (!details) return broken;
-                                    return {
-                                        ...broken,
-                                        title: details.title || broken.title,
-                                        poster_path: details.poster_path || broken.poster_path,
-                                        backdrop_path: details.backdrop_path || broken.backdrop_path || null,
-                                        release_date: details.release_date || null,
-                                        vote_average: details.vote_average || 0,
-                                        genre_ids: details.genres?.map(g => g.id) || broken.genre_ids || [],
-                                        overview: details.overview || null
-                                    };
-                                } catch (e) {
-                                    return broken;
-                                }
+                    // Deep Repair missing metadata
+                    for (let list of ownedData) {
+                        if (!list.movies?.length) continue;
+                        const broken = list.movies.filter(m => !m.release_date || m.vote_average === undefined);
+                        if (broken.length > 0) {
+                            const repairs = await Promise.all(broken.map(async (b) => {
+                                const d = await getMovieDetails(b.id);
+                                return d ? { ...b, release_date: d.release_date, vote_average: d.vote_average, genre_ids: d.genres?.map(g => g.id) } : b;
                             }));
-
-                            cleanedMovies = cleanedMovies.map(m => {
-                                const repaired = repairs.find(r => r.id === m.id);
-                                return repaired || m;
-                            });
+                            const cleaned = list.movies.map(m => repairs.find(r => r.id === m.id) || m);
+                            await updateDoc(doc(db, 'lists', list.id), { movies: cleaned, movieCount: cleaned.length });
                         }
-
-                        // Save updates
-                        try {
-                            const listRef = doc(db, 'lists', list.id);
-                            await updateDoc(listRef, {
-                                movies: cleanedMovies,
-                                movieCount: cleanedMovies.length,
-                                updatedAt: serverTimestamp()
-                            });
-                            // Update local reference
-                            list.movies = cleanedMovies;
-                            list.movieCount = cleanedMovies.length;
-                        } catch (e) { console.error("Repair failed", e); }
                     }
-                }
+                } catch (e) { console.error("Repair error", e); }
 
-                // Sort: General always first, then by date desc
-                ownedData.sort((a, b) => {
-                    if (a.name === 'General') return -1;
-                    if (b.name === 'General') return 1;
-                    return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
-                });
-
-                setMyLists(ownedData);
-
-            } catch (error) {
-                console.error("Error fetching my lists:", error);
-            }
-
-            // 2. Fetch Collaborating Lists
-            try {
-                const qCollab = query(collection(db, 'lists'), where('collaborators', 'array-contains', user.uid));
-                const collabSnap = await getDocs(qCollab);
-                const collabData = collabSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                setCollabLists(collabData);
-            } catch (error) {
-                console.warn("⚠️ Could not fetch collaborative lists (Check Permissions). Ignoring.");
-                setCollabLists([]);
-            } finally {
+                hasInitializedRef.current = true;
                 setLoading(false);
             }
-        };
 
-        fetchAllLists();
+            ownedData.sort((a, b) => {
+                if (a.name === 'General') return -1;
+                if (b.name === 'General') return 1;
+                return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
+            });
+
+            setMyLists(ownedData);
+        }, (error) => {
+            console.error("Owned lists error:", error);
+        });
+
+        return () => unsubscribe();
+    }, [user]);
+
+    // 2. Listen to Collaborative Lists & Notifications
+    useEffect(() => {
+        if (!user) {
+            setCollabLists([]);
+            return;
+        }
+
+        const qCollab = query(collection(db, 'lists'), where('collaborators', 'array-contains', user.uid));
+
+        const unsubscribe = onSnapshot(qCollab, (snapshot) => {
+            const collabData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            collabData.forEach(list => {
+                const currentWatchedIds = new Set((list.movies || []).filter(m => m.watched).map(m => m.id));
+                const prevIds = prevWatchedRef.current[list.id];
+
+                if (prevIds) {
+                    const newId = Array.from(currentWatchedIds).find(id => !prevIds.has(id));
+                    if (newId) {
+                        const movie = list.movies.find(m => m.id === newId);
+                        if (movie && movie.watchedBy !== user.uid) {
+                            toast.success(`${movie.watchedByName || 'Alguien'} vio "${movie.title}"`, {
+                                description: `¡Actualizado en ${list.name}!`,
+                                icon: '🎬',
+                                duration: 5000
+                            });
+                        }
+                    }
+                }
+                prevWatchedRef.current[list.id] = currentWatchedIds;
+            });
+
+            setCollabLists(collabData);
+        }, (error) => {
+            console.warn("Collab error:", error);
+            setCollabLists([]);
+        });
+
+        return () => unsubscribe();
     }, [user]);
 
     // Helpers for General List
@@ -490,7 +447,13 @@ export const ListProvider = ({ children }) => {
 
             const updatedMovies = list.movies.map(m => {
                 if (m.id === movieId) {
-                    return { ...m, watched: watchedStatus, watchedAt: new Date().toISOString() };
+                    return {
+                        ...m,
+                        watched: watchedStatus,
+                        watchedAt: new Date().toISOString(),
+                        watchedBy: user.uid,
+                        watchedByName: user.displayName || 'Alguien'
+                    };
                 }
                 return m;
             });
