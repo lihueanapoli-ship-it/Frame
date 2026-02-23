@@ -74,7 +74,7 @@ const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, vari
                 )}
             </div>
             <div ref={scrollRef}
-                className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory select-none touch-pan-x"
+                className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory select-none touch-pan-y"
                 onMouseDown={handleMouseDown} onMouseLeave={handleMouseLeave} onMouseUp={handleMouseUp} onMouseMove={handleMouseMove}>
                 {(showAll ? movies : movies.slice(0, 20)).map((movie) => (
                     <div key={movie.id} className="flex-shrink-0 w-[140px] sm:w-[170px] md:w-[200px] snap-start">

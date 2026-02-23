@@ -50,7 +50,7 @@ const HeroCarousel = ({ movies, onSelectMovie }) => {
             onClick={() => onSelectMovie(movie)}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
-            className="relative w-full aspect-[3/4] sm:aspect-[16/7] overflow-hidden rounded-2xl md:rounded-3xl shadow-2xl bg-surface cursor-pointer group"
+            className="relative w-full aspect-[3/4] sm:aspect-[16/7] overflow-hidden rounded-2xl md:rounded-3xl shadow-2xl bg-surface cursor-pointer group touch-pan-y"
         >
             <AnimatePresence mode='wait'>
                 <motion.div
