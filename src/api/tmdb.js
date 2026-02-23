@@ -286,3 +286,30 @@ export const getMovieVideos = async (id) => {
         return [];
     }
 };
+
+/**
+ * Get streaming platforms where a movie is available.
+ * Returns Argentina providers (AR) with US fallback.
+ * Each provider has: provider_id, provider_name, logo_path, display_priority.
+ */
+export const getWatchProviders = async (movieId) => {
+    try {
+        const response = await tmdbClient.get(`/movie/${movieId}/watch/providers`);
+        const all = response.data.results;
+
+        // Prefer AR, fallback to US, then any first available
+        const regionData = all?.AR || all?.US || Object.values(all || {})[0];
+        if (!regionData) return null;
+
+        return {
+            flatrate: regionData.flatrate || [],   // Streaming (subscription)
+            rent: regionData.rent || [],   // Rent
+            buy: regionData.buy || [],   // Buy
+            link: regionData.link || null, // JustWatch deep-link
+        };
+    } catch (error) {
+        console.error(`Error getting watch providers for movie ${movieId}:`, error);
+        return null;
+    }
+};
+

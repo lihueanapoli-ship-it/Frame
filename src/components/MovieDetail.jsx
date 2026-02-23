@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { XMarkIcon, CalendarIcon, ClockIcon, ListBulletIcon, ChevronDownIcon, EllipsisHorizontalIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid, PlusIcon, CheckIcon, StarIcon, PlayIcon, FolderIcon } from '@heroicons/react/24/solid';
-import { getBackdropUrl, getPosterUrl, getMovieDetails, getMovieVideos } from '../api/tmdb';
+import { getBackdropUrl, getPosterUrl, getMovieDetails, getMovieVideos, getWatchProviders } from '../api/tmdb';
 import { useMovies } from '../contexts/MovieContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useLists } from '../contexts/ListContext';
@@ -21,6 +21,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
     const [isFullVideoOpen, setIsFullVideoOpen] = useState(false);
     const [hoverRating, setHoverRating] = useState(0);
     const [showShareFriend, setShowShareFriend] = useState(false);
+    const [watchProviders, setWatchProviders] = useState(null);
     const dropdownRef = useRef(null);
 
     // Contexts
@@ -49,7 +50,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
     const userMovie = watched.find(m => m.id === movie.id);
     const userRating = userMovie?.rating || 0;
 
-    // Fetch Full Details & Video
+    // Fetch Full Details, Video & Watch Providers
     useEffect(() => {
         const loadData = async () => {
             // 1. Fetch Full Details
@@ -63,11 +64,14 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
             const trailer = videos.find(v => v.type === 'Trailer' && v.site === 'YouTube');
             const teaser = videos.find(v => v.type === 'Teaser' && v.site === 'YouTube');
             const bestVideo = trailer || teaser || videos[0];
-
             if (bestVideo) {
                 setVideoKey(bestVideo.key);
                 setTimeout(() => setShowVideo(true), 800);
             }
+
+            // 3. Fetch Watch Providers (streaming platforms)
+            const providers = await getWatchProviders(movie.id);
+            setWatchProviders(providers);
         };
 
         loadData();
@@ -274,6 +278,51 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                 </div>
                             )}
 
+                            {/* Where to Watch */}
+                            {watchProviders !== null && (
+                                <div>
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h3 className="text-lg md:text-xl font-bold text-white">D\u00f3nde Ver</h3>
+                                        {watchProviders?.link && (
+                                            <a
+                                                href={watchProviders.link}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-xs text-gray-500 hover:text-primary transition-colors font-mono"
+                                                onClick={e => e.stopPropagation()}
+                                            >
+                                                Ver en JustWatch \u2192
+                                            </a>
+                                        )}
+                                    </div>
+                                    {watchProviders?.flatrate?.length > 0 ? (
+                                        <div className="flex flex-wrap gap-3">
+                                            {watchProviders.flatrate.map(p => (
+                                                <div
+                                                    key={p.provider_id}
+                                                    title={p.provider_name}
+                                                    className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2 hover:border-primary/40 transition-colors group"
+                                                >
+                                                    <img
+                                                        src={`https://image.tmdb.org/t/p/w45${p.logo_path}`}
+                                                        alt={p.provider_name}
+                                                        className="w-7 h-7 rounded-lg object-cover"
+                                                    />
+                                                    <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">
+                                                        {p.provider_name}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2 text-sm text-gray-500 bg-white/[0.03] border border-white/5 rounded-xl px-4 py-3">
+                                            <span className="text-lg">\ud83d\ude14</span>
+                                            <span>Sin disponibilidad de streaming en tu regi\u00f3n por el momento</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
                             {/* Cast */}
                             {movie.credits?.cast?.length > 0 && (
                                 <div>
@@ -298,6 +347,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                         </div>
                     </div>
                 </div>
+
 
                 {/* Actions Sticky Footer (Inside Flex Col) */}
                 <div className="p-4 bg-surface-elevated/95 backdrop-blur-xl border-t border-white/10 z-50">

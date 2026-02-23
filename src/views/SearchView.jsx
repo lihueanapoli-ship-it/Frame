@@ -33,7 +33,20 @@ const GENRES = [
     { id: 37, name: "Western", emoji: "🌵" },
 ];
 
+// Main streaming platforms in Argentina — provider_id from TMDB
+const STREAMING_PLATFORMS = [
+    { id: 8, name: 'Netflix', logo: '/pbpMk2JmcoNnQwx5JGpXngfoWtp.jpg', bg: 'bg-[#E50914]/20', border: 'border-[#E50914]/50' },
+    { id: 119, name: 'Prime Video', logo: '/emthp39XA2YScoYL1p0sdbAH2WA.jpg', bg: 'bg-[#00A8E0]/20', border: 'border-[#00A8E0]/50' },
+    { id: 337, name: 'Disney+', logo: '/7rwgEs15tFwyR9NPQ5vpzxTj19Q.jpg', bg: 'bg-[#113CCF]/20', border: 'border-[#113CCF]/50' },
+    { id: 384, name: 'Max', logo: '/6Fo8MGAZBkJxiRP7FEFMWMBi1K1.jpg', bg: 'bg-[#002BE7]/20', border: 'border-[#002BE7]/50' },
+    { id: 531, name: 'Paramount+', logo: '/h5DcR0J2EESLitnhR8xLG1QymTE.jpg', bg: 'bg-[#0064FF]/20', border: 'border-[#0064FF]/50' },
+    { id: 350, name: 'Apple TV+', logo: '/6uhKBfmtzFqOcLousHwZuzcrScK.jpg', bg: 'bg-white/10', border: 'border-white/30' },
+    { id: 619, name: 'Star+', logo: '/pBgyJDMoFXuab57qcQ7MZJtBqE5.jpg', bg: 'bg-[#003E9C]/20', border: 'border-[#003E9C]/50' },
+    { id: 100, name: 'MUBI', logo: '/fmE9Q0mLJMDmDKFBm1j0ljYbOoB.jpg', bg: 'bg-white/5', border: 'border-white/10' },
+];
+
 const SearchView = ({ onSelectMovie }) => {
+
     const navigate = useNavigate();
 
     // Mode State
@@ -53,7 +66,8 @@ const SearchView = ({ onSelectMovie }) => {
     const [minRating, setMinRating] = useState(0);
     const [runtimeFilter, setRuntimeFilter] = useState('any');
     const [yearRange, setYearRange] = useState({ min: 1900, max: 2050 });
-    const [selectedFilterGenres, setSelectedFilterGenres] = useState([]); // Multiple selection for advanced filter
+    const [selectedFilterGenres, setSelectedFilterGenres] = useState([]);
+    const [selectedPlatforms, setSelectedPlatforms] = useState([]);  // watch provider filter
 
     const getFilterParams = () => {
         const params = {};
@@ -73,9 +87,14 @@ const SearchView = ({ onSelectMovie }) => {
             params['primary_release_date.lte'] = `${yearRange.max}-12-31`;
         }
 
-        // If searching/filtering by multiple genres via modal (overrides single genre click)
         if (selectedFilterGenres.length > 0) {
             params['with_genres'] = selectedFilterGenres.join(',');
+        }
+
+        // Streaming platform filter (TMDB watch providers)
+        if (selectedPlatforms.length > 0) {
+            params['with_watch_providers'] = selectedPlatforms.join('|'); // OR operator
+            params['watch_region'] = 'AR';
         }
 
         return params;
@@ -106,7 +125,7 @@ const SearchView = ({ onSelectMovie }) => {
             }
             else {
                 // Discovery Mode (Trending or Filtered)
-                const hasFilters = minRating > 0 || runtimeFilter !== 'any' || yearRange.min > 1900 || sortOption !== 'popularity.desc' || selectedFilterGenres.length > 0;
+                const hasFilters = minRating > 0 || runtimeFilter !== 'any' || yearRange.min > 1900 || sortOption !== 'popularity.desc' || selectedFilterGenres.length > 0 || selectedPlatforms.length > 0;
 
                 if (hasFilters) {
                     data = await discoverMovies({ ...filterParams, page: pageNum });
@@ -178,13 +197,18 @@ const SearchView = ({ onSelectMovie }) => {
         setYearRange({ min: 1900, max: 2050 });
         setSortOption('popularity.desc');
         setSelectedFilterGenres([]);
+        setSelectedPlatforms([]);
     };
 
     const toggleFilterGenre = (id) => {
         setSelectedFilterGenres(prev => prev.includes(id) ? prev.filter(g => g !== id) : [...prev, id]);
     };
 
-    const activeFilterCount = (minRating > 0 ? 1 : 0) + (runtimeFilter !== 'any' ? 1 : 0) + (yearRange.min > 1900 ? 1 : 0) + (sortOption !== 'popularity.desc' ? 1 : 0) + (selectedFilterGenres.length > 0 ? 1 : 0);
+    const togglePlatform = (id) => {
+        setSelectedPlatforms(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
+    };
+
+    const activeFilterCount = (minRating > 0 ? 1 : 0) + (runtimeFilter !== 'any' ? 1 : 0) + (yearRange.min > 1900 ? 1 : 0) + (sortOption !== 'popularity.desc' ? 1 : 0) + (selectedFilterGenres.length > 0 ? 1 : 0) + (selectedPlatforms.length > 0 ? 1 : 0);
 
     return (
         <div className="p-4 pt-8 pb-24 min-h-screen max-w-7xl mx-auto relative">
@@ -316,6 +340,37 @@ const SearchView = ({ onSelectMovie }) => {
                             <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
                                 <button onClick={() => setYearRange({ min: 1900, max: 2050 })} className={cn("px-4 py-2 rounded-full text-xs font-bold border whitespace-nowrap", yearRange.min === 1900 ? "bg-white text-black border-white" : "bg-surface border-white/10 text-gray-400")}>Todas</button>
                                 {[2020, 2010, 2000, 1990, 1980, 1970].map(decade => { const isSelected = yearRange.min === decade && yearRange.max === decade + 9; return (<button key={decade} onClick={() => setYearRange(isSelected ? { min: 1900, max: 2050 } : { min: decade, max: decade + 9 })} className={cn("px-4 py-2 rounded-full text-xs font-bold border whitespace-nowrap", isSelected ? "bg-primary text-black border-primary" : "bg-surface border-white/10 text-gray-400 hover:text-white")}>{decade}s</button>); })}
+                            </div>
+                        </div>
+
+                        {/* Streaming Platforms */}
+                        <div>
+                            <div className="flex justify-between items-center mb-3">
+                                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Plataformas</h4>
+                                {selectedPlatforms.length > 0 && <span className="text-xs text-primary">{selectedPlatforms.length} seleccionadas</span>}
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                {STREAMING_PLATFORMS.map(p => {
+                                    const isOn = selectedPlatforms.includes(p.id);
+                                    return (
+                                        <button
+                                            key={p.id}
+                                            onClick={() => togglePlatform(p.id)}
+                                            className={cn(
+                                                'flex items-center gap-2.5 px-3 py-2.5 rounded-xl border transition-all text-left',
+                                                isOn ? `${p.bg} ${p.border} text-white ring-1 ring-offset-0` : 'bg-surface border-white/5 text-gray-400 hover:bg-white/5'
+                                            )}
+                                        >
+                                            <img
+                                                src={`https://image.tmdb.org/t/p/w45${p.logo}`}
+                                                alt={p.name}
+                                                className="w-6 h-6 rounded-md object-cover flex-shrink-0"
+                                            />
+                                            <span className="text-sm font-semibold truncate">{p.name}</span>
+                                            {isOn && <span className="ml-auto text-primary text-xs">✓</span>}
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
 
