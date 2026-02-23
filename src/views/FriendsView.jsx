@@ -307,7 +307,7 @@ const FriendsView = () => {
                         activeTab === 'requests'
                             ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.1)]"
                             : ((requests.length > 0 || listRequests.length > 0)
-                                ? "bg-surface text-primary border-primary/40 animate-pulse shadow-[0_0_15px_rgba(var(--primary-rgb),0.2)]"
+                                ? "animate-alarm"
                                 : "bg-surface text-gray-400 border-white/10 hover:text-white"
                             )
                     )}
@@ -390,7 +390,7 @@ const FriendsView = () => {
 
                 {activeTab === 'requests' && (
                     <div className="max-w-2xl mx-auto space-y-4">
-                        {requests.length === 0 && sentRequests.length === 0 && (
+                        {requests.length === 0 && listRequests.length === 0 && sentRequests.length === 0 && (
                             <div className="text-center py-12 text-gray-500">No hay solicitudes pendientes.</div>
                         )}
 

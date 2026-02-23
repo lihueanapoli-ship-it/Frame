@@ -107,6 +107,27 @@
         display: none;
         /* Chrome, Safari and Opera */
     }
+
+    @keyframes alarm-flicker {
+
+        0%,
+        100% {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        50% {
+            background-color: rgba(0, 240, 255, 0.2);
+            color: #00F0FF;
+            border-color: #00F0FF;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+        }
+    }
+
+    .animate-alarm {
+        animation: alarm-flicker 1.2s ease-in-out infinite;
+    }
 }
 
 /* Custom Scrollbar for Webkit */
