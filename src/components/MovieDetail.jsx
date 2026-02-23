@@ -416,7 +416,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                         </div>
                     )}
 
-                    {watchlistState && (
+                    {watchlistState && !watchedState && (
                         <div className="space-y-4 max-w-4xl mx-auto">
                             <div className="flex items-center justify-between p-3 bg-surface rounded-lg border border-white/5">
                                 <div className="flex items-center gap-3">
