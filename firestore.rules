@@ -124,7 +124,7 @@ service cloud.firestore {
            chatId == request.auth.uid);
       }
 
-      allow read: if isParticipant();
+      allow read: if isParticipant() || (resource != null && resource.data.participants.hasAny([request.auth.uid]));
 
       // Create: user must be in participants array AND in chatId
       allow create: if isParticipant() &&

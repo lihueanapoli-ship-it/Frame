@@ -149,6 +149,21 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
         exit: { y: "100%", transition: { type: "tween", ease: "easeInOut", duration: 0.3 } }
     };
 
+    const getDirectStreamingLink = (providerName, movieTitle) => {
+        const name = providerName.toLowerCase();
+        const query = encodeURIComponent(movieTitle);
+
+        if (name.includes('netflix')) return `https://www.netflix.com/search?q=${query}`;
+        if (name.includes('disney')) return `https://www.disneyplus.com/search?q=${query}`;
+        if (name.includes('amazon') || name.includes('prime')) return `https://www.amazon.com/s?k=${query}&i=instant-video`;
+        if (name.includes('hbo') || name.includes('max')) return `https://www.max.com/search/${query}`;
+        if (name.includes('apple')) return `https://tv.apple.com/search?term=${query}`;
+        if (name.includes('google')) return `https://play.google.com/store/search?q=${query}&c=movies`;
+
+        // Fallback: Google Search which usually shows the "Watch" card with direct links
+        return `https://www.google.com/search?q=ver+${query}+en+${encodeURIComponent(providerName)}`;
+    };
+
     return (
         <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-4 sm:pt-24">
             {/* Backdrop */}
@@ -292,7 +307,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                             {watchProviders.flatrate.map(p => (
                                                 <a
                                                     key={p.provider_id}
-                                                    href={watchProviders.link || '#'}
+                                                    href={getDirectStreamingLink(p.provider_name, movie.title)}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     onClick={e => e.stopPropagation()}

@@ -122,6 +122,8 @@ export const ChatProvider = ({ children }) => {
             isFirstLoad.current = false;
             setTotalUnread(count);
             setUnreadPerFriend(perFriend);
+        }, (error) => {
+            console.error('[ChatContext] ❌ Listener error:', error);
         });
 
         return () => unsub();

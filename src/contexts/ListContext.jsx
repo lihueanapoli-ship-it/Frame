@@ -63,7 +63,7 @@ export const ListProvider = ({ children }) => {
                         ownerName: user.displayName || 'Anónimo',
                         name: 'General',
                         description: 'Lista principal de películas por ver',
-                        privacy: 'private',
+                        privacy: 'public',
                         collaborators: [],
                         movies: [],
                         movieCount: 0,
