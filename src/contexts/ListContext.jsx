@@ -516,6 +516,18 @@ export const ListProvider = ({ children }) => {
         }
     };
 
+    const moveMovieBetweenLists = async (sourceListId, targetListId, movie) => {
+        try {
+            // 1. Add to target list
+            await addMovieToList(targetListId, movie);
+            // 2. Remove from source list
+            await removeMovieFromList(sourceListId, movie.id);
+        } catch (error) {
+            console.error("Error moving movie:", error);
+            throw error;
+        }
+    };
+
     const value = {
         myLists,
         collabLists, // Expose collaborative lists
