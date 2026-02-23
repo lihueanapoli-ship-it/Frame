@@ -163,12 +163,6 @@ const CategoryView = ({ onSelectMovie }) => {
         <div className="min-h-screen pb-24 pt-24 px-4 max-w-7xl mx-auto">
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="p-2 rounded-full bg-surface hover:bg-white/10 transition-colors"
-                    >
-                        <ArrowLeftIcon className="w-6 h-6 text-white" />
-                    </button>
                     <h1 className="text-2xl font-display font-bold tracking-widest uppercase text-white">{title}</h1>
                 </div>
 

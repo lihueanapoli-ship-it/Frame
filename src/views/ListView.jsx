@@ -188,15 +188,6 @@ const ListView = ({ onSelectMovie }) => {
                     <div className="w-full h-full bg-gradient-to-br from-gray-900 to-black" />
                 )}
 
-                {/* Fixed Back Button - Always visible and returns to previous screen */}
-                <button
-                    onClick={() => navigate(-1)}
-                    className="fixed top-24 left-4 md:left-8 z-50 p-3 bg-black/60 hover:bg-black/90 backdrop-blur-xl rounded-full text-white border border-white/10 shadow-2xl transition-all group hover:scale-105"
-                    title="Volver atrás"
-                >
-                    <ArrowLeftIcon className="w-6 h-6 group-hover:-translate-x-1 transition-transform" />
-                </button>
-
                 <div className="absolute bottom-0 left-0 w-full p-6 md:p-12 z-30 flex flex-col md:flex-row items-end gap-6">
                     <div className="hidden md:grid grid-cols-2 w-48 h-48 rounded-xl overflow-hidden shadow-2xl bg-black/50 backdrop-blur-sm border border-white/10">
                         {list.movies?.slice(0, 4).map(m => (
