@@ -14,7 +14,7 @@ import { FilmIcon } from '@heroicons/react/24/solid';
 import { cn } from '../lib/utils';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import ManageListMembersModal from '../components/ui/ManageListMembersModal';
+import ListSettingsModal from '../components/ui/ListSettingsModal';
 import CreateListModal from '../components/ui/CreateListModal';
 import StreamingProviderFilter from '../components/ui/StreamingProviderFilter';
 
@@ -263,7 +263,8 @@ const LibraryView = ({ onSelectMovie }) => {
                                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                                     <div className="flex-1">
                                         <div className="flex items-center gap-3 mb-1">
-                                            <h2 className="text-2xl font-display font-bold text-white truncate">
+                                            <h2 className="text-2xl font-display font-bold text-white truncate flex items-center gap-2">
+                                                {currentCustomList.icon && <span>{currentCustomList.icon}</span>}
                                                 {currentCustomList.name}
                                             </h2>
                                             {currentCustomList.collaborators?.length > 0 && (
@@ -292,7 +293,7 @@ const LibraryView = ({ onSelectMovie }) => {
                                                     )}
                                                 </div>
                                                 <span className="text-xs text-gray-400 group-hover/members:text-primary transition-colors">
-                                                    {currentCustomList.ownerId === user.uid ? "Gestionar miembros" : "Ver miembros"}
+                                                    {currentCustomList.ownerId === user.uid ? "Configuración" : "Ver miembros"}
                                                 </span>
                                             </button>
                                         </div>
@@ -456,7 +457,7 @@ const LibraryView = ({ onSelectMovie }) => {
                 )
             }
 
-            <ManageListMembersModal
+            <ListSettingsModal
                 isOpen={isManageMembersOpen}
                 onClose={() => setIsManageMembersOpen(false)}
                 list={currentCustomList}

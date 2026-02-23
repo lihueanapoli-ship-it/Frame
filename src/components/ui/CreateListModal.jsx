@@ -7,7 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 const CreateListModal = ({ isOpen, onClose, onCreated }) => {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
-    // Privacy state removed
+    const [icon, setIcon] = useState('🎬');
     const { createList } = useLists();
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
@@ -22,6 +22,7 @@ const CreateListModal = ({ isOpen, onClose, onCreated }) => {
             const newListId = await createList({
                 name,
                 description,
+                icon,
                 privacy: 'public', // Always public now
                 ownerId: user.uid,
                 ownerName: user.displayName,
@@ -32,6 +33,7 @@ const CreateListModal = ({ isOpen, onClose, onCreated }) => {
             onClose();
             setName('');
             setDescription('');
+            setIcon('🎬');
         } catch (error) {
             console.error("Error creating list:", error);
         } finally {
@@ -56,18 +58,29 @@ const CreateListModal = ({ isOpen, onClose, onCreated }) => {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nombre</label>
-                        <input
-                            type="text"
-                            name="listName"
-                            id="list-name-input"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder="Ej: Favoritas 2024"
-                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary"
-                            autoFocus
-                        />
+                    <div className="flex gap-4">
+                        <div className="w-16 h-16 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-3xl shrink-0">
+                            <input
+                                type="text"
+                                value={icon}
+                                onChange={(e) => setIcon(e.target.value.substring(0, 2))}
+                                className="bg-transparent w-full text-center focus:outline-none"
+                                title="Icono/Emoji"
+                            />
+                        </div>
+                        <div className="flex-1">
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nombre</label>
+                            <input
+                                type="text"
+                                name="listName"
+                                id="list-name-input"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="Ej: Favoritas 2024"
+                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary"
+                                autoFocus
+                            />
+                        </div>
                     </div>
                     <div>
                         <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Descripción</label>

@@ -491,13 +491,27 @@ export const ListProvider = ({ children }) => {
         }
     };
 
+    const updateList = async (listId, updates) => {
+        try {
+            const listRef = doc(db, 'lists', listId);
+            await updateDoc(listRef, {
+                ...updates,
+                updatedAt: serverTimestamp()
+            });
+        } catch (error) {
+            console.error("Error updating list:", error);
+            throw error;
+        }
+    };
+
     const value = {
         myLists,
-        collabLists, // Expose collaborative lists
-        allLists: [...myLists, ...collabLists], // Helper
+        collabLists,
+        allLists: [...myLists, ...collabLists],
         loading,
         createList,
         deleteList,
+        updateList,
         addMovieToList,
         removeMovieFromList,
         moveMovieBetweenLists,
