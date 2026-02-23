@@ -33,7 +33,8 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
         myLists,
         collabLists,
         addMovieToList,
-        removeMovieFromList
+        removeMovieFromList,
+        setMovieWatchedInList
     } = useLists();
 
     const { user, loginWithGoogle } = useAuth();
@@ -99,7 +100,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
     }, []);
 
     const watchedState = isWatched(movie.id);
-    // Determine which list the movie is in (simplify to just checking existence for now, or finding the list ID)
+    // Determine which list the movie is in
     const inAnyList = allLists.find(l => l.movies?.some(m => m.id === movie.id));
     const watchlistState = !!inAnyList;
 
@@ -108,9 +109,13 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
         triggerConfetti();
         playSuccess();
         addToWatched(movie, 0);
-        // Remove from ALL lists it might be in? user request implies moving.
+
+        // If it's in a shared list, mark it as watched for the group
         if (inAnyList) {
-            await removeMovieFromList(inAnyList.id, movie.id);
+            // IMPORTANT: We mark it in the list so all collaborators see it in their "Vistas" tab.
+            // We NO LONGER remove it automatically from the list, because if we do,
+            // others lose the reference that makes it appear in their "Vistas".
+            await setMovieWatchedInList(inAnyList.id, movie.id, true);
         }
     };
 
@@ -401,9 +406,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     if (!user) { loginWithGoogle(); return; }
-                                    triggerConfetti();
-                                    playSuccess();
-                                    addToWatched(movie, 0);
+                                    handleMoveToWatched();
                                 }}
                                 className="flex-1 flex items-center justify-center gap-2 py-4 rounded-xl bg-white text-black font-bold hover:bg-gray-100 transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95"
                             >

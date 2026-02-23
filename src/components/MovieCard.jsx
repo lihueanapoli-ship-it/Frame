@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getPosterUrl, getBackdropUrl } from '../api/tmdb';
-import { Star } from 'lucide-react';
+import { Star, CheckCircle } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { useSound } from '../contexts/SoundContext'; // RESTORED IMPORT
+import { useSound } from '../contexts/SoundContext';
+import { useMovies } from '../contexts/MovieContext';
 import OscarBadge from './badges/OscarBadge';
 import { isOscarWinner } from '../constants/oscarWinners';
 
 const MovieCard = ({ movie, onClick, rating, variant = 'default', onAddToWatchlist, onMarkWatched }) => {
     const [isHovered, setIsHovered] = useState(false);
     const { playHover, playClick } = useSound();
+    const { isWatched } = useMovies();
+
+    const watched = isWatched(movie.id);
 
     // Metadata helpers
     const year = movie.release_date ? movie.release_date.split('-')[0] : 'N/A';
@@ -68,6 +72,13 @@ const MovieCard = ({ movie, onClick, rating, variant = 'default', onAddToWatchli
 
                 {/* Overlays / Badges */}
                 {isOscarWinner(movie.id) && <OscarBadge />}
+
+                {/* Watched Badge */}
+                {watched && (
+                    <div className="absolute top-2 left-2 z-30 p-1 bg-green-500/80 backdrop-blur-md rounded-full shadow-lg border border-white/20">
+                        <CheckCircle size={14} className="text-white fill-green-500" />
+                    </div>
+                )}
             </div>
 
             <div className="p-3 relative z-40 bg-surface transition-colors group-hover:bg-surface-elevated">

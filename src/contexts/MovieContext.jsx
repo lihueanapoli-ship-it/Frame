@@ -4,6 +4,8 @@ import { useAuth } from './AuthContext';
 import { db } from '../api/firebase';
 import { doc, setDoc, onSnapshot } from 'firebase/firestore';
 
+import { useLists } from './ListContext';
+
 const MovieContext = createContext();
 
 export const useMovies = () => useContext(MovieContext);
@@ -17,6 +19,9 @@ export const MovieProvider = ({ children }) => {
     const [cloudWatchlist, setCloudWatchlist] = useState([]);
     const [cloudWatched, setCloudWatched] = useState([]);
 
+    // Lists for Group-Watched sync
+    const { allLists } = useLists();
+
     // Sync state - prevents race conditions
     const isSyncingRef = useRef(false);
     const syncTimeoutRef = useRef(null);
@@ -24,9 +29,42 @@ export const MovieProvider = ({ children }) => {
     const { user } = useAuth();
     const isCloud = !!user && !!db;
 
-    // Derived State (Source of Truth)
-    const watchlist = isCloud ? cloudWatchlist : localWatchlist;
-    const watched = isCloud ? cloudWatched : localWatched;
+    // Internal Arrays
+    const rawWatchlist = isCloud ? cloudWatchlist : localWatchlist;
+    const rawWatched = isCloud ? cloudWatched : localWatched;
+
+    // Computed State: Merge personal watched with movies marked as watched in shared lists
+    const watched = useMemo(() => {
+        const personal = rawWatched;
+        const groupWatched = [];
+
+        // Harvest movies from lists that are marked as watched: true
+        (allLists || []).forEach(list => {
+            (list.movies || []).forEach(movie => {
+                if (movie.watched) {
+                    groupWatched.push(movie);
+                }
+            });
+        });
+
+        if (groupWatched.length === 0) return personal;
+
+        // Merge and Deduplicate by ID
+        const combined = [...personal];
+        const seenIds = new Set(personal.map(m => m.id));
+
+        groupWatched.forEach(movie => {
+            if (!seenIds.has(movie.id)) {
+                combined.push(movie);
+                seenIds.add(movie.id);
+            }
+        });
+
+        return combined;
+    }, [rawWatched, allLists]);
+
+    // Watchlist Truth
+    const watchlist = rawWatchlist;
 
     // ========================================
     // FIREBASE SYNC

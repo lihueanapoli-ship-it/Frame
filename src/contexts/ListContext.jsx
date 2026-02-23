@@ -482,19 +482,36 @@ export const ListProvider = ({ children }) => {
         }
     };
 
-    const moveMovieBetweenLists = async (sourceListId, targetListId, movie) => {
+    const setMovieWatchedInList = async (listId, movieId, watchedStatus = true) => {
         try {
-            // 1. Add to target list
-            await addMovieToList(targetListId, movie);
+            const listRef = doc(db, 'lists', listId);
+            const list = [...myLists, ...collabLists].find(l => l.id === listId);
+            if (!list) return;
 
-            // 2. Remove from source list (if not watchlist/watched handled differently elsewhere, but here assumes Custom List ID)
-            // Note: If sourceListId is 'watchlist', this function might need adaptation if used from general view, 
-            // but for custom-to-custom move, this is correct.
-            // If the intention is to move from a Custom List to another Custom List:
-            await removeMovieFromList(sourceListId, movie.id);
+            const updatedMovies = list.movies.map(m => {
+                if (m.id === movieId) {
+                    return { ...m, watched: watchedStatus, watchedAt: new Date().toISOString() };
+                }
+                return m;
+            });
 
+            await updateDoc(listRef, {
+                movies: updatedMovies,
+                updatedAt: serverTimestamp()
+            });
+
+            // Update local state
+            const updateState = (prevLists) => prevLists.map(l => {
+                if (l.id === listId) {
+                    return { ...l, movies: updatedMovies };
+                }
+                return l;
+            });
+
+            setMyLists(prev => updateState(prev));
+            setCollabLists(prev => updateState(prev));
         } catch (error) {
-            console.error("Error moving movie:", error);
+            console.error("Error marking movie as watched in list:", error);
             throw error;
         }
     };
@@ -509,6 +526,7 @@ export const ListProvider = ({ children }) => {
         addMovieToList,
         removeMovieFromList,
         moveMovieBetweenLists,
+        setMovieWatchedInList,
         getListById,
         addCollaborator,
         removeCollaborator,
