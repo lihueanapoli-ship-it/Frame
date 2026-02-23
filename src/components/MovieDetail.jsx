@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { XMarkIcon, CalendarIcon, ClockIcon, ListBulletIcon, ChevronDownIcon, EllipsisHorizontalIcon, UserGroupIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, CalendarIcon, ClockIcon, ListBulletIcon, ChevronDownIcon, EllipsisHorizontalIcon, UserGroupIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid, PlusIcon, CheckIcon, StarIcon, PlayIcon, FolderIcon } from '@heroicons/react/24/solid';
 import { getBackdropUrl, getPosterUrl, getMovieDetails, getMovieVideos, getWatchProviders } from '../api/tmdb';
 import { useMovies } from '../contexts/MovieContext';
@@ -482,9 +482,19 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
 
                     {watchedState && (
                         <div className="space-y-4 max-w-4xl mx-auto">
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm font-mono text-gray-400 uppercase tracking-widest">Tu Calificación</span>
-                                <button onClick={() => { removeMovie(movie.id); onClose(); }} className="text-xs text-red-500 hover:text-red-400 font-mono tracking-wide opacity-70 hover:opacity-100 transition-opacity">ELIMINAR</button>
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">Tu Calificación</span>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeMovie(movie.id);
+                                    }}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all border border-red-500/10 hover:border-red-500/30 group"
+                                    title="Eliminar de mi historial"
+                                >
+                                    <TrashIcon className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                                    <span className="text-[10px] font-bold tracking-wider uppercase">Borrar Vista</span>
+                                </button>
                             </div>
 
                             <div className="flex justify-between items-center px-1" onMouseLeave={() => setHoverRating(0)}>
