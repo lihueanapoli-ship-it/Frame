@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useMovies } from '../contexts/MovieContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useLists } from '../contexts/ListContext';
 import { useMovieFilter } from '../hooks/useMovieFilter';
-import { getMovieDetails } from '../api/tmdb';
+import { getMovieDetails, getWatchProviders } from '../api/tmdb';
 import { getCachedGenres } from '../utils/genreCache';
 import MovieCard from '../components/MovieCard';
 import BottomSheet from '../components/ui/BottomSheet';
@@ -16,6 +16,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import ManageListMembersModal from '../components/ui/ManageListMembersModal';
 import CreateListModal from '../components/ui/CreateListModal';
+import StreamingProviderFilter from '../components/ui/StreamingProviderFilter';
 
 const GENRES = [
     { id: 28, name: "Acción", emoji: "💥" },
@@ -53,6 +54,10 @@ const LibraryView = ({ onSelectMovie }) => {
     const [minRating, setMinRating] = useState(0);
     const [runtimeFilter, setRuntimeFilter] = useState('any');
     const [yearRange, setYearRange] = useState({ min: 1900, max: new Date().getFullYear() + 5 });
+    const [selectedPlatforms, setSelectedPlatforms] = useState([]);
+    const [platformFilteredMovies, setPlatformFilteredMovies] = useState(null);
+    const [isFetchingProviders, setIsFetchingProviders] = useState(false);
+    const providersCacheRef = useRef({});
 
     // Data
     const { watchlist, watched } = useMovies(); // Watchlist deprecated in favor of Lists
@@ -114,6 +119,42 @@ const LibraryView = ({ onSelectMovie }) => {
         ratingSource
     });
 
+    // Platform filter — async: fetch providers in batches and filter locally
+    useEffect(() => {
+        if (selectedPlatforms.length === 0) {
+            setPlatformFilteredMovies(null);
+            return;
+        }
+        let cancelled = false;
+        const run = async () => {
+            setIsFetchingProviders(true);
+            const BATCH = 5;
+            const movies = filteredMovies.slice(0, 200);
+            for (let i = 0; i < movies.length; i += BATCH) {
+                if (cancelled) break;
+                await Promise.all(
+                    movies.slice(i, i + BATCH).map(async (m) => {
+                        if (!providersCacheRef.current[m.id]) {
+                            providersCacheRef.current[m.id] = await getWatchProviders(m.id);
+                        }
+                    })
+                );
+            }
+            if (!cancelled) {
+                const result = movies.filter(m => {
+                    const ids = (providersCacheRef.current[m.id]?.flatrate || []).map(p => p.provider_id);
+                    return selectedPlatforms.some(id => ids.includes(id));
+                });
+                setPlatformFilteredMovies(result);
+                setIsFetchingProviders(false);
+            }
+        };
+        run();
+        return () => { cancelled = true; };
+    }, [selectedPlatforms, filteredMovies]);
+
+    const displayMovies = platformFilteredMovies ?? filteredMovies;
+
     if (!user) return <div className="min-h-screen" />;
 
     const clearFilters = () => {
@@ -122,9 +163,11 @@ const LibraryView = ({ onSelectMovie }) => {
         setMinRating(0);
         setRuntimeFilter('any');
         setYearRange({ min: 1900, max: new Date().getFullYear() + 5 });
+        setSelectedPlatforms([]);
+        setPlatformFilteredMovies(null);
     };
 
-    const activeFilterCount = (selectedGenres.length > 0 ? 1 : 0) + (minRating > 0 ? 1 : 0) + (runtimeFilter !== 'any' ? 1 : 0) + (sortOption !== 'date_added' ? 1 : 0) + (yearRange.min > 1900 ? 1 : 0);
+    const activeFilterCount = (selectedGenres.length > 0 ? 1 : 0) + (minRating > 0 ? 1 : 0) + (runtimeFilter !== 'any' ? 1 : 0) + (sortOption !== 'date_added' ? 1 : 0) + (yearRange.min > 1900 ? 1 : 0) + (selectedPlatforms.length > 0 ? 1 : 0);
 
     return (
         <div className="min-h-screen pb-24 px-4 pt-8">
@@ -294,7 +337,12 @@ const LibraryView = ({ onSelectMovie }) => {
                     {activeFilterCount > 0 && <button onClick={clearFilters} className="text-primary flex items-center gap-1 hover:underline"><XMarkIcon className="w-3 h-3" /> Limpiar filtros</button>}
                 </div>
                 {/* ... Grid logic same as before ... */}
-                {totalCount === 0 ? (
+                {isFetchingProviders ? (
+                    <div className="flex flex-col items-center justify-center py-16 gap-3">
+                        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                        <p className="text-xs text-gray-500">Buscando disponibilidad en plataformas...</p>
+                    </div>
+                ) : displayMovies.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20 opacity-50">
                         <FilmIcon className="w-16 h-16 text-gray-700 mb-4" />
                         <p className="text-gray-400">
@@ -306,7 +354,7 @@ const LibraryView = ({ onSelectMovie }) => {
                     </div>
                 ) : (
                     <motion.div variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } }} initial="hidden" animate="show" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {filteredMovies.map(movie => (
+                        {displayMovies.map(movie => (
                             <motion.div key={movie.id} variants={{ hidden: { opacity: 0, scale: 0.9 }, show: { opacity: 1, scale: 1 } }}>
                                 <MovieCard movie={movie} onClick={onSelectMovie} rating={activeTab === 'watched' ? movie.rating : undefined} />
                             </motion.div>
@@ -361,6 +409,12 @@ const LibraryView = ({ onSelectMovie }) => {
                                     {[2020, 2010, 2000, 1990, 1980, 1970].map(decade => { const isSelected = yearRange.min === decade && yearRange.max === decade + 9; return (<button key={decade} onClick={() => setYearRange(isSelected ? { min: 1900, max: new Date().getFullYear() + 5 } : { min: decade, max: decade + 9 })} className={cn("px-4 py-2 rounded-full text-xs font-bold border whitespace-nowrap", isSelected ? "bg-primary text-black border-primary" : "bg-surface border-white/10 text-gray-400 hover:text-white")}>{decade}s</button>); })}
                                 </div>
                             </div>
+
+                            {/* Streaming Platforms */}
+                            <StreamingProviderFilter
+                                selected={selectedPlatforms}
+                                onChange={setSelectedPlatforms}
+                            />
 
                             {/* Genres */}
                             <div>

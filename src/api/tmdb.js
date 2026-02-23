@@ -313,3 +313,19 @@ export const getWatchProviders = async (movieId) => {
     }
 };
 
+
+/**
+ * Get the full list of available watch providers in a region.
+ * Used to populate streaming filter chips with correct logo_paths from TMDB.
+ */
+export const getAvailableProvidersInRegion = async (region = 'AR') => {
+    try {
+        const response = await tmdbClient.get('/watch/providers/movie', {
+            params: { watch_region: region }
+        });
+        return response.data.results || [];
+    } catch (error) {
+        console.error('Error fetching available providers list:', error);
+        return [];
+    }
+};

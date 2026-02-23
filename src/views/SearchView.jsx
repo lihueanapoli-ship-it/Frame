@@ -11,6 +11,7 @@ import { cn } from '../lib/utils';
 import { AdjustmentsHorizontalIcon, ClockIcon } from '@heroicons/react/24/outline';
 import MovieCardSkeleton from '../components/ui/MovieCardSkeleton';
 import { FilterChip } from '../components/ui/FilterChip';
+import StreamingProviderFilter from '../components/ui/StreamingProviderFilter';
 
 const GENRES = [
     { id: 28, name: "Acción", emoji: "💥" },
@@ -31,18 +32,6 @@ const GENRES = [
     { id: 10770, name: "Película de TV", emoji: "📺" },
     { id: 10752, name: "Bélica", emoji: "⚔️" },
     { id: 37, name: "Western", emoji: "🌵" },
-];
-
-// Main streaming platforms in Argentina — provider_id from TMDB
-const STREAMING_PLATFORMS = [
-    { id: 8, name: 'Netflix', logo: '/pbpMk2JmcoNnQwx5JGpXngfoWtp.jpg', bg: 'bg-[#E50914]/20', border: 'border-[#E50914]/50' },
-    { id: 119, name: 'Prime Video', logo: '/emthp39XA2YScoYL1p0sdbAH2WA.jpg', bg: 'bg-[#00A8E0]/20', border: 'border-[#00A8E0]/50' },
-    { id: 337, name: 'Disney+', logo: '/7rwgEs15tFwyR9NPQ5vpzxTj19Q.jpg', bg: 'bg-[#113CCF]/20', border: 'border-[#113CCF]/50' },
-    { id: 384, name: 'Max', logo: '/6Fo8MGAZBkJxiRP7FEFMWMBi1K1.jpg', bg: 'bg-[#002BE7]/20', border: 'border-[#002BE7]/50' },
-    { id: 531, name: 'Paramount+', logo: '/h5DcR0J2EESLitnhR8xLG1QymTE.jpg', bg: 'bg-[#0064FF]/20', border: 'border-[#0064FF]/50' },
-    { id: 350, name: 'Apple TV+', logo: '/6uhKBfmtzFqOcLousHwZuzcrScK.jpg', bg: 'bg-white/10', border: 'border-white/30' },
-    { id: 619, name: 'Star+', logo: '/pBgyJDMoFXuab57qcQ7MZJtBqE5.jpg', bg: 'bg-[#003E9C]/20', border: 'border-[#003E9C]/50' },
-    { id: 100, name: 'MUBI', logo: '/fmE9Q0mLJMDmDKFBm1j0ljYbOoB.jpg', bg: 'bg-white/5', border: 'border-white/10' },
 ];
 
 const SearchView = ({ onSelectMovie }) => {
@@ -344,35 +333,10 @@ const SearchView = ({ onSelectMovie }) => {
                         </div>
 
                         {/* Streaming Platforms */}
-                        <div>
-                            <div className="flex justify-between items-center mb-3">
-                                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Plataformas</h4>
-                                {selectedPlatforms.length > 0 && <span className="text-xs text-primary">{selectedPlatforms.length} seleccionadas</span>}
-                            </div>
-                            <div className="grid grid-cols-2 gap-2">
-                                {STREAMING_PLATFORMS.map(p => {
-                                    const isOn = selectedPlatforms.includes(p.id);
-                                    return (
-                                        <button
-                                            key={p.id}
-                                            onClick={() => togglePlatform(p.id)}
-                                            className={cn(
-                                                'flex items-center gap-2.5 px-3 py-2.5 rounded-xl border transition-all text-left',
-                                                isOn ? `${p.bg} ${p.border} text-white ring-1 ring-offset-0` : 'bg-surface border-white/5 text-gray-400 hover:bg-white/5'
-                                            )}
-                                        >
-                                            <img
-                                                src={`https://image.tmdb.org/t/p/w45${p.logo}`}
-                                                alt={p.name}
-                                                className="w-6 h-6 rounded-md object-cover flex-shrink-0"
-                                            />
-                                            <span className="text-sm font-semibold truncate">{p.name}</span>
-                                            {isOn && <span className="ml-auto text-primary text-xs">✓</span>}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
+                        <StreamingProviderFilter
+                            selected={selectedPlatforms}
+                            onChange={setSelectedPlatforms}
+                        />
 
                         {/* Multi-Genre Selection */}
                         <div>

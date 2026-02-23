@@ -282,7 +282,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                             {watchProviders !== null && (
                                 <div>
                                     <div className="flex items-center justify-between mb-3">
-                                        <h3 className="text-lg md:text-xl font-bold text-white">D\u00f3nde Ver</h3>
+                                        <h3 className="text-lg md:text-xl font-bold text-white">Dónde Ver</h3>
                                         {watchProviders?.link && (
                                             <a
                                                 href={watchProviders.link}
@@ -291,7 +291,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                                 className="text-xs text-gray-500 hover:text-primary transition-colors font-mono"
                                                 onClick={e => e.stopPropagation()}
                                             >
-                                                Ver en JustWatch \u2192
+                                                Ver en JustWatch →
                                             </a>
                                         )}
                                     </div>
@@ -316,8 +316,8 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                         </div>
                                     ) : (
                                         <div className="flex items-center gap-2 text-sm text-gray-500 bg-white/[0.03] border border-white/5 rounded-xl px-4 py-3">
-                                            <span className="text-lg">\ud83d\ude14</span>
-                                            <span>Sin disponibilidad de streaming en tu regi\u00f3n por el momento</span>
+                                            <span className="text-lg">😔</span>
+                                            <span>Sin disponibilidad de streaming en tu región por el momento</span>
                                         </div>
                                     )}
                                 </div>
