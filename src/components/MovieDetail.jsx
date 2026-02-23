@@ -281,27 +281,18 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                             {/* Where to Watch */}
                             {watchProviders !== null && (
                                 <div>
-                                    <div className="flex items-center justify-between mb-3">
-                                        <h3 className="text-lg md:text-xl font-bold text-white">Dónde Ver</h3>
-                                        {watchProviders?.link && (
-                                            <a
-                                                href={watchProviders.link}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-xs text-gray-500 hover:text-primary transition-colors font-mono"
-                                                onClick={e => e.stopPropagation()}
-                                            >
-                                                Ver en JustWatch →
-                                            </a>
-                                        )}
-                                    </div>
+                                    <h3 className="text-lg md:text-xl font-bold text-white mb-3">Dónde Ver</h3>
                                     {watchProviders?.flatrate?.length > 0 ? (
                                         <div className="flex flex-wrap gap-3">
                                             {watchProviders.flatrate.map(p => (
-                                                <div
+                                                <a
                                                     key={p.provider_id}
-                                                    title={p.provider_name}
-                                                    className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2 hover:border-primary/40 transition-colors group"
+                                                    href={watchProviders.link || '#'}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    onClick={e => e.stopPropagation()}
+                                                    title={`Ver en ${p.provider_name}`}
+                                                    className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2 hover:border-primary/40 hover:bg-white/10 transition-all group cursor-pointer"
                                                 >
                                                     <img
                                                         src={`https://image.tmdb.org/t/p/w45${p.logo_path}`}
@@ -311,7 +302,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                                     <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">
                                                         {p.provider_name}
                                                     </span>
-                                                </div>
+                                                </a>
                                             ))}
                                         </div>
                                     ) : (
@@ -322,6 +313,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                     )}
                                 </div>
                             )}
+
 
                             {/* Cast */}
                             {movie.credits?.cast?.length > 0 && (
