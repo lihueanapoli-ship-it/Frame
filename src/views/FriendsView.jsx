@@ -33,7 +33,7 @@ import {
 } from 'firebase/firestore';
 import UserSearchModal from '../components/ui/UserSearchModal';
 import { cn } from '../lib/utils';
-import { Toaster, toast } from 'sonner';
+import { toast } from 'sonner';
 import { useChat } from '../contexts/ChatContext';
 
 const CINEMA_RANKS = [
@@ -475,7 +475,6 @@ const FriendsView = () => {
                     setIsSearchOpen(false);
                 }}
             />
-            <Toaster theme="dark" position="bottom-center" />
         </div >
     );
 };

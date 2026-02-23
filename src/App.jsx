@@ -317,8 +317,7 @@ const AppContent = () => {
 
             <Toaster
                 theme="dark"
-                position="top-right"
-                toastOptions={{ style: { background: 'transparent', border: 'none', padding: 0, boxShadow: 'none' } }}
+                position="bottom-center"
             />
 
         </div >
