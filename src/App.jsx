@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { HomeIcon, MagnifyingGlassIcon, RectangleStackIcon, ChartBarIcon, ChatBubbleLeftRightIcon, ArrowLeftOnRectangleIcon, UserIcon, UsersIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, MagnifyingGlassIcon, RectangleStackIcon, ChartBarIcon, ChatBubbleLeftRightIcon, ArrowLeftOnRectangleIcon, UserIcon, UsersIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { HomeIcon as HomeIconSolid, MagnifyingGlassIcon as SearchIconSolid, RectangleStackIcon as LibraryIconSolid, ChartBarIcon as ChartBarIconSolid, UsersIcon as UsersIconSolid } from '@heroicons/react/24/solid';
-import { BrowserRouter, Routes, Route, useNavigate, Navigate, NavLink } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useNavigate, useLocation, Navigate, NavLink } from 'react-router-dom';
 import { MovieProvider } from './contexts/MovieContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SoundProvider } from './contexts/SoundContext';
@@ -53,6 +53,8 @@ const AppContent = () => {
     const { profile, loading: profileLoading } = useUserProfile();
     const { setOpenMovieDetailFn } = useChat();
     const navigate = useNavigate();
+    const location = useLocation();
+    const isHome = location.pathname === '/';
 
     // Track this user's online presence in Firestore
     usePresence();
@@ -179,31 +181,51 @@ const AppContent = () => {
             <PageTransitionOverlay />
             <header className="sticky top-0 z-[100] w-full backdrop-blur-xl bg-background/90 border-b border-white/5 transition-all duration-300">
                 <div className="flex h-14 md:h-20 items-center w-full px-4 max-w-7xl mx-auto justify-between relative">
-                    <a href="/" onClick={(e) => {
-                        e.preventDefault();
-                        navigate('/');
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                        setLogoKey(prev => prev + 1); // Trigger animation
-                    }} className="font-bold text-lg tracking-tight hover:text-primary transition-colors cursor-pointer group z-10">
-                        <motion.div
-                            key={logoKey}
-                            className="flex items-center gap-3"
-                            initial={{ x: 0 }}
-                            animate={{ x: 0 }}
-                            whileTap={{ scale: 0.95 }}
-                        >
+                    {/* Left: Back button + Logo */}
+                    <div className="flex items-center gap-1.5 z-10">
+                        <AnimatePresence>
+                            {!isHome && (
+                                <motion.button
+                                    key="back-btn"
+                                    initial={{ opacity: 0, x: -12, scale: 0.85 }}
+                                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                                    exit={{ opacity: 0, x: -12, scale: 0.85 }}
+                                    transition={{ duration: 0.2, ease: 'easeOut' }}
+                                    onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/')}
+                                    className="flex items-center justify-center w-8 h-8 md:w-9 md:h-9 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all active:scale-95"
+                                    aria-label="Volver"
+                                    title="Volver"
+                                >
+                                    <ArrowLeftIcon className="w-4 h-4" />
+                                </motion.button>
+                            )}
+                        </AnimatePresence>
+                        <a href="/" onClick={(e) => {
+                            e.preventDefault();
+                            navigate('/');
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                            setLogoKey(prev => prev + 1);
+                        }} className="font-bold text-lg tracking-tight hover:text-primary transition-colors cursor-pointer group">
                             <motion.div
-                                className="scale-90"
-                                animate={{ rotate: [0, 360] }}
-                                transition={{ duration: 0.6, ease: "backOut" }}
+                                key={logoKey}
+                                className="flex items-center gap-3"
+                                initial={{ x: 0 }}
+                                animate={{ x: 0 }}
+                                whileTap={{ scale: 0.95 }}
                             >
-                                <DynamicLogo />
+                                <motion.div
+                                    className="scale-90"
+                                    animate={{ rotate: [0, 360] }}
+                                    transition={{ duration: 0.6, ease: "backOut" }}
+                                >
+                                    <DynamicLogo />
+                                </motion.div>
+                                <span className="font-display text-3xl tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400 group-hover:from-primary group-hover:to-cyan-400 transition-all duration-300">
+                                    FRAME
+                                </span>
                             </motion.div>
-                            <span className="font-display text-3xl tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400 group-hover:from-primary group-hover:to-cyan-400 transition-all duration-300">
-                                FRAME
-                            </span>
-                        </motion.div>
-                    </a>
+                        </a>
+                    </div>
 
                     {/* Desktop Navigation (Centered) */}
                     <nav className="hidden md:flex items-center gap-1 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/20 backdrop-blur-md px-2 py-1.5 rounded-full border border-white/5 shadow-2xl z-10">
