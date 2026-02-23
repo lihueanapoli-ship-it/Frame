@@ -41,9 +41,11 @@ const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, vari
         scrollRef.current.scrollLeft = scrollLeft - walk;
     };
 
+    const isLoading = !isEmpty && movies.length === 0;
+
     if (isEmpty && emptyMessage) {
         return (
-            <section className="mb-8" id={categoryId}>
+            <section className="mb-8 content-visibility-auto" id={categoryId}>
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-2xl md:text-3xl font-display text-white">{title}</h2>
                 </div>
@@ -56,7 +58,7 @@ const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, vari
     }
 
     return (
-        <section className="mb-8" id={categoryId} onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
+        <section className="mb-8 content-visibility-auto min-h-[300px]" id={categoryId} onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
             <div className="flex items-center justify-between mb-4">
                 <div>
                     <h2 className="text-2xl md:text-3xl font-display text-white mb-1">{title}</h2>
@@ -66,7 +68,7 @@ const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, vari
                         </p>
                     )}
                 </div>
-                {categoryId && !showAll && (
+                {categoryId && !showAll && movies.length > 0 && (
                     <Link to={`/category/${categoryId}`} className="text-primary hover:text-primary-hover transition-colors flex items-center gap-1 text-sm">
                         <span>Ver todo</span><ChevronRight className="w-4 h-4" />
                     </Link>
@@ -75,11 +77,18 @@ const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, vari
             <div ref={scrollRef}
                 className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory select-none touch-pan-y"
                 onMouseDown={handleMouseDown} onMouseLeave={handleMouseLeave} onMouseUp={handleMouseUp} onMouseMove={handleMouseMove}>
-                {(showAll ? movies : movies.slice(0, 20)).map((movie) => (
-                    <div key={movie.id} className="flex-shrink-0 w-[140px] sm:w-[170px] md:w-[200px] snap-start">
-                        <MovieCard movie={movie} onClick={() => onSelectMovie(movie)} variant={variant} />
-                    </div>
-                ))}
+                {isLoading ? (
+                    // Skeleton State
+                    Array.from({ length: 5 }).map((_, i) => (
+                        <div key={i} className="flex-shrink-0 w-[140px] sm:w-[170px] md:w-[200px] aspect-[2/3] bg-white/5 rounded-xl animate-pulse" />
+                    ))
+                ) : (
+                    (showAll ? movies : movies.slice(0, 20)).map((movie) => (
+                        <div key={movie.id} className="flex-shrink-0 w-[140px] sm:w-[170px] md:w-[200px] snap-start">
+                            <MovieCard movie={movie} onClick={() => onSelectMovie(movie)} variant={variant} />
+                        </div>
+                    ))
+                )}
             </div>
         </section>
     );
@@ -91,28 +100,58 @@ const DiscoverView = ({ onSelectMovie }) => {
     const { expertiseLevel, trackBehavior } = useUserProfile();
     const { watched, watchlist } = useMovies();
 
-    useEffect(() => { fetchAll(); trackBehavior('discoverViewCount', 1); }, []);
-    useEffect(() => { if (watched.length > 0) fetchPersonalizedRecommendations(); }, [watched.length, expertiseLevel]);
+    useEffect(() => {
+        fetchInitialData();
+        trackBehavior('discoverViewCount', 1);
+    }, []);
 
-    const fetchAll = async () => {
-        setLoading(true);
+    const fetchInitialData = async () => {
+        // Step 1: Fetch trending first to show Hero & first section ASAP
         try {
-            const [trending, must_watch, short, conversation, tech, argentina, thriller, romance, real_life, sagas, classic_author] = await Promise.all([
-                getTrendingMovies(), getCustomCollection('must_watch'), getCustomCollection('short'), getCustomCollection('conversation'), getCustomCollection('tech'),
-                getCustomCollection('argentina'), getCustomCollection('thriller'), getCustomCollection('romance'), getCustomCollection('real_life'), getCustomCollection('sagas'), getCustomCollection('classic_author')
-            ]);
-            setData({ trending, must_watch, short, conversation, tech, argentina, thriller, romance, real_life, sagas, classic_author, forYou: [] });
-            if (watched.length > 0) fetchPersonalizedRecommendations();
-        } catch (error) { console.error("Error fetching movies:", error); } finally { setLoading(false); }
+            const trending = await getTrendingMovies();
+            setData(prev => ({ ...prev, trending }));
+            setLoading(false); // Show the UI as soon as we have the hero
+
+            // Step 2: Fetch other collections in the background
+            fetchBackgroundData();
+        } catch (error) {
+            console.error("Error fetching initial data:", error);
+            setLoading(false);
+        }
+    };
+
+    const fetchBackgroundData = async () => {
+        const collections = [
+            { key: 'must_watch', id: 'must_watch' },
+            { key: 'short', id: 'short' },
+            { key: 'conversation', id: 'conversation' },
+            { key: 'tech', id: 'tech' },
+            { key: 'argentina', id: 'argentina' },
+            { key: 'thriller', id: 'thriller' },
+            { key: 'romance', id: 'romance' },
+            { key: 'real_life', id: 'real_life' },
+            { key: 'sagas', id: 'sagas' },
+            { key: 'classic_author', id: 'classic_author' }
+        ];
+
+        // Fetch them in small chunks to avoid saturation
+        for (const col of collections) {
+            getCustomCollection(col.key).then(movies => {
+                setData(prev => ({ ...prev, [col.key]: movies }));
+            });
+        }
+
+        if (watched.length > 0) fetchPersonalizedRecommendations();
     };
 
     const fetchPersonalizedRecommendations = async () => {
-        if (watched.length === 0) return;
         try {
             const userData = { movieData: { watched, watchlist } };
             const recommendations = await getPersonalizedRecommendations(userData, expertiseLevel);
             setData(prev => ({ ...prev, forYou: recommendations.forYou || [] }));
-        } catch (error) { console.error('Error fetching recommendations:', error); }
+        } catch (error) {
+            console.error('Error fetching recommendations:', error);
+        }
     };
 
     if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>;

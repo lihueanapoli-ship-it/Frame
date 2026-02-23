@@ -124,6 +124,26 @@
     .animate-fade-in-fast {
         animation: fadeInFast 0.2s ease-out both;
     }
+
+    @keyframes shimmer {
+        0% {
+            transform: translateX(-200%) skewX(-12deg);
+        }
+
+        100% {
+            transform: translateX(200%) skewX(-12deg);
+        }
+    }
+
+    .animate-shimmer {
+        animation: shimmer 1s ease-in-out;
+    }
+
+    /* Performance utility: skips rendering life-cycle for off-screen elements */
+    .content-visibility-auto {
+        content-visibility: auto;
+        contain-intrinsic-size: 1px 400px;
+    }
 }
 
 /* Custom Scrollbar for Webkit */

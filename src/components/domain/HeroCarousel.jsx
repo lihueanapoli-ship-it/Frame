@@ -67,8 +67,9 @@ const HeroCarousel = ({ movies, onSelectMovie }) => {
                     aria-hidden={i !== currentIndex}
                 >
                     <img
-                        src={getBackdropUrl(m.poster_path, 'w1280')}
-                        srcSet={`${getPosterUrl(m.poster_path, 'w780')} 768w, ${getBackdropUrl(m.backdrop_path, 'w1280')} 1024w`}
+                        src={getBackdropUrl(m.backdrop_path, 'w780')}
+                        srcSet={`${getBackdropUrl(m.backdrop_path, 'w780')} 780w, ${getBackdropUrl(m.backdrop_path, 'w1280')} 1280w`}
+                        sizes="(max-width: 768px) 780px, 1280px"
                         alt={`Póster de ${m.title}`}
                         className="w-full h-full object-cover"
                         loading={i === 0 ? 'eager' : 'lazy'}

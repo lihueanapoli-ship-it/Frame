@@ -19,51 +19,33 @@ const MovieCard = ({ movie, onClick, rating, variant = 'default', onAddToWatchli
     const year = movie.release_date ? movie.release_date.split('-')[0] : 'N/A';
 
     return (
-        <motion.div
-            layout
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            onHoverStart={() => {
-                setIsHovered(true);
-            }}
-            onHoverEnd={() => {
-                setIsHovered(false);
-            }}
+        <div
             onClick={() => {
                 playClick();
                 onClick(movie);
             }}
-            className={cn(
-                "group relative bg-surface rounded-xl overflow-hidden shadow-lg cursor-pointer transform-gpu",
-                "border border-transparent hover:border-white/10"
-            )}
-            whileHover={{
-                scale: 1.05,
-                y: -5,
-                boxShadow: "0 15px 30px -10px rgba(0, 0, 0, 0.5)",
-                zIndex: 20
+            onMouseEnter={() => {
+                setIsHovered(true);
+                playHover();
             }}
+            onMouseLeave={() => setIsHovered(false)}
+            className={cn(
+                "group relative bg-surface rounded-xl overflow-hidden shadow-lg cursor-pointer transform transition-all duration-300 ease-out hover:-translate-y-1.5 hover:scale-[1.03] hover:shadow-2xl hover:z-20 border border-transparent hover:border-white/10 active:scale-95",
+                variant === 'compact' ? "aspect-[2/3]" : ""
+            )}
         >
-            {/* Shimmer Effect */}
-            <AnimatePresence>
-                {isHovered && (
-                    <motion.div
-                        initial={{ x: "-100%", opacity: 0 }}
-                        animate={{ x: "200%", opacity: [0, 0.5, 0] }}
-                        transition={{ duration: 0.6, ease: "easeInOut" }}
-                        className="absolute inset-0 z-20 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 pointer-events-none"
-                    />
-                )}
-            </AnimatePresence>
+            {/* Shimmer Effect — CSS purely */}
+            <div className="absolute inset-0 z-20 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 translate-x-[-200%] group-hover:animate-shimmer pointer-events-none" />
 
             <div className={cn(
                 "w-full overflow-hidden relative aspect-[2/3] bg-surface-elevated",
             )}>
                 <img
-                    src={getPosterUrl(movie.poster_path)}
+                    src={getPosterUrl(movie.poster_path, 'w342')}
+                    srcSet={`${getPosterUrl(movie.poster_path, 'w185')} 185w, ${getPosterUrl(movie.poster_path, 'w342')} 342w, ${getPosterUrl(movie.poster_path, 'w500')} 500w`}
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 250px"
                     alt={`Póster de ${movie.title}`}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     loading="lazy"
                     decoding="async"
                     width="200"
@@ -78,7 +60,7 @@ const MovieCard = ({ movie, onClick, rating, variant = 'default', onAddToWatchli
 
                 {/* Watched Badge */}
                 {watched && (
-                    <div className="absolute top-2 left-2 z-30 p-1 bg-green-500/80 backdrop-blur-md rounded-full shadow-lg border border-white/20">
+                    <div className="absolute top-2 left-2 z-30 p-1 bg-green-500/80 backdrop-blur-md rounded-full shadow-lg border border-white/20 animate-fade-in-fast">
                         <CheckCircle size={14} className="text-white fill-green-500" />
                     </div>
                 )}
@@ -110,7 +92,7 @@ const MovieCard = ({ movie, onClick, rating, variant = 'default', onAddToWatchli
                     )}
                 </div>
             </div>
-        </motion.div>
+        </div>
     );
 };
 
