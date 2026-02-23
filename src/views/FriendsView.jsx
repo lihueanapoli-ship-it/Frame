@@ -298,12 +298,12 @@ const FriendsView = () => {
                     )}
                 >
                     <UsersIcon className="w-4 h-4" />
-                    Mis Amigos ({friends.length})
+                    Mis Amigos
                 </button>
                 <button
                     onClick={() => setActiveTab('requests')}
                     className={cn(
-                        "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors border",
+                        "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors border relative",
                         activeTab === 'requests'
                             ? "bg-white text-black border-white"
                             : "bg-surface text-gray-400 border-white/10 hover:text-white"
@@ -311,10 +311,8 @@ const FriendsView = () => {
                 >
                     <ChatBubbleLeftEllipsisIcon className="w-4 h-4" />
                     Solicitudes
-                    {requests.length > 0 && (
-                        <span className="bg-primary text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                            {requests.length}
-                        </span>
+                    {(requests.length > 0 || listRequests.length > 0) && (
+                        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary rounded-full border-2 border-[#111] animate-pulse shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]" />
                     )}
                 </button>
             </div>
