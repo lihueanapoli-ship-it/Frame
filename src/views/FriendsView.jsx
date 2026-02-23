@@ -303,17 +303,17 @@ const FriendsView = () => {
                 <button
                     onClick={() => setActiveTab('requests')}
                     className={cn(
-                        "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors border relative",
+                        "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-500 border relative",
                         activeTab === 'requests'
-                            ? "bg-white text-black border-white"
-                            : "bg-surface text-gray-400 border-white/10 hover:text-white"
+                            ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+                            : ((requests.length > 0 || listRequests.length > 0)
+                                ? "bg-surface text-primary border-primary/40 animate-pulse shadow-[0_0_15px_rgba(var(--primary-rgb),0.2)]"
+                                : "bg-surface text-gray-400 border-white/10 hover:text-white"
+                            )
                     )}
                 >
                     <ChatBubbleLeftEllipsisIcon className="w-4 h-4" />
                     Solicitudes
-                    {(requests.length > 0 || listRequests.length > 0) && (
-                        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary rounded-full border-2 border-[#111] animate-pulse shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]" />
-                    )}
                 </button>
             </div>
 
