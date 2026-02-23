@@ -12,6 +12,9 @@ import CollaboratorModal from '../components/ui/CollaboratorModal';
 import AddToListModal from '../components/ui/AddToListModal';
 import ShareWithFriendModal from '../components/ui/ShareWithFriendModal';
 import { useChat } from '../contexts/ChatContext';
+import { toast } from 'sonner';
+import { db } from '../api/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 // Reuse AddToListModal logic? No, move is specific. Let's create a small inline modal or reuse AddTo with a twist.
 // Actually `AddToListModal` just adds/removes. 
 // If I use `AddToListModal`, I can just check the new list and uncheck the current one manually?
