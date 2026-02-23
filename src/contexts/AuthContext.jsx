@@ -9,53 +9,64 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+    // Start as false so the UI renders immediately on first paint.
+    // Components that need user-data should check `authLoading` themselves.
+    const [authLoading, setAuthLoading] = useState(true);
 
     useEffect(() => {
-        // Safe check if auth exists
         if (!auth) {
-            console.log("Auth no disponible (Modo Local)");
-            setLoading(false);
+            setAuthLoading(false);
             return;
         }
 
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             setUser(currentUser);
 
-            // Sync user to Firestore on every login/refresh to keep data fresh
+            // Sync user to Firestore in the background — don't await for render
             if (currentUser) {
-                try {
-                    const userRef = doc(db, 'users', currentUser.uid);
-                    await setDoc(userRef, {
-                        uid: currentUser.uid,
-                        displayName: currentUser.displayName,
-                        email: currentUser.email,
-                        photoURL: currentUser.photoURL,
-                        searchName: currentUser.displayName ? currentUser.displayName.toLowerCase() : '',
-                        lastLogin: serverTimestamp()
-                    }, { merge: true });
-                } catch (error) {
-                    console.error("Error syncing user to Firestore:", error);
+                // Use requestIdleCallback to avoid blocking the main thread
+                const syncUser = async () => {
+                    try {
+                        const userRef = doc(db, 'users', currentUser.uid);
+                        await setDoc(userRef, {
+                            uid: currentUser.uid,
+                            displayName: currentUser.displayName,
+                            email: currentUser.email,
+                            photoURL: currentUser.photoURL,
+                            searchName: currentUser.displayName
+                                ? currentUser.displayName.toLowerCase()
+                                : '',
+                            lastLogin: serverTimestamp(),
+                        }, { merge: true });
+                    } catch (error) {
+                        console.error('Error syncing user to Firestore:', error);
+                    }
+                };
+
+                if ('requestIdleCallback' in window) {
+                    requestIdleCallback(syncUser, { timeout: 5000 });
+                } else {
+                    setTimeout(syncUser, 0);
                 }
             }
 
-            setLoading(false);
+            setAuthLoading(false);
         });
+
         return unsubscribe;
     }, []);
 
     const loginWithGoogle = async () => {
         if (!auth) {
-            alert("No se puede iniciar sesión: Falta configuración de Firebase en .env");
+            alert('No se puede iniciar sesión: Falta configuración de Firebase en .env');
             return;
         }
-
         const provider = new GoogleAuthProvider();
         try {
             await signInWithPopup(auth, provider);
         } catch (error) {
-            console.error("Error logging in with Google", error);
-            alert("Error al iniciar sesión. Verifica tu configuración de Firebase.");
+            console.error('Error logging in with Google', error);
+            alert('Error al iniciar sesión. Verifica tu configuración de Firebase.');
         }
     };
 
@@ -64,9 +75,9 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loginWithGoogle, logout, loading }}>
-            {/* Show nothing while checking auth status to prevent flicker */}
-            {!loading && children}
+        <AuthContext.Provider value={{ user, loginWithGoogle, logout, loading: authLoading }}>
+            {/* Render children immediately — don't block on auth state */}
+            {children}
         </AuthContext.Provider>
     );
 };

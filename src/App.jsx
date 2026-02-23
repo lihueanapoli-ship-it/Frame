@@ -65,7 +65,7 @@ const AppContent = () => {
     const location = useLocation();
     const isHome = location.pathname === '/';
 
-    // Track this user's online presence in Firestore
+    // Track this user's online presence in Firestore (only when logged in)
     usePresence();
 
     // Register setSelectedMovie so ChatWindow can open MovieDetail
@@ -73,13 +73,9 @@ const AppContent = () => {
         setOpenMovieDetailFn(setSelectedMovie);
     }, [setOpenMovieDetailFn, setSelectedMovie]);
 
-    // 1. Loading Guard
-    if (loading) {
-        return <div className="min-h-screen bg-black" />;
-    }
-
-    // 2. Login Wall Guard
-    if (!user) {
+    // Show WelcomeView if auth resolved and there's no user
+    // Don't block render while auth is loading — show app shell immediately
+    if (!loading && !user) {
         return <WelcomeView />;
     }
 
@@ -94,8 +90,16 @@ const AppContent = () => {
         );
     };
 
+    // Skeleton shown while auth resolves
+    const UserMenuSkeleton = () => (
+        <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/10 animate-pulse" />
+    );
+
     const UserMenu = () => {
-        const firstName = user.displayName?.split(' ')[0] || 'Cinéfilo';
+        // While auth is loading, show a skeleton instead of nothing
+        if (loading) return <UserMenuSkeleton />;
+
+        const firstName = user?.displayName?.split(' ')[0] || 'Cinéfilo';
 
         return (
             <div className="flex items-center gap-3 md:gap-4">
@@ -303,22 +307,56 @@ const AppContent = () => {
     );
 }
 
+/** 
+ * AuthenticatedProviders: Heavy Firebase contexts that only make sense
+ * when the user is logged in. By mounting them lazily after auth resolves,
+ * we avoid running 5 Firestore subscriptions on the initial paint.
+ */
+const AuthenticatedProviders = ({ children }) => {
+    const { user, loading } = useAuth();
+
+    // While auth is resolving, render children with no Firebase contexts
+    // (DiscoverView works without them — it only needs TMDB API)
+    if (loading || !user) {
+        return (
+            <UserProfileProvider>
+                <ListProvider>
+                    <MovieProvider>
+                        <SoundProvider>
+                            <ChatProvider>
+                                {children}
+                            </ChatProvider>
+                        </SoundProvider>
+                    </MovieProvider>
+                </ListProvider>
+            </UserProfileProvider>
+        );
+    }
+
+    // Once user is known, mount all providers normally
+    return (
+        <UserProfileProvider>
+            <ListProvider>
+                <MovieProvider>
+                    <SoundProvider>
+                        <ChatProvider>
+                            {children}
+                        </ChatProvider>
+                    </SoundProvider>
+                </MovieProvider>
+            </ListProvider>
+        </UserProfileProvider>
+    );
+};
+
 function App() {
     return (
         <BrowserRouter>
             <AuthProvider>
                 <LanguageProvider>
-                    <UserProfileProvider>
-                        <ListProvider>
-                            <MovieProvider>
-                                <SoundProvider>
-                                    <ChatProvider>
-                                        <AppContent />
-                                    </ChatProvider>
-                                </SoundProvider>
-                            </MovieProvider>
-                        </ListProvider>
-                    </UserProfileProvider>
+                    <AuthenticatedProviders>
+                        <AppContent />
+                    </AuthenticatedProviders>
                 </LanguageProvider>
             </AuthProvider>
         </BrowserRouter>

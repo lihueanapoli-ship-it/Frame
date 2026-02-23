@@ -71,58 +71,40 @@ export const MovieProvider = ({ children }) => {
     // ========================================
     useEffect(() => {
         if (!user || !db) {
-            console.log('[MovieContext] 🚫 No user or db');
             setCloudWatchlist([]);
             setCloudWatched([]);
             return;
         }
 
-        console.log('[MovieContext] 🔥 Initializing Firebase sync for:', user.uid);
         const userRef = doc(db, 'users', user.uid);
 
         const unsubscribe = onSnapshot(
             userRef,
             (docSnap) => {
-                // Skip updates if we're currently syncing
-                if (isSyncingRef.current) {
-                    console.log('[MovieContext] ⏸️ Skipping listener update (sync in progress)');
-                    return;
-                }
+                if (isSyncingRef.current) return;
 
                 if (docSnap.exists()) {
                     const data = docSnap.data();
-                    console.log('[MovieContext] 📥 Loaded from Firebase:', {
-                        watchlist: data.watchlist?.length || 0,
-                        watched: data.watched?.length || 0
-                    });
-
                     setCloudWatchlist(data.watchlist || []);
                     setCloudWatched(data.watched || []);
                 } else {
-                    // Create initial document
-                    console.log('[MovieContext] 📝 Creating initial document');
                     const initialData = {
                         watchlist: localWatchlist.length > 0 ? localWatchlist : [],
                         watched: localWatched.length > 0 ? localWatched : [],
                         createdAt: new Date().toISOString()
                     };
-
                     setDoc(userRef, initialData, { merge: true })
-                        .then(() => console.log('[MovieContext] ✅ Initial document created'))
-                        .catch((err) => console.error('[MovieContext] ❌ Error creating document:', err));
+                        .catch((err) => console.error('[MovieContext] Error creating document:', err));
                 }
             },
             (error) => {
-                console.error('[MovieContext] ❌ Listener error:', error);
+                console.error('[MovieContext] Listener error:', error);
             }
         );
 
         return () => {
-            console.log('[MovieContext] 🧹 Cleanup');
             unsubscribe();
-            if (syncTimeoutRef.current) {
-                clearTimeout(syncTimeoutRef.current);
-            }
+            if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
         };
     }, [user, db]);
 
@@ -148,30 +130,18 @@ export const MovieProvider = ({ children }) => {
             const userRef = doc(db, 'users', user.uid);
 
             try {
-                console.log('[MovieContext] 💾 Syncing to Firebase:', {
-                    watchlist: newWatchlist.length,
-                    watched: newWatched.length
-                });
-
                 await setDoc(userRef, {
                     watchlist: newWatchlist,
                     watched: newWatched,
                     lastUpdated: new Date().toISOString()
                 }, { merge: true });
-
-                console.log('[MovieContext] ✅ Sync successful');
-
             } catch (error) {
-                console.error('[MovieContext] ❌ Sync failed:', error);
+                console.error('[MovieContext] Sync failed:', error);
                 throw error;
             } finally {
-                // Release sync flag after 1 second to ensure Firebase propagation
-                setTimeout(() => {
-                    isSyncingRef.current = false;
-                    console.log('[MovieContext] 🔓 Sync flag released');
-                }, 1000);
+                setTimeout(() => { isSyncingRef.current = false; }, 1000);
             }
-        }, 500); // Debounce 500ms
+        }, 500);
     };
 
     // ========================================
