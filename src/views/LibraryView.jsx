@@ -88,7 +88,13 @@ const LibraryView = ({ onSelectMovie }) => {
             return watched;
         }
 
-        // In 'watchlist' tab, we show movies in the selected list that are NOT yet watched (globally)
+        // In 'watchlist' tab: 
+        // For custom lists, we show what's pending IN THAT LIST so all collaborators see the same.
+        if (currentCustomList && currentCustomList.name !== 'General') {
+            return moviesInCurrentList.filter(m => !m.watched);
+        }
+
+        // For "General" (global watchlist), we filter by what the user hasn't seen anywhere.
         return moviesInCurrentList.filter(m => !watchedIds.has(m.id));
     }, [activeTab, currentCustomList, watched]);
 
