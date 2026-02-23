@@ -81,18 +81,15 @@ const LibraryView = ({ onSelectMovie }) => {
 
     const rawMovies = useMemo(() => {
         const moviesInCurrentList = currentCustomList?.movies || [];
+        const watchedIds = new Set(watched.map(m => m.id));
 
         if (activeTab === 'watched') {
-            // If viewing a specific custom list (not General), show only its watched movies
-            if (currentCustomList && currentCustomList.name !== 'General') {
-                return moviesInCurrentList.filter(m => m.watched);
-            }
-            // Otherwise, show user's global watched history
+            // "Vistas" is ALWAYS global per user request, reflecting their cinematic DNA
             return watched;
         }
 
-        // In 'watchlist' tab, we show movies in the selected list that are NOT yet watched
-        return moviesInCurrentList.filter(m => !m.watched);
+        // In 'watchlist' tab, we show movies in the selected list that are NOT yet watched (globally)
+        return moviesInCurrentList.filter(m => !watchedIds.has(m.id));
     }, [activeTab, currentCustomList, watched]);
 
     // Handlers
