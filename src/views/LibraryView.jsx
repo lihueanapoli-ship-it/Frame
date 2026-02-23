@@ -330,7 +330,7 @@ const LibraryView = ({ onSelectMovie }) => {
                         <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                         <input
                             type="text"
-                            placeholder={`Buscar en ${currentCustomList ? currentCustomList.name : activeTab === 'watchlist' ? 'Watchlist' : 'Vistas'}...`}
+                            placeholder="Buscar..."
                             value={localSearch}
                             onChange={(e) => setLocalSearch(e.target.value)}
                             className="w-full bg-surface-elevated border-none text-sm text-white rounded-xl py-3 pl-10 pr-4 placeholder-gray-500 focus:ring-1 focus:ring-primary/50"
