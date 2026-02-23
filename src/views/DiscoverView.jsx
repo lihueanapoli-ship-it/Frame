@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { motion } from 'framer-motion';
 import { getTrendingMovies, getCustomCollection } from '../api/tmdb';
 import { useUserProfile } from '../contexts/UserProfileContext';
 import { useMovies } from '../contexts/MovieContext';
@@ -122,18 +121,14 @@ const DiscoverView = ({ onSelectMovie }) => {
         <div className="pb-16 pt-4 md:pt-8">
             <header className="mb-4 md:mb-8 flex items-end justify-between border-b border-white/5 pb-4 md:pb-6 overflow-hidden">
                 <div className="relative w-full">
-                    <motion.div
-                        initial={{ x: "40vw", opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-                    >
+                    <div className="animate-slide-in-left">
                         <h1 className="text-3xl md:text-6xl font-display font-bold text-white mb-1 md:mb-2 tracking-tight">
                             DESCUBRIR <span className="text-primary">CINE</span>
                         </h1>
                         <p className="font-mono text-[10px] md:text-sm text-gray-400">
                             ESTRENOS Y CLÁSICOS SELECCIONADOS
                         </p>
-                    </motion.div>
+                    </div>
                 </div>
             </header>
 

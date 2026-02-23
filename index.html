@@ -8,7 +8,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0a0a0a" />
   <title>Frame — Tu ciclo de vida en 24 cuadros por segundo</title>
-  <meta name="description" content="Frame es tu app de cine personal. Registrá lo que viste, creá listas con amigos, descubrí nuevas películas y analizá tu ADN cinematográfico.">
+  <meta name="description"
+    content="Frame es tu app de cine personal. Registrá lo que viste, creá listas con amigos, descubrí nuevas películas y analizá tu ADN cinematográfico.">
 
   <!-- Open Graph / Social -->
   <meta property="og:type" content="website">
@@ -24,22 +25,48 @@
   <meta property="twitter:description" content="Tu app de cine personal.">
   <meta property="twitter:image" content="/pwa-512x512.png">
 
-  <!-- Preconnect to external domains for faster resource loading -->
+  <!-- Preconnect to external domains -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://image.tmdb.org">
   <link rel="dns-prefetch" href="https://api.themoviedb.org">
   <link rel="dns-prefetch" href="https://firestore.googleapis.com">
 
-  <!-- Fonts: only load the weights we actually use -->
-  <link
+  <!--
+    Fonts: NON-BLOCKING async load strategy.
+    1. media="print" makes it non-blocking immediately (browser still loads it)
+    2. onload switches to media="all" to apply the styles once loaded
+    3. <noscript> provides fallback for JS-disabled browsers
+    This eliminates "render-blocking resources" for fonts.
+  -->
+  <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
-    rel="stylesheet">
+    media="print" onload="this.media='all'">
+  <noscript>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet">
+  </noscript>
 
-  <!-- Inline critical CSS: prevent FOUC (flash of unstyled content) -->
+  <!-- Inline critical CSS: prevent FOUC and reserve space -->
   <style>
-    html, body { background-color: #09090b; }
-    #root { min-height: 100dvh; }
+    html,
+    body {
+      background-color: #09090b;
+      margin: 0;
+      padding: 0;
+    }
+
+    #root {
+      min-height: 100dvh;
+    }
+
+    /* Critical font fallbacks so layout doesn't shift when real fonts arrive */
+    :root {
+      --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+      --font-display: 'Bebas Neue', Impact, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+    }
   </style>
 </head>
 
