@@ -4,17 +4,20 @@ import { motion } from 'framer-motion';
 const SpotlightCursor = () => {
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
+    // Don't render on touch-only devices (no mouse)
+    const isTouchDevice = typeof window !== 'undefined' &&
+        ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+
     useEffect(() => {
+        if (isTouchDevice) return;
         const updateMousePosition = (e) => {
             setMousePosition({ x: e.clientX, y: e.clientY });
         };
-
         window.addEventListener('mousemove', updateMousePosition);
+        return () => window.removeEventListener('mousemove', updateMousePosition);
+    }, [isTouchDevice]);
 
-        return () => {
-            window.removeEventListener('mousemove', updateMousePosition);
-        };
-    }, []);
+    if (isTouchDevice) return null;
 
     return (
         <motion.div
@@ -22,9 +25,10 @@ const SpotlightCursor = () => {
             animate={{
                 background: `radial-gradient(600px circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(0, 240, 255, 0.03), transparent 40%)`
             }}
-            transition={{ type: 'tween', ease: 'linear', duration: 0.05 }} // Fast update but smooth
+            transition={{ type: 'tween', ease: 'linear', duration: 0.05 }}
         />
     );
 };
 
 export default SpotlightCursor;
+

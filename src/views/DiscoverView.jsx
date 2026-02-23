@@ -73,10 +73,11 @@ const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, vari
                     </Link>
                 )}
             </div>
-            <div ref={scrollRef} className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory cursor-grab select-none"
+            <div ref={scrollRef}
+                className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory select-none touch-pan-x"
                 onMouseDown={handleMouseDown} onMouseLeave={handleMouseLeave} onMouseUp={handleMouseUp} onMouseMove={handleMouseMove}>
                 {(showAll ? movies : movies.slice(0, 20)).map((movie) => (
-                    <div key={movie.id} className="flex-shrink-0 w-[200px] snap-start">
+                    <div key={movie.id} className="flex-shrink-0 w-[140px] sm:w-[170px] md:w-[200px] snap-start">
                         <MovieCard movie={movie} onClick={() => onSelectMovie(movie)} variant={variant} />
                     </div>
                 ))}
@@ -118,18 +119,18 @@ const DiscoverView = ({ onSelectMovie }) => {
     if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>;
 
     return (
-        <div className="pb-24 pt-8">
-            <header className="mb-8 flex items-end justify-between border-b border-white/5 pb-6 overflow-hidden">
+        <div className="pb-16 pt-4 md:pt-8">
+            <header className="mb-4 md:mb-8 flex items-end justify-between border-b border-white/5 pb-4 md:pb-6 overflow-hidden">
                 <div className="relative w-full">
                     <motion.div
                         initial={{ x: "40vw", opacity: 0 }}
                         animate={{ x: 0, opacity: 1 }}
                         transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
                     >
-                        <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-2 tracking-tight">
+                        <h1 className="text-3xl md:text-6xl font-display font-bold text-white mb-1 md:mb-2 tracking-tight">
                             DESCUBRIR <span className="text-primary">CINE</span>
                         </h1>
-                        <p className="font-mono text-xs md:text-sm text-gray-400">
+                        <p className="font-mono text-[10px] md:text-sm text-gray-400">
                             ESTRENOS Y CLÁSICOS SELECCIONADOS
                         </p>
                     </motion.div>

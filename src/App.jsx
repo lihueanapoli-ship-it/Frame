@@ -87,9 +87,9 @@ const AppContent = () => {
         const firstName = user.displayName?.split(' ')[0] || 'Cinéfilo';
 
         return (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 md:gap-4">
                 {/* Creative Greeting - Hidden on mobile */}
-                <div className="flex flex-col items-end animate-fade-in">
+                <div className="hidden sm:flex flex-col items-end animate-fade-in">
                     <span className="text-[9px] font-mono text-primary uppercase tracking-[0.2em] mb-0.5">En Escena</span>
                     <span className="text-sm font-display font-bold text-white tracking-wide leading-none">
                         {firstName.toUpperCase()}
@@ -178,7 +178,7 @@ const AppContent = () => {
             <SpotlightCursor />
             <PageTransitionOverlay />
             <header className="sticky top-0 z-[100] w-full backdrop-blur-xl bg-background/90 border-b border-white/5 transition-all duration-300">
-                <div className="flex h-20 items-center w-full px-4 max-w-7xl mx-auto justify-between relative">
+                <div className="flex h-14 md:h-20 items-center w-full px-4 max-w-7xl mx-auto justify-between relative">
                     <a href="/" onClick={(e) => {
                         e.preventDefault();
                         navigate('/');
@@ -242,7 +242,7 @@ const AppContent = () => {
                 </div>
             </header>
 
-            <main className="container max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 pb-32">
+            <main className="container max-w-7xl mx-auto px-4 py-3 sm:py-6 md:py-8 sm:px-6 lg:px-8 pb-28 md:pb-32">
                 <AnimatePresence mode="wait">
                     <Routes>
                         <Route path="/" element={<DiscoverView onSelectMovie={setSelectedMovie} />} />

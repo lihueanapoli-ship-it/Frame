@@ -225,12 +225,12 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent pointer-events-none" />
 
                         {/* Title & Stats */}
-                        <div className="absolute bottom-0 left-0 p-6 sm:p-10 w-full z-10 pointer-events-none">
+                        <div className="absolute bottom-0 left-0 p-4 sm:p-6 md:p-10 w-full z-10 pointer-events-none">
                             <motion.h2
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.2 }}
-                                className="text-4xl sm:text-6xl font-bold text-white mb-3 leading-tight drop-shadow-xl font-display"
+                                className="text-2xl sm:text-4xl md:text-6xl font-bold text-white mb-2 leading-tight drop-shadow-xl font-display"
                             >
                                 {movie.title}
                             </motion.h2>
@@ -238,16 +238,16 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ delay: 0.4 }}
-                                className="flex flex-wrap gap-4 text-sm font-medium text-gray-200"
+                                className="flex flex-wrap gap-2 text-xs sm:text-sm font-medium text-gray-200"
                             >
                                 {movie.release_date && (
-                                    <span className="flex items-center gap-1.5 backdrop-blur-sm bg-black/30 px-3 py-1.5 rounded-lg border border-white/5"><CalendarIcon className="w-4 h-4" /> {movie.release_date.split('-')[0]}</span>
+                                    <span className="flex items-center gap-1 sm:gap-1.5 backdrop-blur-sm bg-black/30 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-white/5"><CalendarIcon className="w-3 h-3 sm:w-4 sm:h-4" /> {movie.release_date.split('-')[0]}</span>
                                 )}
                                 {movie.runtime > 0 && (
-                                    <span className="flex items-center gap-1.5 backdrop-blur-sm bg-black/30 px-3 py-1.5 rounded-lg border border-white/5"><ClockIcon className="w-4 h-4" /> {Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m</span>
+                                    <span className="flex items-center gap-1 sm:gap-1.5 backdrop-blur-sm bg-black/30 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-white/5"><ClockIcon className="w-3 h-3 sm:w-4 sm:h-4" /> {Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m</span>
                                 )}
                                 {movie.vote_average > 0 && (
-                                    <span className="flex items-center gap-1.5 text-yellow-400 backdrop-blur-sm bg-black/30 px-3 py-1.5 rounded-lg border border-white/5"><StarIconSolid className="w-4 h-4" /> {movie.vote_average.toFixed(1)}</span>
+                                    <span className="flex items-center gap-1 sm:gap-1.5 text-yellow-400 backdrop-blur-sm bg-black/30 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-white/5"><StarIconSolid className="w-3 h-3 sm:w-4 sm:h-4" /> {movie.vote_average.toFixed(1)}</span>
                                 )}
                             </motion.div>
                         </div>
@@ -255,10 +255,10 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
 
                     {/* Content Body */}
                     <div className="flex flex-col pb-24">
-                        <div className="p-6 sm:p-10 space-y-8">
+                        <div className="p-4 sm:p-6 md:p-10 space-y-6 md:space-y-8">
                             <div className="max-w-4xl">
-                                <h3 className="text-xl font-bold text-white mb-3">Sinopsis</h3>
-                                <p className="text-gray-300 leading-relaxed text-lg font-light">
+                                <h3 className="text-lg md:text-xl font-bold text-white mb-2 md:mb-3">Sinopsis</h3>
+                                <p className="text-gray-300 leading-relaxed text-base md:text-lg font-light">
                                     {movie.overview || "No hay descripción disponible."}
                                 </p>
                             </div>
