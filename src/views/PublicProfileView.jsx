@@ -11,6 +11,7 @@ import { collection, query, where, getDocs, limit, doc, getDoc, updateDoc } from
 import { cn } from '../lib/utils';
 import { UserCircleIcon } from '@heroicons/react/24/solid';
 import MovieDetail from '../components/MovieDetail';
+import { getRankTitle } from '../constants/cinemaRanks';
 
 const PublicProfileView = ({ onSelectMovie }) => {
     const { username } = useParams();
@@ -274,6 +275,11 @@ const PublicProfileView = ({ onSelectMovie }) => {
                             ) : (
                                 <>
                                     <h1 className="text-3xl md:text-5xl font-display font-bold text-white mb-2">{profile.displayName}</h1>
+                                    <div className="flex items-center justify-center md:justify-start mb-4">
+                                        <span className="px-3 py-1 bg-primary/10 border border-primary/20 text-primary text-[10px] font-mono font-bold tracking-widest rounded-full">
+                                            {getRankTitle(userMovies.watched?.length || 0)}
+                                        </span>
+                                    </div>
                                     <p className="text-gray-400 font-mono text-sm max-w-lg mx-auto md:mx-0 whitespace-pre-wrap">
                                         {profile.bio || "Amante del cine. Sin biografía aún."}
                                     </p>

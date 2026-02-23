@@ -36,23 +36,7 @@ import { cn } from '../lib/utils';
 import { toast } from 'sonner';
 import { useChat } from '../contexts/ChatContext';
 
-const CINEMA_RANKS = [
-    { min: 0, title: "Turista de Estudio" },
-    { min: 10, title: "Extra de Fondo" },
-    { min: 25, title: "Claquetista" },
-    { min: 50, title: "Focus Puller" },
-    { min: 100, title: "Montajista" },
-    { min: 200, title: "Director de Fotografía" },
-    { min: 300, title: "Guionista Auteur" },
-    { min: 400, title: "Productor Visionario" },
-    { min: 480, title: "Arquitecto de Sueños" },
-    { min: 500, title: "Lumière Renacido" }
-];
-
-const getRankTitle = (count) => {
-    const rank = [...CINEMA_RANKS].reverse().find(r => (count || 0) >= r.min);
-    return rank ? rank.title.toUpperCase() : "TURISTA DE ESTUDIO";
-};
+import { CINEMA_RANKS, getRankTitle } from '../constants/cinemaRanks';
 
 const FriendsView = () => {
     const { user } = useAuth();
