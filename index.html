@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="es" class="dark">
 
 <head>
   <meta charset="UTF-8" />
@@ -7,25 +7,40 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0a0a0a" />
-  <title>Frame</title>
-  <meta name="description" content="Enfocá tu pasión">
+  <title>Frame — Tu ciclo de vida en 24 cuadros por segundo</title>
+  <meta name="description" content="Frame es tu app de cine personal. Registrá lo que viste, creá listas con amigos, descubrí nuevas películas y analizá tu ADN cinematográfico.">
 
-  <!-- Open Graph / Facebook -->
+  <!-- Open Graph / Social -->
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Frame">
-  <meta property="og:description" content="Enfocá tu pasión">
+  <meta property="og:url" content="https://frame-kappa-eight.vercel.app/">
+  <meta property="og:title" content="Frame — Enfocá tu pasión">
+  <meta property="og:description" content="Tu app de cine personal. Listas, amigos, recomendaciones y más.">
   <meta property="og:image" content="/pwa-512x512.png">
+  <meta property="og:locale" content="es_AR">
 
   <!-- Twitter -->
   <meta property="twitter:card" content="summary_large_image">
-  <meta property="twitter:title" content="Frame">
-  <meta property="twitter:description" content="Enfocá tu pasión">
+  <meta property="twitter:title" content="Frame — Enfocá tu pasión">
+  <meta property="twitter:description" content="Tu app de cine personal.">
   <meta property="twitter:image" content="/pwa-512x512.png">
+
+  <!-- Preconnect to external domains for faster resource loading -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://image.tmdb.org">
+  <link rel="dns-prefetch" href="https://api.themoviedb.org">
+  <link rel="dns-prefetch" href="https://firestore.googleapis.com">
+
+  <!-- Fonts: only load the weights we actually use -->
   <link
-    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
     rel="stylesheet">
+
+  <!-- Inline critical CSS: prevent FOUC (flash of unstyled content) -->
+  <style>
+    html, body { background-color: #09090b; }
+    #root { min-height: 100dvh; }
+  </style>
 </head>
 
 <body class="bg-background text-white antialiased selection:bg-primary selection:text-white">

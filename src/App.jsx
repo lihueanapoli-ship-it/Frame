@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { HomeIcon, MagnifyingGlassIcon, RectangleStackIcon, ChartBarIcon, ChatBubbleLeftRightIcon, ArrowLeftOnRectangleIcon, UserIcon, UsersIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, MagnifyingGlassIcon, RectangleStackIcon, ChartBarIcon, ChatBubbleLeftRightIcon, ArrowLeftOnRectangleIcon, UsersIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { HomeIcon as HomeIconSolid, MagnifyingGlassIcon as SearchIconSolid, RectangleStackIcon as LibraryIconSolid, ChartBarIcon as ChartBarIconSolid, UsersIcon as UsersIconSolid } from '@heroicons/react/24/solid';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, Navigate, NavLink } from 'react-router-dom';
 import { MovieProvider } from './contexts/MovieContext';
@@ -10,26 +10,36 @@ import { UserProfileProvider, useUserProfile } from './contexts/UserProfileConte
 import { ListProvider } from './contexts/ListContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { ChatProvider, useChat } from './contexts/ChatContext';
-import ChatWindow from './components/ui/ChatWindow';
 import usePresence from './hooks/usePresence';
 
-import DiscoverView from './views/DiscoverView';
-import LibraryView from './views/LibraryView';
+// Critical path — loaded eagerly
 import WelcomeView from './views/WelcomeView';
-import CategoryView from './views/CategoryView';
-import SearchView from './views/SearchView';
-import StatsView from './views/StatsView';
-import PublicProfileView from './views/PublicProfileView';
-import FriendsView from './views/FriendsView';
-import ListView from './views/ListView';
-
+import DiscoverView from './views/DiscoverView';
 import BottomNav from './components/navigation/BottomNav';
-import MovieDetail from './components/MovieDetail';
 import DynamicLogo from './components/ui/DynamicLogo';
-import SpotlightCursor from './components/ui/SpotlightCursor';
-import PageTransitionOverlay from './components/ui/PageTransitionOverlay';
-import FeedbackModal from './components/ui/FeedbackModal';
 import { Toaster } from 'sonner';
+
+// Non-critical — loaded lazily per route
+const LibraryView = lazy(() => import('./views/LibraryView'));
+const SearchView = lazy(() => import('./views/SearchView'));
+const StatsView = lazy(() => import('./views/StatsView'));
+const FriendsView = lazy(() => import('./views/FriendsView'));
+const PublicProfileView = lazy(() => import('./views/PublicProfileView'));
+const ListView = lazy(() => import('./views/ListView'));
+const CategoryView = lazy(() => import('./views/CategoryView'));
+
+const MovieDetail = lazy(() => import('./components/MovieDetail'));
+const ChatWindow = lazy(() => import('./components/ui/ChatWindow'));
+const FeedbackModal = lazy(() => import('./components/ui/FeedbackModal'));
+const SpotlightCursor = lazy(() => import('./components/ui/SpotlightCursor'));
+const PageTransitionOverlay = lazy(() => import('./components/ui/PageTransitionOverlay'));
+
+// Lightweight fallback skeleton while lazy chunks load
+const RouteFallback = () => (
+    <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+    </div>
+);
 
 
 // Wrapper component to use Hooks like useNavigate
@@ -50,7 +60,7 @@ const AppContent = () => {
 
     // Auth Hooks
     const { user, loading, logout } = useAuth();
-    const { profile, loading: profileLoading } = useUserProfile();
+    const { loading: profileLoading } = useUserProfile();
     const { setOpenMovieDetailFn } = useChat();
     const navigate = useNavigate();
     const location = useLocation();
@@ -101,14 +111,17 @@ const AppContent = () => {
                 <div className="relative">
                     <button
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        className="relative group focus:outline-none"
+                        className="relative group focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-full"
+                        aria-label={`Menú de usuario: ${user?.displayName || 'Perfil'}`}
+                        aria-expanded={isMenuOpen}
                     >
                         <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-purple-600 rounded-full opacity-75 group-hover:opacity-100 blur transition duration-200" />
                         <img
                             src={user?.photoURL || "/logo.png"}
-                            alt={user?.displayName}
+                            alt={`Foto de perfil de ${user?.displayName || 'usuario'}`}
                             className="relative w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-black object-cover"
-                            title={user?.displayName}
+                            width="48"
+                            height="48"
                         />
                     </button>
 
@@ -265,19 +278,21 @@ const AppContent = () => {
             </header>
 
             <main className="container max-w-7xl mx-auto px-4 py-3 sm:py-6 md:py-8 sm:px-6 lg:px-8 pb-28 md:pb-32">
-                <AnimatePresence mode="wait">
-                    <Routes>
-                        <Route path="/" element={<DiscoverView onSelectMovie={setSelectedMovie} />} />
-                        <Route path="/search" element={<SearchView onSelectMovie={setSelectedMovie} />} />
-                        <Route path="/library" element={<LibraryView onSelectMovie={setSelectedMovie} />} />
-                        <Route path="/friends" element={<FriendsView />} />
-                        <Route path="/dashboard" element={<StatsView />} />
-                        <Route path="/u/:username" element={<PublicProfileView onSelectMovie={setSelectedMovie} />} />
-                        <Route path="/lists/:id" element={<ListView onSelectMovie={setSelectedMovie} />} />
-                        <Route path="/category/:id" element={<CategoryView onSelectMovie={setSelectedMovie} />} />
-                        <Route path="*" element={<Navigate to="/" replace />} />
-                    </Routes>
-                </AnimatePresence>
+                <Suspense fallback={<RouteFallback />}>
+                    <AnimatePresence mode="wait">
+                        <Routes>
+                            <Route path="/" element={<DiscoverView onSelectMovie={setSelectedMovie} />} />
+                            <Route path="/search" element={<SearchView onSelectMovie={setSelectedMovie} />} />
+                            <Route path="/library" element={<LibraryView onSelectMovie={setSelectedMovie} />} />
+                            <Route path="/friends" element={<FriendsView />} />
+                            <Route path="/dashboard" element={<StatsView />} />
+                            <Route path="/u/:username" element={<PublicProfileView onSelectMovie={setSelectedMovie} />} />
+                            <Route path="/lists/:id" element={<ListView onSelectMovie={setSelectedMovie} />} />
+                            <Route path="/category/:id" element={<CategoryView onSelectMovie={setSelectedMovie} />} />
+                            <Route path="*" element={<Navigate to="/" replace />} />
+                        </Routes>
+                    </AnimatePresence>
+                </Suspense>
             </main>
 
             <footer className="fixed bottom-24 md:bottom-6 right-6 z-0 pointer-events-none opacity-20 hover:opacity-100 transition-opacity duration-700 hidden md:block">
@@ -298,29 +313,33 @@ const AppContent = () => {
             <BottomNav />
 
             {/* Modals */}
-            <AnimatePresence>
-                {selectedMovie && (
-                    <MovieDetail
-                        key="movie-detail-modal"
-                        movie={selectedMovie}
-                        onClose={() => setSelectedMovie(null)}
-                    />
-                )}
-            </AnimatePresence>
+            <Suspense fallback={null}>
+                <AnimatePresence>
+                    {selectedMovie && (
+                        <MovieDetail
+                            key="movie-detail-modal"
+                            movie={selectedMovie}
+                            onClose={() => setSelectedMovie(null)}
+                        />
+                    )}
+                </AnimatePresence>
 
-            <FeedbackModal
-                isOpen={isFeedbackOpen}
-                onClose={() => setIsFeedbackOpen(false)}
-            />
+                <FeedbackModal
+                    isOpen={isFeedbackOpen}
+                    onClose={() => setIsFeedbackOpen(false)}
+                />
 
-            <ChatWindow />
+                <ChatWindow />
+                <SpotlightCursor />
+                <PageTransitionOverlay />
+            </Suspense>
 
             <Toaster
                 theme="dark"
                 position="bottom-center"
             />
 
-        </div >
+        </div>
     );
 }
 

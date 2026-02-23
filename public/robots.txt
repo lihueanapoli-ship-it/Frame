@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://frame-kappa-eight.vercel.app/sitemap.xml

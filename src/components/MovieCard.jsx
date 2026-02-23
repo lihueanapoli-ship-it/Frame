@@ -60,11 +60,14 @@ const MovieCard = ({ movie, onClick, rating, variant = 'default', onAddToWatchli
             <div className={cn(
                 "w-full overflow-hidden relative aspect-[2/3] bg-surface-elevated",
             )}>
-                <motion.img
+                <img
                     src={getPosterUrl(movie.poster_path)}
-                    alt={movie.title}
+                    alt={`Póster de ${movie.title}`}
                     className="w-full h-full object-cover"
                     loading="lazy"
+                    decoding="async"
+                    width="200"
+                    height="300"
                 />
 
                 {/* Dark Gradient Overlay */}
