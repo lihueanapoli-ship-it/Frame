@@ -28,18 +28,24 @@ export async function getPersonalizedRecommendations(userData, expertiseLevel = 
         const minThreshold = Math.floor(avgOfTop3); // e.g. 8.4 -> 8.0
 
         console.log(`[Tu ADN] Top Genres: ${top3ForThreshold.map(g => g.name).join(', ')}`);
-        console.log(`[Tu ADN] Min Threshold: ${minThreshold}`);
+        console.log(`[Tu ADN] Target Min Rating: ${minThreshold}`);
 
         // Fetch candidates centering on these top genres
+        // We'll fetch multiple pages to ensure we reach the 50 movies goal
         const [genreBased, similarBased] = await Promise.all([
             getGenreFocusedCandidates(profile, minThreshold, watched, watchlist),
             getSimilarBasedRecommendations(watchedWithDetails, watched, watchlist)
         ]);
 
-        const allCandidates = removeDuplicates([...genreBased, ...similarBased]);
+        let allCandidates = removeDuplicates([...genreBased, ...similarBased]);
+        let scoredMovies = rankByGenreIntersection(allCandidates, profile, minThreshold);
 
-        // Filter and Rank strictly by Genre Intersection
-        const scoredMovies = rankByGenreIntersection(allCandidates, profile, minThreshold);
+        // Fallback: if we still don't have 50 movies, broaden the search
+        if (scoredMovies.length < 50 && top3ForThreshold.length > 0) {
+            const moreCandidates = await getBroadGenreCandidates(profile, minThreshold, watched, watchlist);
+            allCandidates = removeDuplicates([...allCandidates, ...moreCandidates]);
+            scoredMovies = rankByGenreIntersection(allCandidates, profile, minThreshold);
+        }
 
         return {
             forYou: scoredMovies.slice(0, 50),
@@ -135,28 +141,42 @@ async function getGenreFocusedCandidates(profile, minThreshold, watched, watchli
     if (top3Ids.length === 0) return [];
 
     try {
-        // Source 1: Strict intersection (ALL 3)
-        const strictPromise = top3Ids.length === 3
-            ? discoverMovies({
-                with_genres: top3Ids.join(','), // AND
-                'vote_average.gte': minThreshold,
-                'vote_count.gte': 100,
-                sort_by: 'vote_average.desc'
-            }) : Promise.resolve([]);
+        const promises = [];
 
-        // Source 2: Broad intersection (ANY of Top 3)
-        const broadPromise = discoverMovies({
-            with_genres: top3Ids.join('|'), // OR
-            'vote_average.gte': minThreshold,
-            'vote_count.gte': 500, // Higher count for quality when OR logic
-            sort_by: 'vote_average.desc'
-        });
+        // Strict AND for all top 3 (Pages 1 & 2)
+        if (top3Ids.length === 3) {
+            promises.push(discoverMovies({ with_genres: top3Ids.join(','), 'vote_average.gte': minThreshold, 'vote_count.gte': 50, sort_by: 'vote_average.desc', page: 1 }));
+            promises.push(discoverMovies({ with_genres: top3Ids.join(','), 'vote_average.gte': minThreshold, 'vote_count.gte': 50, sort_by: 'vote_average.desc', page: 2 }));
+        }
 
-        const [strict, broad] = await Promise.all([strictPromise, broadPromise]);
+        // OR for top 3 (Multiple pages)
+        promises.push(discoverMovies({ with_genres: top3Ids.join('|'), 'vote_average.gte': minThreshold, 'vote_count.gte': 200, sort_by: 'vote_average.desc', page: 1 }));
+        promises.push(discoverMovies({ with_genres: top3Ids.join('|'), 'vote_average.gte': minThreshold, 'vote_count.gte': 200, sort_by: 'vote_average.desc', page: 2 }));
+        promises.push(discoverMovies({ with_genres: top3Ids.join('|'), 'vote_average.gte': minThreshold, 'vote_count.gte': 200, sort_by: 'vote_average.desc', page: 3 }));
 
-        return filterWatched([...strict, ...broad], watched, watchlist);
+        const results = await Promise.all(promises);
+        return filterWatched(results.flat(), watched, watchlist);
     } catch (e) {
         console.error('[Tu ADN] Genre candidates error:', e);
+        return [];
+    }
+}
+
+async function getBroadGenreCandidates(profile, minThreshold, watched, watchlist) {
+    const top3Ids = profile.topGenres.slice(0, 3).map(g => g.id);
+    try {
+        const promises = top3Ids.map(id =>
+            discoverMovies({
+                with_genres: id,
+                'vote_average.gte': minThreshold,
+                'vote_count.gte': 50, // Lower vote count to fill up
+                sort_by: 'vote_average.desc',
+                page: 1
+            })
+        );
+        const results = await Promise.all(promises);
+        return filterWatched(results.flat(), watched, watchlist);
+    } catch (e) {
         return [];
     }
 }
@@ -186,25 +206,27 @@ function rankByGenreIntersection(movies, profile, threshold) {
 
     return movies
         .map(movie => {
-            const intersection = (movie.genre_ids || []).filter(id => top3Ids.includes(id)).length;
+            const genres = movie.genre_ids || [];
+            const matches = genres.filter(id => top3Ids.includes(id));
+            const intersection = matches.length;
 
-            // Tiered Scoring:
-            // 3 matches = base 100
-            // 2 matches = base 50
-            // 1 match = base 10
-            // 0 matches = -1000 (Filter out)
-            let score = 0;
-            if (intersection === 3) score = 100;
-            else if (intersection === 2) score = 50;
-            else if (intersection === 1) score = 10;
-            else score = -1000;
-
-            // Rating bonus: How much it exceeds the threshold
-            if (movie.vote_average) {
-                score += (movie.vote_average - threshold) * 10;
+            let levelScore = 0;
+            if (intersection === 3) {
+                // Nivel 1: Películas que contienen los 3 géneros del Top al mismo tiempo y ningún otro
+                if (genres.length === 3) levelScore = 10000;
+                // Nivel 2: Películas que contienen los 3 géneros del Top y otros también
+                else levelScore = 5000;
             }
+            // Nivel 3: Películas con 2 de tus géneros top.
+            else if (intersection === 2) levelScore = 1000;
+            // Nivel 4: Películas con al menos 1 de tus géneros top.
+            else if (intersection === 1) levelScore = 100;
+            else levelScore = -50000;
 
-            return { ...movie, tuAdnScore: score };
+            // Bonus within level based on quality
+            const qualityBonus = movie.vote_average ? (movie.vote_average * 10) : 0;
+
+            return { ...movie, tuAdnScore: levelScore + qualityBonus };
         })
         .filter(movie => movie.tuAdnScore > 0 && (movie.vote_average || 0) >= threshold)
         .sort((a, b) => b.tuAdnScore - a.tuAdnScore || b.vote_average - a.vote_average);
