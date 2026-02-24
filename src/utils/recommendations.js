@@ -1,3 +1,12 @@
+import {
+    discoverMovies,
+    getMoviesByGenre,
+    getSimilarMovies,
+    getMovieDetails
+} from '../api/tmdb';
+
+import { getGenresForMovies } from './genreCache';
+
 export async function getPersonalizedRecommendations(userData, expertiseLevel = 'novice') {
     const { watched = [], watchlist = [] } = userData?.movieData || {};
 
