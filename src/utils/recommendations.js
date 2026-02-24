@@ -1,12 +1,3 @@
-import {
-    discoverMovies,
-    getMoviesByGenre,
-    getSimilarMovies,
-    getMovieDetails
-} from '../api/tmdb';
-
-import { getGenresForMovies } from './genreCache';
-
 export async function getPersonalizedRecommendations(userData, expertiseLevel = 'novice') {
     const { watched = [], watchlist = [] } = userData?.movieData || {};
 
@@ -16,13 +7,12 @@ export async function getPersonalizedRecommendations(userData, expertiseLevel = 
 
     try {
         const watchedWithDetails = await fetchMovieDetails(watched);
-
         const profile = analyzeUserProfile(watchedWithDetails);
 
         const [genreBased, similarBased, deepCuts] = await Promise.all([
             getGenreBasedRecommendations(profile, watched, watchlist),
             getSimilarBasedRecommendations(watchedWithDetails, watched, watchlist),
-            expertiseLevel === 'expert'
+            expertiseLevel === 'expert' || watched.length > 50
                 ? getDeepCuts(profile, watched, watchlist)
                 : Promise.resolve([])
         ]);
@@ -50,7 +40,6 @@ async function fetchMovieDetails(movies) {
 
     const results = movies.map(movie => {
         const cachedData = cache[movie.id];
-
         if (!cachedData) return null;
 
         return {
@@ -58,7 +47,8 @@ async function fetchMovieDetails(movies) {
             genres: cachedData.genres || [],
             release_date: cachedData.release_date || movie.release_date,
             runtime: cachedData.runtime || 0,
-            userRating: movie.rating || 0
+            userRating: movie.rating || 0,
+            popularity: movie.popularity || 0
         };
     });
 
@@ -66,18 +56,11 @@ async function fetchMovieDetails(movies) {
 }
 
 function analyzeUserProfile(watchedWithDetails) {
-    const genreMap = {
-        28: 'Acción', 12: 'Aventura', 16: 'Animación', 35: 'Comedia',
-        80: 'Crimen', 99: 'Documental', 18: 'Drama', 10751: 'Familia',
-        14: 'Fantasía', 36: 'Historia', 27: 'Terror', 10402: 'Música',
-        9648: 'Misterio', 10749: 'Romance', 878: 'Sci-Fi', 53: 'Thriller',
-        10752: 'Guerra', 37: 'Western'
-    };
-
     const genreScores = {};
     const decades = {};
     let totalRating = 0;
     let ratedCount = 0;
+    let obscureCount = 0;
 
     watchedWithDetails.forEach(movie => {
         const rating = movie.userRating || 0;
@@ -109,6 +92,10 @@ function analyzeUserProfile(watchedWithDetails) {
             totalRating += rating;
             ratedCount++;
         }
+
+        if (movie.popularity && movie.popularity < 30) {
+            obscureCount++;
+        }
     });
 
     const topGenres = Object.values(genreScores)
@@ -117,7 +104,7 @@ function analyzeUserProfile(watchedWithDetails) {
             avgScore: g.score / g.count,
             percentage: Math.round((g.count / watchedWithDetails.length) * 100)
         }))
-        .sort((a, b) => b.avgScore - a.avgScore);
+        .sort((a, b) => b.avgScore - a.avgScore || b.count - a.count);
 
     const topDecades = Object.entries(decades)
         .map(([decade, count]) => ({ decade: parseInt(decade), count }))
@@ -128,29 +115,35 @@ function analyzeUserProfile(watchedWithDetails) {
         topDecades,
         avgRating: ratedCount > 0 ? totalRating / ratedCount : 7.0,
         totalWatched: watchedWithDetails.length,
-        prefersPopular: calculatePopularityPreference(watchedWithDetails)
+        prefersPopular: calculatePopularityPreference(watchedWithDetails),
+        obscureRatio: obscureCount / Math.max(watchedWithDetails.length, 1)
     };
 }
 
 function calculatePopularityPreference(movies) {
     const avgPopularity = movies.reduce((sum, m) => sum + (m.popularity || 0), 0) / movies.length;
-    return avgPopularity > 50;
+    return avgPopularity > 40;
 }
 
 async function getGenreBasedRecommendations(profile, watched, watchlist) {
     if (profile.topGenres.length === 0) return [];
 
     try {
-        const genreIds = profile.topGenres.slice(0, 3).map(g => g.id).join(',');
+        const top5Genres = profile.topGenres.slice(0, 5);
+        const genrePromises = top5Genres.map(g =>
+            discoverMovies({
+                with_genres: g.id,
+                sort_by: 'vote_average.desc',
+                'vote_count.gte': profile.prefersPopular ? 1000 : 150,
+                'vote_average.gte': Math.max(profile.avgRating - 1, 6.5),
+                'primary_release_date.gte': profile.topDecades.length > 0 ? `${profile.topDecades[0].decade - 20}-01-01` : '1900-01-01'
+            }).catch(() => [])
+        );
 
-        const movies = await discoverMovies({
-            with_genres: genreIds,
-            sort_by: 'vote_average.desc',
-            'vote_count.gte': profile.prefersPopular ? 500 : 100,
-            'vote_average.gte': profile.avgRating - 1
-        });
+        const results = await Promise.all(genrePromises);
+        const combined = removeDuplicates(results.flat());
 
-        return filterWatched(movies, watched, watchlist);
+        return filterWatched(combined, watched, watchlist);
     } catch (error) {
         console.error('[Tu ADN] Error in genre-based:', error);
         return [];
@@ -158,10 +151,11 @@ async function getGenreBasedRecommendations(profile, watched, watchlist) {
 }
 
 async function getSimilarBasedRecommendations(watchedWithDetails, watched, watchlist) {
+    // Seed with top 10 best rated movies (8+)
     const topRated = watchedWithDetails
         .filter(m => (m.userRating || 0) >= 8)
-        .sort((a, b) => (b.userRating || 0) - (a.userRating || 0))
-        .slice(0, 5);
+        .sort((a, b) => (b.userRating || 0) - (a.userRating || 0) || (b.vote_average || 0) - (a.vote_average || 0))
+        .slice(0, 10);
 
     if (topRated.length === 0) return [];
 
@@ -188,14 +182,14 @@ async function getDeepCuts(profile, watched, watchlist) {
     if (profile.topGenres.length === 0) return [];
 
     try {
-        const topGenre = profile.topGenres[0].id;
+        const topGenreId = profile.topGenres[0].id;
 
         const movies = await discoverMovies({
-            with_genres: topGenre,
+            with_genres: topGenreId,
             sort_by: 'vote_average.desc',
             'vote_count.gte': 50,
-            'vote_count.lte': 500,
-            'vote_average.gte': 7.0
+            'vote_count.lte': 800,
+            'vote_average.gte': 7.2
         });
 
         return filterWatched(movies, watched, watchlist);
@@ -206,47 +200,66 @@ async function getDeepCuts(profile, watched, watchlist) {
 }
 
 function scoreAndRank(movies, profile) {
+    const topGenreIds = profile.topGenres.slice(0, 7).map(g => g.id);
+    const favoriteDecades = profile.topDecades.slice(0, 3).map(d => d.decade);
+
     const scored = movies.map(movie => {
         let score = 0;
 
         if (movie.genre_ids) {
-            const topGenreIds = profile.topGenres.slice(0, 3).map(g => g.id);
-            const genreMatches = movie.genre_ids.filter(id => topGenreIds.includes(id)).length;
-            score += genreMatches * 10;
+            movie.genre_ids.forEach((id, index) => {
+                const genreIndex = topGenreIds.indexOf(id);
+                if (genreIndex === 0) score += 25; // Top 1 genre
+                else if (genreIndex > 0 && genreIndex < 3) score += 15; // Top 2-3
+                else if (genreIndex >= 3) score += 8; // Top 4-7
+            });
         }
 
         if (movie.vote_average) {
             const diff = Math.abs(movie.vote_average - profile.avgRating);
-            if (diff < 1) score += 5;
+            if (diff < 0.5) score += 15;
+            else if (diff < 1.0) score += 8;
+
+            // Quality bonus
+            if (movie.vote_average > 8.0) score += 5;
         }
 
-        if (movie.release_date && profile.topDecades.length > 0) {
+        if (movie.release_date) {
             const year = new Date(movie.release_date).getFullYear();
             const decade = Math.floor(year / 10) * 10;
-            if (profile.topDecades[0].decade === decade) score += 3;
+            if (favoriteDecades.includes(decade)) {
+                score += favoriteDecades[0] === decade ? 12 : 6;
+            }
+        }
+
+        // Niche modifier
+        if (profile.obscureRatio > 0.2 && movie.vote_count < 1000) {
+            score += 10;
+        } else if (profile.obscureRatio < 0.1 && movie.popularity > 100) {
+            score += 5;
         }
 
         return { ...movie, tuAdnScore: score };
     });
 
     return scored
-        .sort((a, b) => b.tuAdnScore - a.tuAdnScore)
+        .sort((a, b) => b.tuAdnScore - a.tuAdnScore || b.vote_average - a.vote_average)
         .slice(0, 50);
 }
 
 function filterWatched(movies, watched, watchlist) {
-    const watchedIds = new Set(watched.map(m => m.id));
-    const watchlistIds = new Set(watchlist.map(m => m.id));
+    const watchedIds = new Set(watched.filter(m => m && m.id).map(m => m.id));
+    const watchlistIds = new Set(watchlist.filter(m => m && m.id).map(m => m.id));
 
     return movies.filter(movie =>
-        !watchedIds.has(movie.id) && !watchlistIds.has(movie.id)
+        movie && movie.id && !watchedIds.has(movie.id) && !watchlistIds.has(movie.id)
     );
 }
 
 function removeDuplicates(movies) {
     const seen = new Set();
     return movies.filter(movie => {
-        if (seen.has(movie.id)) return false;
+        if (!movie || !movie.id || seen.has(movie.id)) return false;
         seen.add(movie.id);
         return true;
     });

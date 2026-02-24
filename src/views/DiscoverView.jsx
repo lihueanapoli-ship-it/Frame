@@ -104,6 +104,12 @@ const DiscoverView = ({ onSelectMovie }) => {
         trackBehavior('discoverViewCount', 1);
     }, []);
 
+    useEffect(() => {
+        if (watched.length > 0) {
+            fetchPersonalizedRecommendations();
+        }
+    }, [watched, expertiseLevel]);
+
     const fetchInitialData = async () => {
         try {
             const trending = await getTrendingMovies();
@@ -136,8 +142,6 @@ const DiscoverView = ({ onSelectMovie }) => {
                 setData(prev => ({ ...prev, [col.key]: movies }));
             });
         }
-
-        if (watched.length > 0) fetchPersonalizedRecommendations();
     };
 
     const fetchPersonalizedRecommendations = async () => {
