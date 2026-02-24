@@ -75,7 +75,7 @@ const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, vari
                 )}
             </div>
             <div ref={scrollRef}
-                className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory select-none touch-pan-y"
+                className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory select-none touch-auto"
                 onMouseDown={handleMouseDown} onMouseLeave={handleMouseLeave} onMouseUp={handleMouseUp} onMouseMove={handleMouseMove}>
                 {isLoading ? (
                     // Skeleton State

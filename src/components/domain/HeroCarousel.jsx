@@ -36,7 +36,7 @@ const HeroCarousel = ({ movies, onSelectMovie }) => {
     const handleTouchEnd = (e) => {
         if (touchStartX.current === null) return;
         const diff = touchStartX.current - e.changedTouches[0].clientX;
-        if (Math.abs(diff) > 48) {
+        if (Math.abs(diff) > 30) {
             resetTimer();
             diff > 0 ? goNext() : goPrev();
         }
@@ -52,7 +52,7 @@ const HeroCarousel = ({ movies, onSelectMovie }) => {
             onClick={() => onSelectMovie(movie)}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
-            className="relative w-full aspect-[3/4] sm:aspect-[16/7] overflow-hidden rounded-2xl md:rounded-3xl shadow-2xl bg-surface cursor-pointer group touch-pan-y"
+            className="relative w-full aspect-[3/4] sm:aspect-[16/7] overflow-hidden rounded-2xl md:rounded-3xl shadow-2xl bg-surface cursor-pointer group touch-auto"
         >
             {/* CSS-based crossfade — no framer-motion needed */}
             {movies.slice(0, total).map((m, i) => (
