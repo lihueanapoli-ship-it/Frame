@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { XMarkIcon, CalendarIcon, ClockIcon, ListBulletIcon, ChevronDownIcon, EllipsisHorizontalIcon, UserGroupIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, CalendarIcon, ClockIcon, ListBulletIcon, ChevronDownIcon, EllipsisHorizontalIcon, UserGroupIcon, TrashIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid, PlusIcon, CheckIcon, StarIcon, PlayIcon, FolderIcon } from '@heroicons/react/24/solid';
 import { getBackdropUrl, getPosterUrl, getMovieDetails, getMovieVideos, getWatchProviders } from '../api/tmdb';
 import { useMovies } from '../contexts/MovieContext';
@@ -241,6 +241,12 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                 )}
                                 {movie.runtime > 0 && (
                                     <span className="flex items-center gap-1 sm:gap-1.5 backdrop-blur-sm bg-black/30 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-white/5"><ClockIcon className="w-3 h-3 sm:w-4 sm:h-4" /> {Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m</span>
+                                )}
+                                {movie.production_countries?.length > 0 && (
+                                    <span className="flex items-center gap-1 sm:gap-1.5 backdrop-blur-sm bg-black/30 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-white/5 uppercase">
+                                        <GlobeAltIcon className="w-3 h-3 sm:w-4 sm:h-4 text-blue-400" />
+                                        {movie.production_countries[0].iso_3166_1}
+                                    </span>
                                 )}
                                 {movie.vote_average > 0 && (
                                     <span className="flex items-center gap-1 sm:gap-1.5 text-yellow-400 backdrop-blur-sm bg-black/30 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-white/5"><StarIconSolid className="w-3 h-3 sm:w-4 sm:h-4" /> {movie.vote_average.toFixed(1)}</span>

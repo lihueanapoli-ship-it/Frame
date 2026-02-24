@@ -71,6 +71,7 @@ async function fetchMovieDetails(movies) {
             ...movie,
             genres: cachedData.genres || [],
             genre_ids: cachedData.genres ? cachedData.genres.map(g => g.id) : movie.genre_ids,
+            production_countries: cachedData.production_countries || [],
             release_date: cachedData.release_date || movie.release_date,
             runtime: cachedData.runtime || 0,
             userRating: movie.rating || 0,

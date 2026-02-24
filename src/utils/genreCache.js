@@ -41,7 +41,9 @@ export async function getGenresForMovies(movies, onProgress) {
                     cache[movie.id] = {
                         genres: details.genres || [],
                         release_date: details.release_date || null,
-                        runtime: details.runtime || 0
+                        runtime: details.runtime || 0,
+                        production_countries: details.production_countries || [],
+                        popularity: details.popularity || 0
                     };
                     hasChanges = true;
                 }
