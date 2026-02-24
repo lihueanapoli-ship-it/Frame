@@ -24,7 +24,7 @@ export async function getPersonalizedRecommendations(userData, expertiseLevel = 
 
         // Calculate Average Threshold based on Top 3 Genres (or whatever is available)
         const top3ForThreshold = profile.topGenres.slice(0, 3);
-        const avgOfTop3 = top3ForThreshold.reduce((sum, g) => sum + g.avgRating, 0) / top3ForThreshold.length;
+        const avgOfTop3 = top3ForThreshold.reduce((sum, g) => sum + g.avgRating, 0) / (top3ForThreshold.length || 1);
         const minThreshold = Math.floor(avgOfTop3); // e.g. 8.4 -> 8.0
 
         console.log(`[Tu ADN] Top Genres: ${top3ForThreshold.map(g => g.name).join(', ')}`);
@@ -70,6 +70,7 @@ async function fetchMovieDetails(movies) {
         return {
             ...movie,
             genres: cachedData.genres || [],
+            genre_ids: cachedData.genres ? cachedData.genres.map(g => g.id) : movie.genre_ids,
             release_date: cachedData.release_date || movie.release_date,
             runtime: cachedData.runtime || 0,
             userRating: movie.rating || 0,
@@ -152,7 +153,6 @@ async function getGenreFocusedCandidates(profile, minThreshold, watched, watchli
         // OR for top 3 (Multiple pages)
         promises.push(discoverMovies({ with_genres: top3Ids.join('|'), 'vote_average.gte': minThreshold, 'vote_count.gte': 200, sort_by: 'vote_average.desc', page: 1 }));
         promises.push(discoverMovies({ with_genres: top3Ids.join('|'), 'vote_average.gte': minThreshold, 'vote_count.gte': 200, sort_by: 'vote_average.desc', page: 2 }));
-        promises.push(discoverMovies({ with_genres: top3Ids.join('|'), 'vote_average.gte': minThreshold, 'vote_count.gte': 200, sort_by: 'vote_average.desc', page: 3 }));
 
         const results = await Promise.all(promises);
         return filterWatched(results.flat(), watched, watchlist);
@@ -169,7 +169,7 @@ async function getBroadGenreCandidates(profile, minThreshold, watched, watchlist
             discoverMovies({
                 with_genres: id,
                 'vote_average.gte': minThreshold,
-                'vote_count.gte': 50, // Lower vote count to fill up
+                'vote_count.gte': 30, // Lower vote count to fill up
                 sort_by: 'vote_average.desc',
                 page: 1
             })
@@ -202,7 +202,8 @@ async function getSimilarBasedRecommendations(watchedWithDetails, watched, watch
 }
 
 function rankByGenreIntersection(movies, profile, threshold) {
-    const top3Ids = profile.topGenres.slice(0, 3).map(g => g.id);
+    const top3 = profile.topGenres.slice(0, 3);
+    const top3Ids = top3.map(g => g.id);
 
     return movies
         .map(movie => {
@@ -210,23 +211,37 @@ function rankByGenreIntersection(movies, profile, threshold) {
             const matches = genres.filter(id => top3Ids.includes(id));
             const intersection = matches.length;
 
+            // RANK BONUS: Prioritize matches with the highest ranked user genres
+            // #1 genre match = 3000, #2 = 2000, #3 = 1000
+            let rankBonus = 0;
+            matches.forEach(mId => {
+                const rankIndex = top3Ids.indexOf(mId);
+                if (rankIndex !== -1) rankBonus += (3 - rankIndex) * 1000;
+            });
+
             let levelScore = 0;
             if (intersection === 3) {
                 // Nivel 1: Películas que contienen los 3 géneros del Top al mismo tiempo y ningún otro
-                if (genres.length === 3) levelScore = 10000;
+                if (genres.length === 3) levelScore = 1000000;
                 // Nivel 2: Películas que contienen los 3 géneros del Top y otros también
-                else levelScore = 5000;
+                else levelScore = 500000;
             }
             // Nivel 3: Películas con 2 de tus géneros top.
-            else if (intersection === 2) levelScore = 1000;
+            else if (intersection === 2) {
+                levelScore = 100000;
+            }
             // Nivel 4: Películas con al menos 1 de tus géneros top.
-            else if (intersection === 1) levelScore = 100;
-            else levelScore = -50000;
+            else if (intersection === 1) {
+                levelScore = 10000;
+            }
+            else {
+                levelScore = -1000000;
+            }
 
-            // Bonus within level based on quality
-            const qualityBonus = movie.vote_average ? (movie.vote_average * 10) : 0;
+            // Quality is the tie-breaker within the same level and rank group
+            const qualityScore = movie.vote_average ? (movie.vote_average * 10) : 0;
 
-            return { ...movie, tuAdnScore: levelScore + qualityBonus };
+            return { ...movie, tuAdnScore: levelScore + rankBonus + qualityScore };
         })
         .filter(movie => movie.tuAdnScore > 0 && (movie.vote_average || 0) >= threshold)
         .sort((a, b) => b.tuAdnScore - a.tuAdnScore || b.vote_average - a.vote_average);
