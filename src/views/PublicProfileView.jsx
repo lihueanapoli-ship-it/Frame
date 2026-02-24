@@ -16,7 +16,7 @@ import { getRankTitle } from '../constants/cinemaRanks';
 const PublicProfileView = ({ onSelectMovie }) => {
     const { username } = useParams();
     const { user: currentUser } = useAuth();
-    const { sendFriendRequest, getFriendshipStatus, unfollowUser } = useUserProfile(); // Using getFriendshipStatus instead of isUserFollowing
+    const { sendFriendRequest, getFriendshipStatus, unfollowUser } = useUserProfile();
     const navigate = useNavigate();
 
     const [profile, setProfile] = useState(null);
@@ -24,11 +24,10 @@ const PublicProfileView = ({ onSelectMovie }) => {
     const [error, setError] = useState(null);
     const [userMovies, setUserMovies] = useState({ watchlist: [], watched: [], favorites: [] });
 
-    const [friendshipStatus, setFriendshipStatus] = useState('none'); // 'none' | 'friend' | 'sent' | 'received'
+    const [friendshipStatus, setFriendshipStatus] = useState('none');
     const [isShareOpen, setIsShareOpen] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
 
-    // Edit Mode State
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState({ displayName: '', bio: '' });
 
@@ -37,14 +36,12 @@ const PublicProfileView = ({ onSelectMovie }) => {
     const [viewMode, setViewMode] = useState('grid');
     const [selectedMovie, setSelectedMovie] = useState(null);
 
-
     useEffect(() => {
         const fetchPublicProfile = async () => {
             setLoading(true);
             setError(null);
             try {
                 let targetUid = null;
-                // ... (existing ID resolution logic remains same) ...
                 if (username === 'me' && currentUser) {
                     targetUid = currentUser.uid;
                 } else if (currentUser && username === currentUser.displayName?.replace(/\s+/g, '').toLowerCase()) {
@@ -68,7 +65,6 @@ const PublicProfileView = ({ onSelectMovie }) => {
                 }
 
                 if (targetUid) {
-                    // ... (fetch logic same as before, simplified for brevity here, reused existing) ...
                     try {
                         const [profileSnap, userSnap] = await Promise.all([
                             getDoc(doc(db, 'userProfiles', targetUid)),
@@ -92,14 +88,12 @@ const PublicProfileView = ({ onSelectMovie }) => {
                         setProfile(finalProfile);
                         setEditForm({ displayName: finalProfile.displayName || '', bio: finalProfile.bio || '' });
 
-                        // Lists
                         try {
                             const listsQuery = query(collection(db, 'lists'), where('ownerId', '==', targetUid));
                             const listSnap = await getDocs(listsQuery);
                             setLists(listSnap.docs.map(d => ({ id: d.id, ...d.data() })));
                         } catch (err) { console.error(err); }
 
-                        // User Movies
                         if (userSnap.exists()) {
                             const uData = userSnap.data();
                             setUserMovies({
@@ -110,11 +104,10 @@ const PublicProfileView = ({ onSelectMovie }) => {
                         }
                     } catch (e) { console.error(e); }
 
-                    // Check Friendship Status
                     if (currentUser && targetUid !== currentUser.uid) {
                         try {
                             const status = await getFriendshipStatus(targetUid);
-                            setFriendshipStatus(status); // 'none', 'friend', 'sent', 'received'
+                            setFriendshipStatus(status);
                         } catch (e) {
                             console.error("Status check failed", e);
                         }
@@ -133,7 +126,7 @@ const PublicProfileView = ({ onSelectMovie }) => {
         };
 
         fetchPublicProfile();
-    }, [username, currentUser, getFriendshipStatus]); // Removed isUserFollowing dep
+    }, [username, currentUser, getFriendshipStatus]);
 
     const handleConnectClick = async () => {
         if (!currentUser || !profile) return;
@@ -143,8 +136,6 @@ const PublicProfileView = ({ onSelectMovie }) => {
                 await sendFriendRequest(profile);
                 setFriendshipStatus('sent');
             } else if (friendshipStatus === 'friend') {
-                // Option to unfriend? For now, maybe navigate to chat or just do nothing/show toast
-                // navigate('/friends');
             }
         } catch (error) {
             console.error("Connect action failed", error);
@@ -166,7 +157,6 @@ const PublicProfileView = ({ onSelectMovie }) => {
             setIsEditing(false);
         } catch (error) {
             console.error("Error updating profile:", error);
-            // Handling if document doesn't exist yet (first edit) would require setDoc with merge
         }
     };
 
@@ -181,8 +171,6 @@ const PublicProfileView = ({ onSelectMovie }) => {
     );
 
     const isOwnProfile = currentUser && (profile.uid === currentUser.uid);
-
-    // --- RENDER HELPERS ---
 
     const renderCollectionCard = (title, count, type, coverUrl, onClick) => (
         <motion.div
@@ -241,15 +229,11 @@ const PublicProfileView = ({ onSelectMovie }) => {
         </div>
     );
 
-    // --- MAIN RENDER ---
-
     return (
         <div className="min-h-screen bg-black text-white pb-20">
-            {/* PROFILE HEADER code remains similar, keeping it concise here */}
             {profile && (
                 <div className="relative pt-20 px-4 pb-8 mb-4 border-b border-white/5">
                     <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-8">
-                        {/* Avatar & Info */}
                         <div className="relative group">
                             <div className="w-24 h-24 md:w-32 md:h-32 rounded-full p-1 bg-gradient-to-br from-white/10 to-transparent border border-white/10">
                                 <img src={profile.photoURL || "/logo.png"} alt={profile.displayName} className="w-full h-full rounded-full object-cover" />
@@ -283,7 +267,6 @@ const PublicProfileView = ({ onSelectMovie }) => {
                                     <p className="text-gray-400 font-mono text-sm max-w-lg mx-auto md:mx-0 whitespace-pre-wrap">
                                         {profile.bio || "Amante del cine. Sin biografía aún."}
                                     </p>
-                                    {/* Stats Row */}
                                     <div className="flex items-center justify-center md:justify-start gap-6 mt-4 text-sm font-medium text-gray-400">
                                         <div><span className="text-white font-bold">{lists.length}</span> Listas</div>
                                         <div><span className="text-white font-bold">{userMovies.watched?.length || 0}</span> Vistas</div>
@@ -291,7 +274,6 @@ const PublicProfileView = ({ onSelectMovie }) => {
                                 </>
                             )}
                         </div>
-                        {/* Action Buttons */}
                         <div className="flex items-center gap-3 flex-wrap justify-center md:justify-end mt-4 md:mt-0">
                             {!isOwnProfile && (
                                 <button
@@ -344,7 +326,6 @@ const PublicProfileView = ({ onSelectMovie }) => {
                 </div>
             )}
 
-            {/* BREADCRUMB / NAVIGATION */}
             {activeFolder && (
                 <div className="max-w-7xl mx-auto px-4 mb-6 flex items-center justify-between animate-fade-in">
                     <button
@@ -374,7 +355,6 @@ const PublicProfileView = ({ onSelectMovie }) => {
                 </div>
             )}
 
-            {/* CONTENT AREA */}
             <div className="max-w-7xl mx-auto px-4">
                 <AnimatePresence mode="wait">
                     {!activeFolder ? (
@@ -385,9 +365,6 @@ const PublicProfileView = ({ onSelectMovie }) => {
                             exit={{ opacity: 0, y: -20 }}
                             className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
                         >
-
-
-                            {/* 2. Custom Lists (Treating them as part of the 'Watchlist' ecosystem as requested) */}
                             {lists.map(list => (
                                 renderCollectionCard(
                                     list.name,
@@ -444,7 +421,7 @@ const PublicProfileView = ({ onSelectMovie }) => {
                         data={{
                             title: profile.displayName,
                             subtitle: `@${profile.username} • Cinéfilo en FRAME`,
-                            movies: [], // Changed from activeTab === 'lists' ? [] : movies, as activeTab is removed
+                            movies: [],
                             type: 'profile'
                         }}
                     />

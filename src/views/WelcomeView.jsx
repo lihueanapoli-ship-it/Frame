@@ -5,7 +5,6 @@ import DynamicLogo from '../components/ui/DynamicLogo';
 import { cn } from '../lib/utils';
 
 const DustParticles = () => {
-    // Generate random particles
     const particles = Array.from({ length: 20 }).map((_, i) => ({
         id: i,
         x: Math.random() * 100,
@@ -27,7 +26,7 @@ const DustParticles = () => {
                         height: p.size,
                     }}
                     animate={{
-                        y: [0, -100, 0], // Float up and down slightly or drift
+                        y: [0, -100, 0],
                         x: [0, Math.random() * 20 - 10, 0],
                         opacity: [0, 0.5, 0],
                     }}
@@ -51,11 +50,8 @@ const WelcomeView = () => {
         const hour = new Date().getHours();
         setIsNight(hour >= 20 || hour < 6);
 
-        // Try to play ambient sound deeply low volume
         if (audioRef.current) {
             audioRef.current.volume = 0.05;
-            // Auto-play policies might block this without interaction
-            // We'll leave it ready for interaction
         }
     }, []);
 
@@ -69,48 +65,35 @@ const WelcomeView = () => {
 
     return (
         <div className="relative h-screen w-full bg-black overflow-hidden flex flex-col items-center justify-center text-center px-4">
-
-            {/* 0. Ambient Sound */}
             <audio ref={audioRef} loop>
                 <source src="/assets/projector_hum.mp3" type="audio/mpeg" />
             </audio>
 
-            {/* 1. Background Effects */}
-            {/* Vignette */}
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#000000_90%)] z-10 pointer-events-none" />
 
-            {/* Film Grain (CSS Trick) */}
             <div className="absolute inset-0 opacity-[0.08] z-0 pointer-events-none"
                 style={{
                     backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`
                 }}
             />
 
-            {/* Dust Particles */}
             <DustParticles />
 
-            {/* 2. Opening Animation: Anamorphic Light Beam */}
             <motion.div
                 initial={{ scaleX: 0, opacity: 0 }}
                 animate={{ scaleX: [0, 1.5, 1], opacity: [0, 1, 0] }}
                 transition={{ duration: 2.5, ease: "circOut" }}
                 className="absolute top-1/2 left-0 right-0 h-[2px] bg-cyan-400 blur-lg z-20"
             />
-            {/* Persistent faint beam */}
             <div className="absolute top-1/2 left-1/4 right-1/4 h-[1px] bg-cyan-500/20 blur-md z-0" />
 
-
-            {/* 3. Main Content Container */}
             <div className="relative z-30 flex flex-col items-center space-y-8 max-w-2xl">
-
-                {/* Logo Area */}
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.5, duration: 1 }}
                     className="relative group cursor-default"
                 >
-                    {/* Glowing Aura usually stronger at night */}
                     <div className={cn(
                         "absolute inset-0 rounded-full blur-3xl transition-opacity duration-1000",
                         isNight ? "bg-cyan-500/20 opacity-40" : "bg-cyan-500/10 opacity-20"
@@ -121,7 +104,6 @@ const WelcomeView = () => {
                     </div>
                 </motion.div>
 
-                {/* Typography */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -140,7 +122,6 @@ const WelcomeView = () => {
                     </p>
                 </motion.div>
 
-                {/* 4. Action Button */}
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -157,10 +138,8 @@ const WelcomeView = () => {
                         </span>
                     </button>
                 </motion.div>
-
             </div>
 
-            {/* 5. Footer / Coordinates */}
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -171,12 +150,10 @@ const WelcomeView = () => {
                 <span className="opacity-30">|</span>
                 <TimeCode />
             </motion.div>
-
         </div>
     );
 };
 
-// Running Timecode Component
 const TimeCode = () => {
     const [time, setTime] = useState('');
     useEffect(() => {
@@ -186,7 +163,7 @@ const TimeCode = () => {
             const ms = String(Math.floor(d.getMilliseconds() / 10)).padStart(2, '0');
             setTime(`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}:${ms}`);
         };
-        const timer = setInterval(update, 41); // ~24fps ish update
+        const timer = setInterval(update, 41);
         return () => clearInterval(timer);
     }, []);
     return <span>{time}</span>;

@@ -10,35 +10,26 @@ const FeedbackModal = ({ isOpen, onClose }) => {
     const { playClick, playSuccess, playError } = useSound();
     const { user } = useAuth();
 
-    // Form States
     const [answers, setAnswers] = useState({
         overall: 0,
-        usability: null, // 'hard', 'medium', 'easy'
-        speed: null,     // 'slow', 'ok', 'fast'
+        usability: null,
+        speed: null,
         design: 0,
-        nps: null        // 0-10 or boolean
+        nps: null
     });
-    // const [category, setCategory] = useState(null); // REMOVED: Replaced by specific questions
     const [submitted, setSubmitted] = useState(false);
     const [isSending, setIsSending] = useState(false);
 
-    // Audio States
     const [isRecording, setIsRecording] = useState(false);
     const [audioBlob, setAudioBlob] = useState(null);
     const [recordingTime, setRecordingTime] = useState(0);
 
-    // Tech Info (Telemetry)
     const [techInfo, setTechInfo] = useState({});
 
-    // Refs
     const mediaRecorderRef = useRef(null);
     const audioChunksRef = useRef([]);
     const timerRef = useRef(null);
 
-    // Categories Logic
-    // Categories Logic (REMOVED: Old categories array no longer needed for rendering, kept logic inline)
-
-    // Capture Telemetry on mount
     useEffect(() => {
         if (isOpen) {
             setTechInfo({
@@ -51,7 +42,6 @@ const FeedbackModal = ({ isOpen, onClose }) => {
         }
     }, [isOpen]);
 
-    // --- Audio Logic (Identical to previous, optimized) ---
     const startRecording = async () => {
         playClick();
         try {
@@ -96,10 +86,8 @@ const FeedbackModal = ({ isOpen, onClose }) => {
         const secs = seconds % 60;
         return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
     };
-    // -----------------------------------------------------
 
     const handleSubmit = async () => {
-        // Validate: At least one answer or audio is required to submit
         const hasAnswers = answers.overall > 0 || answers.usability || answers.speed || answers.design > 0 || answers.nps !== null;
         if (!hasAnswers && !audioBlob) return;
 
@@ -111,34 +99,24 @@ const FeedbackModal = ({ isOpen, onClose }) => {
         const userEmail = user?.email || "No especificado";
         const emailSubject = `[Feedback] Encuesta de ${userName}`;
 
-        // --- FormSubmit Config (Estética mejorada) ---
         formData.append("_captcha", "false");
         formData.append("_template", "box");
         formData.append("_subject", emailSubject);
         formData.append("_autoresponse", "¡Recibimos tu feedback! Gracias por ayudarnos a mejorar FRAME 🎬.");
 
-        // --- Datos Principales (Encuesta) ---
         formData.append("👤 Usuario", userName);
         formData.append("📧 Contacto", userEmail);
 
-        // Survey Data - Formatted for readability
         if (answers.overall) formData.append("🌟 Experiencia General", `${answers.overall}/5 Estrellas`);
         if (answers.usability) formData.append("🧠 Usabilidad", answers.usability === 'easy' ? 'Fácil' : answers.usability === 'medium' ? 'Normal' : 'Difícil');
         if (answers.speed) formData.append("⚡ Velocidad", answers.speed === 'fast' ? 'Rápida' : answers.speed === 'ok' ? 'Normal' : 'Lenta');
         if (answers.design) formData.append("🎨 Diseño", `${answers.design}/5 Estrellas`);
         if (answers.nps !== null) formData.append("❤️ Recomendaría", answers.nps ? 'SÍ' : 'NO');
 
-        // --- Telemetría Técnica ---
         formData.append("📱 Dispositivo", techInfo.platform);
         formData.append("🖥️ Resolución", techInfo.screenProb);
 
-        // --- Adjunto (MP3 Trick) ---
         if (audioBlob) {
-            // NOTE: Most browsers only record in webm/ogg. To send as MP3 without a heavy encoder library,
-            // we use a compatibility trick: we wrap the webm blob in an audio/mpeg container.
-            // Most modern players (VLC, Chrome, etc) will sniff the header and play it, 
-            // even if the extension is .mp3 but the efficient codec is inside.
-            // This satisfies the requirement of "file arriving as .mp3".
             const fileName = `voice_${userName.replace(/\s+/g, '')}_${Date.now()}.mp3`;
             const audioFile = new File([audioBlob], fileName, { type: 'audio/mpeg' });
             formData.append("attachment", audioFile);
@@ -161,7 +139,6 @@ const FeedbackModal = ({ isOpen, onClose }) => {
         setSubmitted(false);
         setIsSending(false);
         setAnswers({ overall: 0, usability: null, speed: null, design: 0, nps: null });
-        // setCategory(null);
         setAudioBlob(null);
         setIsRecording(false);
         clearInterval(timerRef.current);
@@ -193,11 +170,7 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                         </div>
                                         <h2 className="text-2xl font-bold text-white mb-2">Ayúdanos a mejorar</h2>
                                         <p className="text-sm text-gray-400">Tu opinión nos ayuda a que FRAME sea mejor cada día.</p>
-                                        {/* 1. SURVEY QUESTIONS (5 steps) */}
                                         <div className="space-y-6 mb-8">
-
-                                            {/* Q1: Overall Experience (10 Stars) */}
-                                            {/* Q1: Overall Experience (Segmented Bar) */}
                                             <div>
                                                 <div className="flex justify-between items-end mb-3">
                                                     <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">1. Experiencia General</label>
@@ -226,7 +199,6 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                                 </div>
                                             </div>
 
-                                            {/* Q2: Usability (Buttons) */}
                                             <div>
                                                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">2. ¿Qué tan fácil fue usar FRAME?</label>
                                                 <div className="flex gap-2 bg-white/5 p-1 rounded-xl">
@@ -250,7 +222,6 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                                 </div>
                                             </div>
 
-                                            {/* Q3: Speed (Buttons) */}
                                             <div>
                                                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">3. ¿La app se sintió rápida?</label>
                                                 <div className="grid grid-cols-3 gap-2">
@@ -275,8 +246,6 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                                 </div>
                                             </div>
 
-                                            {/* Q4: Design (10 Brushes) */}
-                                            {/* Q4: Design (10 Brushes Bar) */}
                                             <div>
                                                 <div className="flex justify-between items-end mb-3">
                                                     <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">4. ¿Te gusta el diseño?</label>
@@ -302,7 +271,6 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                                 </div>
                                             </div>
 
-                                            {/* Q5: Recommendation (Yes/No) */}
                                             <div>
                                                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">5. ¿Recomendarías la app?</label>
                                                 <div className="flex gap-3">
@@ -329,7 +297,6 @@ const FeedbackModal = ({ isOpen, onClose }) => {
 
                                         </div>
 
-                                        {/* 2. Audio Recorder (Moved to Bottom) */}
                                         <div className="bg-white/[0.02] rounded-2xl p-5 border border-white/5 mb-8 relative group">
                                             <div className="flex justify-between items-center mb-4">
                                                 <label className="text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">
@@ -394,7 +361,7 @@ const FeedbackModal = ({ isOpen, onClose }) => {
 
                                         <button
                                             onClick={handleSubmit}
-                                            disabled={isSending} // Allow sending even with just audio or partial answers
+                                            disabled={isSending}
                                             className="w-full py-4 bg-primary text-black font-black rounded-2xl hover:shadow-[0_0_30px_rgba(0,240,255,0.2)] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-3 relative overflow-hidden group/btn"
                                         >
                                             {isSending ? (

@@ -4,7 +4,6 @@ import App from './App.jsx'
 import './index.css'
 import { registerSW } from 'virtual:pwa-register'
 
-// Simple Error Boundary to catch crashers
 class ErrorBoundary extends React.Component {
     constructor(props) {
         super(props);
@@ -34,7 +33,6 @@ class ErrorBoundary extends React.Component {
     }
 }
 
-// Register Service Worker for PWA
 const updateSW = registerSW({
     onNeedRefresh() {
         if (confirm('New content available. Reload?')) {

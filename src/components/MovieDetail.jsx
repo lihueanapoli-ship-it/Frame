@@ -24,7 +24,6 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
     const [watchProviders, setWatchProviders] = useState(null);
     const dropdownRef = useRef(null);
 
-    // Contexts
     const { addToWatched, isWatched, removeMovie, watched } = useMovies();
     const {
         addToGeneralList,
@@ -40,27 +39,22 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
     const { user, loginWithGoogle } = useAuth();
     const { playSuccess, playClick } = useSound();
 
-    // Combined Lists for Dropdown
     const allLists = [...myLists, ...collabLists].reduce((acc, current) => {
         const x = acc.find(item => item.id === current.id);
         if (!x) return acc.concat([current]);
         return acc;
     }, []);
 
-    // Get live rating from context
     const userMovie = watched.find(m => m.id === movie.id);
     const userRating = userMovie?.rating || 0;
 
-    // Fetch Full Details, Video & Watch Providers
     useEffect(() => {
         const loadData = async () => {
-            // 1. Fetch Full Details
             const details = await getMovieDetails(movie.id);
             if (details) {
                 setMovie(prev => ({ ...prev, ...details }));
             }
 
-            // 2. Fetch Video
             const videos = await getMovieVideos(movie.id);
             const trailer = videos.find(v => v.type === 'Trailer' && v.site === 'YouTube');
             const teaser = videos.find(v => v.type === 'Teaser' && v.site === 'YouTube');
@@ -70,7 +64,6 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                 setTimeout(() => setShowVideo(true), 800);
             }
 
-            // 3. Fetch Watch Providers (streaming platforms)
             const providers = await getWatchProviders(movie.id);
             setWatchProviders(providers);
         };
@@ -78,7 +71,6 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
         loadData();
     }, [movie.id]);
 
-    // Scroll Lock
     useEffect(() => {
         document.body.style.overflow = 'hidden';
         return () => {
@@ -86,7 +78,6 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
         };
     }, []);
 
-    // Close Dropdown on Click Outside
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -100,21 +91,15 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
     }, []);
 
     const watchedState = isWatched(movie.id);
-    // Determine which list the movie is in
     const inAnyList = allLists.find(l => l.movies?.some(m => m.id === movie.id));
     const watchlistState = !!inAnyList;
 
-    // Handlers
     const handleMoveToWatched = async () => {
         triggerConfetti();
         playSuccess();
         addToWatched(movie, 0);
 
-        // If it's in a shared list, mark it as watched for the group
         if (inAnyList) {
-            // IMPORTANT: We mark it in the list so all collaborators see it in their "Vistas" tab.
-            // We NO LONGER remove it automatically from the list, because if we do,
-            // others lose the reference that makes it appear in their "Vistas".
             await setMovieWatchedInList(inAnyList.id, movie.id, true);
         }
     };
@@ -133,10 +118,8 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
         setShowDropdown(false);
     };
 
-    // UI Helpers
     const currentListName = inAnyList?.name || 'General';
 
-    // Variants
     const overlayVariants = {
         hidden: { opacity: 0 },
         visible: { opacity: 1 },
@@ -160,13 +143,11 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
         if (name.includes('apple')) return `https://tv.apple.com/search?term=${query}`;
         if (name.includes('google')) return `https://play.google.com/store/search?q=${query}&c=movies`;
 
-        // Fallback: Google Search which usually shows the "Watch" card with direct links
         return `https://www.google.com/search?q=ver+${query}+en+${encodeURIComponent(providerName)}`;
     };
 
     return (
         <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-4 sm:pt-24">
-            {/* Backdrop */}
             <motion.div
                 variants={overlayVariants}
                 initial="hidden"
@@ -176,7 +157,6 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                 className="absolute inset-0 bg-black/80 backdrop-blur-sm"
             />
 
-            {/* Modal Container */}
             <motion.div
                 variants={sheetVariants}
                 initial="hidden"
@@ -184,7 +164,6 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                 exit="exit"
                 className="relative w-full max-w-6xl mx-auto bg-background rounded-t-xl sm:rounded-xl overflow-hidden shadow-2xl h-[85vh] flex flex-col border border-white/10"
             >
-                {/* Close Button (Fixed relative to Container) */}
                 <button
                     onClick={onClose}
                     className="absolute top-4 right-4 z-[70] p-2.5 bg-black/60 hover:bg-black/80 backdrop-blur-md rounded-full text-white transition-colors cursor-pointer shadow-lg border border-white/10"
@@ -192,10 +171,8 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                     <XMarkIcon className="w-6 h-6" />
                 </button>
 
-                {/* Scrollable Content */}
                 <div className="flex-1 overflow-y-auto overscroll-contain relative">
 
-                    {/* Cinematic Header (Clickable for Full Video) */}
                     <div
                         className={cn(
                             "relative h-[30vh] sm:h-[50vh] w-full bg-black overflow-hidden group",
@@ -207,7 +184,6 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                             }
                         }}
                     >
-                        {/* 1. Backdrop Image */}
                         <div className={cn(
                             "absolute inset-0 transition-opacity duration-1000",
                             showVideo ? "opacity-0" : "opacity-100"
@@ -219,7 +195,6 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                             />
                         </div>
 
-                        {/* 2. Youtube Trailer */}
                         {videoKey && (
                             <div className={cn(
                                 "absolute inset-0 transition-opacity duration-1000 pointer-events-none",
@@ -235,7 +210,6 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                             </div>
                         )}
 
-                        {/* 3. Play Button */}
                         {videoKey && showVideo && (
                             <div className="absolute inset-0 flex items-center justify-center z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                 <div className="bg-white/20 backdrop-blur-md border border-white/30 p-5 rounded-full shadow-2xl transform group-hover:scale-110 transition-transform">
@@ -245,10 +219,8 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                             </div>
                         )}
 
-                        {/* 4. Gradient */}
                         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent pointer-events-none" />
 
-                        {/* Title & Stats */}
                         <div className="absolute bottom-0 left-0 p-4 sm:p-6 md:p-10 w-full z-10 pointer-events-none">
                             <motion.h2
                                 initial={{ opacity: 0, y: 20 }}
@@ -277,7 +249,6 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                         </div>
                     </div>
 
-                    {/* Content Body */}
                     <div className="flex flex-col pb-24">
                         <div className="p-4 sm:p-6 md:p-10 space-y-6 md:space-y-8">
                             <div className="max-w-4xl">
@@ -287,7 +258,6 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                 </p>
                             </div>
 
-                            {/* Genres */}
                             {movie.genres && (
                                 <div className="flex flex-wrap gap-2">
                                     {movie.genres.map(g => (
@@ -298,7 +268,6 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                 </div>
                             )}
 
-                            {/* Where to Watch */}
                             {watchProviders !== null && (
                                 <div>
                                     <h3 className="text-lg md:text-xl font-bold text-white mb-3">Dónde Ver</h3>
@@ -335,7 +304,6 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                             )}
 
 
-                            {/* Cast */}
                             {movie.credits?.cast?.length > 0 && (
                                 <div>
                                     <h3 className="text-xl font-bold text-white mb-4">Elenco Principal</h3>
@@ -361,9 +329,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                 </div>
 
 
-                {/* Actions Sticky Footer (Inside Flex Col) */}
                 <div className="p-4 bg-surface-elevated/95 backdrop-blur-xl border-t border-white/10 z-50">
-                    {/* Recommend to friend — always visible if logged in */}
                     {user && (
                         <div className="flex justify-end mb-3">
                             <button
@@ -377,7 +343,6 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                     )}
                     {!watchedState && !watchlistState && (
                         <div className="flex gap-3 max-w-4xl mx-auto">
-                            {/* ADD BUTTON WITH DROPDOWN */}
                             <div className="relative flex-1 group" ref={dropdownRef}>
                                 <button
                                     onClick={(e) => {
@@ -392,7 +357,6 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                     <ChevronDownIcon className="w-4 h-4 ml-1 opacity-70" />
                                 </button>
 
-                                {/* Dropdown Menu */}
                                 {showDropdown && (
                                     <div className="absolute bottom-full left-0 w-full mb-2 bg-[#1A1A1A] border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-fade-in z-[80]">
                                         <div className="p-2 max-h-48 overflow-y-auto">
@@ -447,7 +411,6 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                             {currentListName} <ChevronDownIcon className="w-3 h-3" />
                                         </button>
 
-                                        {/* Movable Dropdown */}
                                         {showDropdown && (
                                             <div className="absolute bottom-full left-0 mb-2 w-64 bg-[#1A1A1A] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-[80]">
                                                 <div className="p-2">

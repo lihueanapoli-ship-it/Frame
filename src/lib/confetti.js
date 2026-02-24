@@ -4,7 +4,7 @@ export const triggerConfetti = () => {
     const count = 200;
     const defaults = {
         origin: { y: 0.7 },
-        zIndex: 9999 // Ensure it pops over modals
+        zIndex: 9999
     };
 
     function fire(particleRatio, opts) {
@@ -40,7 +40,6 @@ export const triggerConfetti = () => {
 };
 
 export const triggerSmallConfetti = (x, y) => {
-    // For smaller interactions (like adding to watchlist)
     confetti({
         particleCount: 50,
         spread: 60,

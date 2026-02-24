@@ -38,25 +38,22 @@ const SearchView = ({ onSelectMovie }) => {
 
     const navigate = useNavigate();
 
-    // Mode State
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedGenre, setSelectedGenre] = useState(null);
     const [isOscars, setIsOscars] = useState(false);
 
-    // Data State
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(false);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
 
-    // Filter UI State
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [sortOption, setSortOption] = useState('popularity.desc');
     const [minRating, setMinRating] = useState(0);
     const [runtimeFilter, setRuntimeFilter] = useState('any');
     const [yearRange, setYearRange] = useState({ min: 1900, max: 2050 });
     const [selectedFilterGenres, setSelectedFilterGenres] = useState([]);
-    const [selectedPlatforms, setSelectedPlatforms] = useState([]);  // watch provider filter
+    const [selectedPlatforms, setSelectedPlatforms] = useState([]);
 
     const getFilterParams = () => {
         const params = {};
@@ -80,16 +77,14 @@ const SearchView = ({ onSelectMovie }) => {
             params['with_genres'] = selectedFilterGenres.join(',');
         }
 
-        // Streaming platform filter (TMDB watch providers)
         if (selectedPlatforms.length > 0) {
-            params['with_watch_providers'] = selectedPlatforms.join('|'); // OR operator
+            params['with_watch_providers'] = selectedPlatforms.join('|');
             params['watch_region'] = 'AR';
         }
 
         return params;
     };
 
-    // MOVIES FETCH
     const fetchMovies = useCallback(async (pageNum, reset = false) => {
         setLoading(true);
         try {
@@ -97,23 +92,17 @@ const SearchView = ({ onSelectMovie }) => {
             const filterParams = getFilterParams();
 
             if (searchQuery) {
-                // Search Mode
                 data = await searchMovies(searchQuery);
-                // Apply client-side filters since TMDB Search doesn't support extensive filtering in same call efficiently
                 if (minRating > 0) data = data.filter(m => m.vote_average >= minRating);
-                // (More client filtering could go here if needed)
             }
             else if (isOscars) {
-                // Oscars Mode
                 data = await getOscarWinners();
                 if (minRating > 0) data = data.filter(m => m.vote_average >= minRating);
             }
             else if (selectedGenre) {
-                // Single Genre Quick Mode
                 data = await getMoviesByGenre(selectedGenre, filterParams, pageNum);
             }
             else {
-                // Discovery Mode (Trending or Filtered)
                 const hasFilters = minRating > 0 || runtimeFilter !== 'any' || yearRange.min > 1900 || sortOption !== 'popularity.desc' || selectedFilterGenres.length > 0 || selectedPlatforms.length > 0;
 
                 if (hasFilters) {
@@ -145,7 +134,6 @@ const SearchView = ({ onSelectMovie }) => {
         }
     }, [searchQuery, selectedGenre, isOscars, minRating, runtimeFilter, yearRange, sortOption, selectedFilterGenres]);
 
-    // Trigger Fetch
     useEffect(() => {
         setPage(1);
         setHasMore(true);
@@ -165,7 +153,7 @@ const SearchView = ({ onSelectMovie }) => {
         else setSelectedGenre(id);
         setIsOscars(false);
         setSearchQuery('');
-        setSelectedFilterGenres([]); // Clear advanced filters when using quick chips
+        setSelectedFilterGenres([]);
     };
 
     const handleOscarClick = () => {
@@ -213,7 +201,6 @@ const SearchView = ({ onSelectMovie }) => {
                 </div>
             </header>
 
-            {/* SEARCH & FILTER BAR */}
             <div className="mb-8 flex gap-3 items-start">
                 <div className="flex-1">
                     <SearchBar onSelectMovie={onSelectMovie} onSearchCallback={handleSearch} placeholder="Buscar películas..." />
@@ -237,7 +224,6 @@ const SearchView = ({ onSelectMovie }) => {
                 </button>
             </div>
 
-            {/* Quick Categories Pills (Only if no search & no advanced filters active) */}
             {!searchQuery && activeFilterCount === 0 && (
                 <div className="mb-10 animate-fade-in">
                     <h2 className="text-lg font-semibold text-gray-400 mb-4">Categorías Rápidas</h2>
@@ -254,7 +240,6 @@ const SearchView = ({ onSelectMovie }) => {
                 </div>
             )}
 
-            {/* CONTENT AREA */}
             <div className="flex justify-between items-end mb-4">
                 <h2 className="text-xl font-bold text-white">
                     {isOscars ? "🏆 Ganadoras del Oscar" : selectedGenre ? `Películas de ${GENRES.find(g => g.id === selectedGenre)?.name}` : searchQuery ? `Buscando "${searchQuery}"` : activeFilterCount > 0 ? "Resultados Filtrados" : "Tendencias"}
@@ -286,11 +271,9 @@ const SearchView = ({ onSelectMovie }) => {
                 </div>
             )}
 
-            {/* FULL FILTER MODAL */}
             {createPortal(
                 <BottomSheet isOpen={isFilterOpen} onClose={() => setIsFilterOpen(false)} title="Filtros Avanzados">
                     <div className="space-y-8 pb-8">
-                        {/* Sort */}
                         <div>
                             <h4 className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-widest">Ordenar Por</h4>
                             <div className="grid grid-cols-2 gap-3">
@@ -300,7 +283,6 @@ const SearchView = ({ onSelectMovie }) => {
                             </div>
                         </div>
 
-                        {/* Rating */}
                         <div>
                             <div className="flex justify-between items-center mb-3">
                                 <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Calificación Mínima</h4>
@@ -313,7 +295,6 @@ const SearchView = ({ onSelectMovie }) => {
                             </div>
                         </div>
 
-                        {/* Runtime */}
                         <div>
                             <h4 className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-widest">Duración</h4>
                             <div className="grid grid-cols-3 gap-2">
@@ -323,7 +304,6 @@ const SearchView = ({ onSelectMovie }) => {
                             </div>
                         </div>
 
-                        {/* Decades */}
                         <div>
                             <h4 className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-widest">Década</h4>
                             <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
@@ -332,13 +312,11 @@ const SearchView = ({ onSelectMovie }) => {
                             </div>
                         </div>
 
-                        {/* Streaming Platforms */}
                         <StreamingProviderFilter
                             selected={selectedPlatforms}
                             onChange={setSelectedPlatforms}
                         />
 
-                        {/* Multi-Genre Selection */}
                         <div>
                             <div className="flex justify-between items-center mb-3">
                                 <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Géneros</h4>

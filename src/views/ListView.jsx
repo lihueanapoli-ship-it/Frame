@@ -15,22 +15,12 @@ import { useChat } from '../contexts/ChatContext';
 import { toast } from 'sonner';
 import { db } from '../api/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-// Reuse AddToListModal logic? No, move is specific. Let's create a small inline modal or reuse AddTo with a twist.
-// Actually `AddToListModal` just adds/removes. 
-// If I use `AddToListModal`, I can just check the new list and uncheck the current one manually?
-// User asked for "Move". Automated "Add to New + Remove from Old".
-// Let's create a specialized `MoveMovieModal` locally or reused.
 
 const MoveMovieModal = ({ isOpen, onClose, movie, currentListId }) => {
     const { allLists, moveMovieBetweenLists } = useLists();
 
     if (!isOpen) return null;
 
-    // Filter target lists: 
-    // 1. Must not be the current list
-    // 2. User must have write access (Owner or Collaborator) - 'allLists' from context usually returns lists user has access to.
-    // Double check: In ListContext, 'allLists' = 'myLists' + 'collabLists'. Both imply write access usually?
-    // Wait, 'collabLists' are lists where I am a collaborator. So yes, I can add to them.
     const targetLists = allLists.filter(l => l.id !== currentListId);
 
     return (
@@ -53,7 +43,6 @@ const MoveMovieModal = ({ isOpen, onClose, movie, currentListId }) => {
                                     key={list.id}
                                     onClick={async () => {
                                         await moveMovieBetweenLists(currentListId, list.id, movie);
-                                        // toast.success(`Movida a ${list.name}`); // Assuming toast is available or imported? Use alert for safety if not.
                                         onClose();
                                     }}
                                     className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 text-left transition-colors group"
@@ -94,7 +83,6 @@ const ListView = ({ onSelectMovie }) => {
     const [isShareOpen, setIsShareOpen] = useState(false);
     const [isCollaboratorModalOpen, setIsCollaboratorModalOpen] = useState(false);
 
-    // Move Logic
     const [movieToMove, setMovieToMove] = useState(null);
 
     useEffect(() => {
@@ -153,7 +141,7 @@ const ListView = ({ onSelectMovie }) => {
                 fromUid: user.uid,
                 fromName: user.displayName,
                 fromPhoto: user.photoURL,
-                toUid: list.ownerId, // The list owner
+                toUid: list.ownerId,
                 listId: list.id,
                 listName: list.name,
                 status: 'pending',
@@ -209,18 +197,15 @@ const ListView = ({ onSelectMovie }) => {
                         <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-2 leading-none">{list.name}</h1>
 
                         <div className="flex items-center gap-3">
-                            {/* Owner Avatar */}
                             <div className="flex -space-x-3 items-center">
                                 <div className="w-10 h-10 rounded-full border-2 border-background bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center font-bold text-white z-20 shadow-lg relative tooltip-container group/avatar">
                                     {list.ownerName?.[0]?.toUpperCase()}
                                     <div className="absolute inset-0 rounded-full border border-white/10" />
-                                    {/* Tooltip */}
                                     <span className="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-black/80 backdrop-blur text-white text-[10px] rounded opacity-0 group-hover/avatar:opacity-100 transition-opacity whitespace-nowrap">
                                         Propietario: {list.ownerName}
                                     </span>
                                 </div>
 
-                                {/* Collaborators Avatars */}
                                 {list.collaborators?.map((uid, index) => (
                                     <div key={uid} className="w-10 h-10 rounded-full border-2 border-background bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center font-bold text-white z-10 shadow-lg relative tooltip-container group/collab">
                                         C{index + 1}
@@ -354,7 +339,6 @@ const ListView = ({ onSelectMovie }) => {
                 />
             )}
 
-            {/* Move Movie Modal */}
             {movieToMove && (
                 <MoveMovieModal
                     isOpen={!!movieToMove}

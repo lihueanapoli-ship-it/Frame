@@ -34,7 +34,6 @@ const BottomNav = () => {
                                 <div className="relative">
                                     <item.icon className={cn("w-6 h-6", isActive ? "hidden" : "block")} />
                                     <item.activeIcon className={cn("w-6 h-6", isActive ? "block" : "hidden")} />
-                                    {/* Unread badge */}
                                     {item.badge > 0 && (
                                         <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 bg-primary text-black text-[9px] font-black rounded-full flex items-center justify-center px-1 shadow-lg shadow-primary/40 animate-bounce-once">
                                             {item.badge > 9 ? '9+' : item.badge}

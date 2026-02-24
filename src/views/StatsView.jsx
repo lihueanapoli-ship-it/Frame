@@ -9,11 +9,6 @@ import { cn } from '../lib/utils';
 import { getGenresForMovies } from '../utils/genreCache';
 import { OSCAR_BEST_PICTURE_WINNERS } from '../constants/oscarWinners';
 
-
-// ==========================================
-// CONSTANTS & CONFIG
-// ==========================================
-
 import { CINEMA_RANKS } from '../constants/cinemaRanks';
 
 const formatRuntime = (mins) => {
@@ -59,15 +54,10 @@ const StatsView = () => {
     const { watched, watchlist } = useMovies();
     const { user } = useAuth();
 
-    // View State
     const [movieGenres, setMovieGenres] = useState({});
     const [radarMode, setRadarMode] = useState('consumption');
     const [showAllRanks, setShowAllRanks] = useState(false);
 
-    // Modal State for Friend Search
-
-
-    // Genre Fetching
     useEffect(() => {
         const fetchAllGenres = async () => {
             if (watched.length === 0) return;
@@ -79,7 +69,6 @@ const StatsView = () => {
         fetchAllGenres();
     }, [watched]);
 
-    // Calculations
     const runtimes = useMemo(() => watched.reduce((acc, m) => acc + (m.runtime || 110), 0), [watched]);
     const currentRank = useMemo(() => [...CINEMA_RANKS].reverse().find(r => watched.length >= r.min) || CINEMA_RANKS[0], [watched]);
     const nextRank = useMemo(() => CINEMA_RANKS.find(r => r.min > watched.length) || { min: 500, title: "Lumière Renacido", desc: "Eres el cine mismo." }, [watched]);
@@ -149,7 +138,6 @@ const StatsView = () => {
 
     return (
         <div className="min-h-screen pb-24 pt-8 px-4 md:px-8 max-w-7xl mx-auto">
-            {/* HERITAGE HEADER */}
             <header className="mb-12 flex items-end justify-between border-b border-white/5 pb-6">
                 <div>
                     <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-2 tracking-tight">
@@ -160,8 +148,6 @@ const StatsView = () => {
                     </p>
                 </div>
                 <div className="flex items-center gap-4">
-
-
                     <div className="hidden md:block text-right">
                         <div className="font-mono text-xs text-primary">{new Date().toLocaleDateString()}</div>
                         <div className="font-mono text-xs text-gray-500">ESTADO: ACTIVO</div>
@@ -169,9 +155,7 @@ const StatsView = () => {
                 </div>
             </header>
 
-            {/* DASHBOARD GRID */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* 1. Rank Card */}
                 <div className="col-span-1 md:col-span-2 row-span-1 bg-surface border border-white/5 p-6 relative overflow-hidden group rounded-xl">
                     <div className="flex justify-between items-start mb-6 relative z-10">
                         <div className="flex items-center gap-3">
@@ -201,18 +185,15 @@ const StatsView = () => {
                     <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
                 </div>
 
-                {/* 2. Telemetry */}
                 <div className="col-span-1 md:col-span-1 bg-surface border border-white/5 p-6 flex flex-col justify-center rounded-xl">
                     <div className="flex items-center gap-3 mb-2 text-gray-400"><ClockIcon className="w-5 h-5" /><span className="font-mono text-xs uppercase">TIEMPO EN VUELO</span></div>
                     <div className="font-display text-2xl text-white">{formatRuntime(runtimes)}</div>
                 </div>
-                {/* 3. Watchlist Count */}
                 <div className="col-span-1 md:col-span-1 bg-surface border border-white/5 p-6 flex flex-col justify-center rounded-xl">
                     <div className="flex items-center gap-3 mb-2 text-gray-400"><BookmarkIcon className="w-5 h-5" /><span className="font-mono text-xs uppercase">EN COLA</span></div>
                     <div className="font-display text-2xl text-white">{watchlist.length}</div>
                 </div>
 
-                {/* 4. Radar */}
                 <div className="col-span-1 md:col-span-2 bg-surface border border-white/5 p-6 flex flex-col min-h-[350px] rounded-xl">
                     <div className="flex justify-between items-start mb-6">
                         <h3 className="font-mono text-xs text-gray-500 uppercase tracking-widest">RADAR DE GÉNEROS</h3>
@@ -236,7 +217,6 @@ const StatsView = () => {
                     </div>
                 </div>
 
-                {/* 5. Rating Histogram - Spans 2 cols (Restored) */}
                 <div className="col-span-1 md:col-span-2 bg-surface border border-white/5 p-6 flex flex-col min-h-[350px] rounded-xl">
                     <h3 className="font-mono text-xs text-gray-500 uppercase tracking-widest mb-4">CURVA DE EXIGENCIA</h3>
                     <div className="w-full h-[250px]">
@@ -254,7 +234,6 @@ const StatsView = () => {
                     </div>
                 </div>
 
-                {/* 6. Pulse */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-4 bg-surface border border-white/5 p-6 rounded-xl">
                     <h3 className="font-mono text-xs text-primary uppercase tracking-widest flex items-center gap-2 mb-4"><FireIcon className="w-4 h-4" /> PULSO CINÉFILO</h3>
                     <div className="w-full h-[200px]">
@@ -270,15 +249,12 @@ const StatsView = () => {
                 </div>
             </div>
 
-            {/* Achievements */}
             <div className="mt-8">
                 <h3 className="font-mono text-xs text-gray-500 uppercase mb-4">LOGROS</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                     {achievements.map(badge => <AchievementBadge key={badge.id} {...badge} />)}
                 </div>
             </div>
-
-
         </div>
     );
 };

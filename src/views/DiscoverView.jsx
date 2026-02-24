@@ -78,7 +78,6 @@ const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, vari
                 className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory select-none touch-auto"
                 onMouseDown={handleMouseDown} onMouseLeave={handleMouseLeave} onMouseUp={handleMouseUp} onMouseMove={handleMouseMove}>
                 {isLoading ? (
-                    // Skeleton State
                     Array.from({ length: 5 }).map((_, i) => (
                         <div key={i} className="flex-shrink-0 w-[140px] sm:w-[170px] md:w-[200px] aspect-[2/3] bg-white/5 rounded-xl animate-pulse" />
                     ))
@@ -106,13 +105,11 @@ const DiscoverView = ({ onSelectMovie }) => {
     }, []);
 
     const fetchInitialData = async () => {
-        // Step 1: Fetch trending first to show Hero & first section ASAP
         try {
             const trending = await getTrendingMovies();
             setData(prev => ({ ...prev, trending }));
-            setLoading(false); // Show the UI as soon as we have the hero
+            setLoading(false);
 
-            // Step 2: Fetch other collections in the background
             fetchBackgroundData();
         } catch (error) {
             console.error("Error fetching initial data:", error);
@@ -134,7 +131,6 @@ const DiscoverView = ({ onSelectMovie }) => {
             { key: 'classic_author', id: 'classic_author' }
         ];
 
-        // Fetch them in small chunks to avoid saturation
         for (const col of collections) {
             getCustomCollection(col.key).then(movies => {
                 setData(prev => ({ ...prev, [col.key]: movies }));

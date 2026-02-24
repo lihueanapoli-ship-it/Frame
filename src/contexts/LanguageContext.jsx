@@ -7,13 +7,10 @@ const LanguageContext = createContext();
 export const useLanguage = () => useContext(LanguageContext);
 
 export const LanguageProvider = ({ children }) => {
-    // Default to Spanish
     const [language, setLanguage] = useLocalStorage('cinetrack_language', 'es-MX');
 
     useEffect(() => {
-        // Update API configuration whenever language changes
         setApiLanguage(language);
-        console.log(`Language set to: ${language}`);
     }, [language]);
 
     const toggleLanguage = () => {

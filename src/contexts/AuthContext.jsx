@@ -9,8 +9,6 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    // Start as false so the UI renders immediately on first paint.
-    // Components that need user-data should check `authLoading` themselves.
     const [authLoading, setAuthLoading] = useState(true);
 
     useEffect(() => {
@@ -22,9 +20,7 @@ export const AuthProvider = ({ children }) => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             setUser(currentUser);
 
-            // Sync user to Firestore in the background — don't await for render
             if (currentUser) {
-                // Use requestIdleCallback to avoid blocking the main thread
                 const syncUser = async () => {
                     try {
                         const userRef = doc(db, 'users', currentUser.uid);
@@ -76,7 +72,6 @@ export const AuthProvider = ({ children }) => {
 
     return (
         <AuthContext.Provider value={{ user, loginWithGoogle, logout, loading: authLoading }}>
-            {/* Render children immediately — don't block on auth state */}
             {children}
         </AuthContext.Provider>
     );

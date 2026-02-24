@@ -12,7 +12,7 @@ const tmdbClient = axios.create({
     baseURL: BASE_URL,
     params: {
         api_key: API_KEY,
-        language: 'es-MX', // Default
+        language: 'es-MX',
     },
 });
 
@@ -68,7 +68,7 @@ export const getMovieDetails = async (id) => {
 
         let data = response.data;
 
-        // Fallback for overview if empty (fetch English)
+
         if (!data.overview) {
             try {
                 const enResponse = await tmdbClient.get(`/movie/${id}`, {
@@ -78,7 +78,7 @@ export const getMovieDetails = async (id) => {
                     data.overview = enResponse.data.overview;
                 }
             } catch (e) {
-                // Ignore fallback error
+
             }
         }
 
@@ -119,53 +119,53 @@ export const getCustomCollection = async (type, page = 1) => {
 
         switch (type) {
             case 'must_watch':
-                // "Los Infaltables": High rating, high vote count. Classics.
+
                 params = { ...params, 'vote_average.gte': 8.2, 'vote_count.gte': 10000, sort_by: 'vote_average.desc' };
                 break;
             case 'short':
-                // "Cortitas y al Pie": <= 90 mins
+
                 params = { ...params, 'with_runtime.lte': 90, 'vote_count.gte': 500, sort_by: 'popularity.desc' };
                 break;
             case 'conversation':
-                // "Mate y Sobremesa": Dramas, indie feel.
+
                 params = { ...params, with_genres: '18', without_genres: '28,878,27', 'vote_average.gte': 7.5, sort_by: 'popularity.desc' };
                 break;
             case 'tech':
-                // "El Laboratorio": Sci-Fi
+
                 params = { ...params, with_genres: '878', sort_by: 'popularity.desc' };
                 break;
             case 'argentina':
-                // "El Aguante" handled by with_origin_country below, just setting basic params here
+
                 params = { ...params, region: 'AR', sort_by: 'popularity.desc' };
                 break;
             case 'thriller':
-                // "Pulso a Mil": Thriller/Mystery
+
                 params = { ...params, with_genres: '53,9648', sort_by: 'popularity.desc' };
                 break;
             case 'romance':
-                // "Primera Cita": Romance, Comedy
+
                 params = { ...params, with_genres: '10749,35', 'vote_average.gte': 7, sort_by: 'popularity.desc' };
                 break;
             case 'real_life':
-                // "Misiones de Verdad": History, Documentary or based on true story keyword
+
                 params = { ...params, with_keywords: '9672', sort_by: 'popularity.desc' }; // 9672 = based on true story
                 break;
             case 'sagas':
-                // "Viaje de Ida": Collections/Franchises. Keywords: trilogy(180547), sequel(933), franchise.
-                // Best logic: High revenue adventure/fantasy
+
+
                 params = { ...params, with_genres: '12,14', sort_by: 'revenue.desc' };
                 break;
             case 'classic_author':
-                // "Solo para Locos": Low popularity but high rating? Or known auteur keywords?
-                // Let's try "Arthouse" logic: High rating, lower vote count cap? Or specific keywords like "surrealism", "philosophical".
-                // Keyword: 2398 (surrealism), 390 (neo-noir), 14750 (cult film)
+
+
+
                 params = { ...params, with_keywords: '2398|390|14750', sort_by: 'vote_average.desc', 'vote_count.gte': 200 };
                 break;
             default:
                 break;
         }
 
-        // Special handling for Argentina strictly
+
         if (type === 'argentina') {
             const response = await tmdbClient.get('/discover/movie', {
                 params: { ...params, with_origin_country: 'AR' }
@@ -199,9 +199,6 @@ export const getMoviesByGenre = async (genreId, extraParams = {}, page = 1) => {
     }
 };
 
-/**
- * Get similar movies to a given movie ID
- */
 export const getSimilarMovies = async (movieId) => {
     try {
         const response = await tmdbClient.get(`/movie/${movieId}/similar`);
@@ -212,9 +209,6 @@ export const getSimilarMovies = async (movieId) => {
     }
 };
 
-/**
- * Discover movies with custom parameters
- */
 export const discoverMovies = async (params = {}) => {
     try {
         const response = await tmdbClient.get('/discover/movie', { params });
@@ -225,9 +219,6 @@ export const discoverMovies = async (params = {}) => {
     }
 };
 
-/**
- * Get movies by director (using person ID)
- */
 export const getDirectorMovies = async (directorId) => {
     try {
         const response = await tmdbClient.get('/discover/movie', {
@@ -243,7 +234,6 @@ export const getDirectorMovies = async (directorId) => {
     }
 };
 
-
 export const getTrendingMovies = async (page = 1) => {
     try {
         const response = await tmdbClient.get('/trending/movie/week', {
@@ -256,7 +246,6 @@ export const getTrendingMovies = async (page = 1) => {
     }
 };
 
-// Image helpers
 export const getPosterUrl = (path, size = 'w500') => {
     if (!path) return 'https://via.placeholder.com/500x750?text=No+Poster';
     return `https://image.tmdb.org/t/p/${size}${path}`;
@@ -269,11 +258,9 @@ export const getBackdropUrl = (path, size = 'w1280') => {
 
 export const getMovieVideos = async (id) => {
     try {
-        // Try default language (es-MX)
         const response = await tmdbClient.get(`/movie/${id}/videos`);
         let results = response.data.results;
 
-        // Fallback: If no results, try English (en-US)
         if (!results || results.length === 0) {
             const fallback = await tmdbClient.get(`/movie/${id}/videos`, {
                 params: { language: 'en-US' }
@@ -287,25 +274,18 @@ export const getMovieVideos = async (id) => {
     }
 };
 
-/**
- * Get streaming platforms where a movie is available.
- * Returns Argentina providers (AR) with US fallback.
- * Each provider has: provider_id, provider_name, logo_path, display_priority.
- */
 export const getWatchProviders = async (movieId) => {
     try {
         const response = await tmdbClient.get(`/movie/${movieId}/watch/providers`);
         const all = response.data.results;
-
-        // Prefer AR, fallback to US, then any first available
         const regionData = all?.AR || all?.US || Object.values(all || {})[0];
         if (!regionData) return null;
 
         return {
-            flatrate: regionData.flatrate || [],   // Streaming (subscription)
-            rent: regionData.rent || [],   // Rent
-            buy: regionData.buy || [],   // Buy
-            link: regionData.link || null, // JustWatch deep-link
+            flatrate: regionData.flatrate || [],
+            rent: regionData.rent || [],
+            buy: regionData.buy || [],
+            link: regionData.link || null,
         };
     } catch (error) {
         console.error(`Error getting watch providers for movie ${movieId}:`, error);
@@ -313,11 +293,6 @@ export const getWatchProviders = async (movieId) => {
     }
 };
 
-
-/**
- * Get the full list of available watch providers in a region.
- * Used to populate streaming filter chips with correct logo_paths from TMDB.
- */
 export const getAvailableProvidersInRegion = async (region = 'AR') => {
     try {
         const response = await tmdbClient.get('/watch/providers/movie', {

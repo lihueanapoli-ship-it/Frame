@@ -17,7 +17,6 @@ const CategoryView = ({ onSelectMovie }) => {
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
 
-    // For "Tu ADN" - progressive loading
     const [allRecommendations, setAllRecommendations] = useState([]);
     const [displayCount, setDisplayCount] = useState(20);
 
@@ -30,9 +29,7 @@ const CategoryView = ({ onSelectMovie }) => {
         try {
             switch (currentId) {
                 case 'for_you':
-                    // Personalized recommendations
                     if (watched.length > 0) {
-                        // Only fetch once for 'for_you' then paginate locally
                         if (allRecommendations.length === 0 || reset) {
                             const userData = {
                                 movieData: { watched, watchlist }
@@ -40,14 +37,12 @@ const CategoryView = ({ onSelectMovie }) => {
                             const recommendations = await getPersonalizedRecommendations(userData, 'intermediate');
                             const allRecs = recommendations.forYou || [];
 
-                            // Deduplicate locally just in case
                             const uniqueRecs = Array.from(new Map(allRecs.map(item => [item.id, item])).values());
 
                             setAllRecommendations(uniqueRecs);
                             results = uniqueRecs.slice(0, displayCount);
                         } else {
-                            // This meant we are just refreshing local state, but fetchData usually called for API
-                            results = []; // handled by loadMore local logic
+                            results = [];
                         }
                         pageTitle = 'TU ADN';
                     } else {
@@ -77,13 +72,11 @@ const CategoryView = ({ onSelectMovie }) => {
                     pageTitle = 'COLECCIÓN';
             }
 
-            // Validar que seguimos en la misma categoría
             if (currentId !== id) return;
 
             if (id !== 'for_you') {
                 if (results.length === 0) {
                     if (reset && pageNum > 1) {
-                        // Fallback logic if needed
                     } else {
                         setHasMore(false);
                     }
@@ -96,10 +89,8 @@ const CategoryView = ({ onSelectMovie }) => {
                     });
                 }
             } else {
-                // For 'for_you', we handle setMovies inside loadMore or initial block if needed
-                // Initial block:
                 if (reset && allRecommendations.length === 0) {
-                    setMovies(results); // Initial set
+                    setMovies(results);
                 }
             }
 
@@ -121,7 +112,7 @@ const CategoryView = ({ onSelectMovie }) => {
         setLoading(true);
         fetchData(1, true, id);
         window.scrollTo(0, 0);
-    }, [id]); // fetchData removed from dep array to avoid loops, it's stable enough or we ignore
+    }, [id]);
 
     const shuffle = async () => {
         let maxPage = 20;
@@ -143,14 +134,8 @@ const CategoryView = ({ onSelectMovie }) => {
                 return newCount;
             });
         } else {
-            // API Pagination
             const nextPage = page + 1;
             setPage(nextPage);
-            // We set loading true manually if we want spinner on button, but let's assume we use local state or just wait
-            // fetchData handles state. But fetchData sets 'loading' global which hides list in current return.
-            // We should NOT set global loading for pagination.
-            // Let's modify logic: 
-            // We need a 'loadingMore' state.
             await fetchData(nextPage, false, id);
         }
     };
@@ -194,7 +179,6 @@ const CategoryView = ({ onSelectMovie }) => {
                         ))}
                     </div>
 
-                    {/* Generic Load More Button */}
                     {canLoadMore && (
                         <div className="flex flex-col items-center gap-4 mt-12 pb-12">
                             {id === 'for_you' && (

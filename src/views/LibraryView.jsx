@@ -40,15 +40,13 @@ const GENRES = [
 ];
 
 const LibraryView = ({ onSelectMovie }) => {
-    // State
-    const [activeTab, setActiveTab] = useState('watchlist'); // 'watchlist' | 'watched'
+    const [activeTab, setActiveTab] = useState('watchlist');
     const [selectedListId, setSelectedListId] = useState('watchlist');
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [localSearch, setLocalSearch] = useState('');
     const [isManageMembersOpen, setIsManageMembersOpen] = useState(false);
     const [isCreateListOpen, setIsCreateListOpen] = useState(false);
 
-    // Filter States
     const [selectedGenres, setSelectedGenres] = useState([]);
     const [sortOption, setSortOption] = useState('date_added');
     const [minRating, setMinRating] = useState(0);
@@ -59,15 +57,13 @@ const LibraryView = ({ onSelectMovie }) => {
     const [isFetchingProviders, setIsFetchingProviders] = useState(false);
     const providersCacheRef = useRef({});
 
-    // Data
-    const { watchlist, watched } = useMovies(); // Watchlist deprecated in favor of Lists
+    const { watchlist, watched } = useMovies();
     const { myLists, collabLists, addCollaborator, deleteList, leaveList, generalList } = useLists();
     const { user, loginWithGoogle } = useAuth();
     const navigate = useNavigate();
 
     const allListsDisplay = useMemo(() => [...myLists, ...collabLists], [myLists, collabLists]);
 
-    // Initial Selection: Default to General List
     useEffect(() => {
         if (selectedListId === 'watchlist' && generalList) {
             setSelectedListId(generalList.id);
@@ -84,22 +80,16 @@ const LibraryView = ({ onSelectMovie }) => {
         const watchedIds = new Set(watched.map(m => m.id));
 
         if (activeTab === 'watched') {
-            // "Vistas" is ALWAYS global per user request, reflecting their cinematic DNA
             return watched;
         }
 
-        // In 'watchlist' tab: 
-        // For custom lists, we show what's pending IN THAT LIST so all collaborators see the same.
         if (currentCustomList && currentCustomList.name !== 'General') {
             return moviesInCurrentList.filter(m => !m.watched);
         }
 
-        // For "General" (global watchlist), we filter by what the user hasn't seen anywhere.
         return moviesInCurrentList.filter(m => !watchedIds.has(m.id));
     }, [activeTab, currentCustomList, watched]);
 
-    // Handlers
-    // Invite/Manage logic moved to Modal.
 
     const handleDeleteList = async () => {
         if (!currentCustomList) return;
@@ -117,7 +107,6 @@ const LibraryView = ({ onSelectMovie }) => {
         }
     };
 
-    // Filter Logic
     const ratingSource = activeTab === 'watchlist' ? 'tmdb' : 'user';
     useEffect(() => { clearFilters(); }, [activeTab, selectedListId]);
 
@@ -132,7 +121,6 @@ const LibraryView = ({ onSelectMovie }) => {
         ratingSource
     });
 
-    // Platform filter — async: fetch providers in batches and filter locally
     useEffect(() => {
         if (selectedPlatforms.length === 0) {
             setPlatformFilteredMovies(null);
@@ -184,7 +172,6 @@ const LibraryView = ({ onSelectMovie }) => {
 
     return (
         <div className="min-h-screen pb-24 px-4 pt-8">
-            {/* HERO HEADER */}
             <header className="mb-8 flex items-end justify-between border-b border-white/5 pb-6">
                 <div>
                     <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-2 tracking-tight">
@@ -196,9 +183,7 @@ const LibraryView = ({ onSelectMovie }) => {
                 </div>
             </header>
 
-            {/* CONTROLS (Sticky Tabs Only) */}
             <div className="sticky top-20 z-30 bg-[#0A0A0A] py-4 -mx-4 px-4 border-b border-white/5 mb-6 shadow-xl">
-                {/* 1. TABS */}
                 <div className="flex p-1 bg-surface rounded-xl relative overflow-hidden">
                     <button onClick={() => setActiveTab('watchlist')} className={cn("flex-1 flex items-center justify-center gap-2 py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all z-10", activeTab === 'watchlist' ? "text-white" : "text-gray-500 hover:text-gray-300")}>
                         <FilmIcon className="w-4 h-4" /> <span className="hidden sm:inline">Por ver</span><span className="sm:hidden">Watchlist</span>
@@ -215,12 +200,9 @@ const LibraryView = ({ onSelectMovie }) => {
                 </div>
             </div>
 
-            {/* NON-STICKY CONTROLS (Scrollable) */}
             <div className="space-y-4 mb-6">
-                {/* 2. LIST SELECTOR (Unified) */}
                 {activeTab === 'watchlist' && (
                     <div className="relative z-10 space-y-4">
-                        {/* Custom Dropdown Trigger */}
                         <div className="relative">
                             <select
                                 value={currentCustomList?.id || ''}
@@ -254,10 +236,8 @@ const LibraryView = ({ onSelectMovie }) => {
                             <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                         </div>
 
-                        {/* RICH LIST HEADER BANNER */}
                         {currentCustomList && currentCustomList.name !== 'General' && (
                             <div className="bg-gradient-to-r from-surface-elevated to-surface border border-white/5 rounded-2xl p-5 relative overflow-hidden group animate-fade-in">
-                                {/* Background Glow */}
                                 <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
                                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -277,15 +257,12 @@ const LibraryView = ({ onSelectMovie }) => {
                                             {currentCustomList.description || "Sin descripción"}
                                         </p>
 
-                                        {/* MEMBERS & ACTIONS ROW */}
                                         <div className="flex items-center gap-4">
                                             <button onClick={() => setIsManageMembersOpen(true)} className="flex items-center gap-2 group/members hover:bg-white/5 p-1.5 rounded-lg transition-colors -ml-1.5">
                                                 <div className="flex -space-x-2">
-                                                    {/* Owner Avatar Placeholder */}
                                                     <div className="w-6 h-6 rounded-full border border-[#121212] bg-indigo-500 flex items-center justify-center text-[10px] font-bold text-white" title={`Dueño: ${currentCustomList.ownerName}`}>
                                                         {currentCustomList.ownerName?.[0]?.toUpperCase() || 'O'}
                                                     </div>
-                                                    {/* Collabs Count */}
                                                     {(currentCustomList.collaborators?.length || 0) > 0 && (
                                                         <div className="w-6 h-6 rounded-full border border-[#121212] bg-surface-elevated flex items-center justify-center text-[9px] font-bold text-gray-400">
                                                             +{currentCustomList.collaborators.length}
@@ -299,7 +276,6 @@ const LibraryView = ({ onSelectMovie }) => {
                                         </div>
                                     </div>
 
-                                    {/* PRIMARY ACTIONS */}
                                     <div className="flex items-center gap-2 self-end md:self-center">
                                         {currentCustomList.ownerId === user.uid ? (
                                             <>
@@ -325,7 +301,6 @@ const LibraryView = ({ onSelectMovie }) => {
                     </div>
                 )}
 
-                {/* 3. FILTERS & SEARCH */}
                 <div className="flex gap-3 animate-fade-in">
                     <div className="relative flex-1">
                         <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
@@ -344,13 +319,11 @@ const LibraryView = ({ onSelectMovie }) => {
                 </div>
             </div>
 
-            {/* GRID */}
             <div>
                 <div className="text-xs text-gray-500 font-medium uppercase tracking-wider flex justify-between items-center mb-3">
                     <span>{totalCount} Películas</span>
                     {activeFilterCount > 0 && <button onClick={clearFilters} className="text-primary flex items-center gap-1 hover:underline"><XMarkIcon className="w-3 h-3" /> Limpiar filtros</button>}
                 </div>
-                {/* ... Grid logic same as before ... */}
                 {isFetchingProviders ? (
                     <div className="flex flex-col items-center justify-center py-16 gap-3">
                         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -377,12 +350,10 @@ const LibraryView = ({ onSelectMovie }) => {
                 )}
             </div>
 
-            {/* MODALS */}
             {
                 createPortal(
                     <BottomSheet isOpen={isFilterOpen} onClose={() => setIsFilterOpen(false)} title="Filtros Avanzados">
                         <div className="space-y-8 pb-8">
-                            {/* Sort */}
                             <div>
                                 <h4 className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-widest">Ordenar Por</h4>
                                 <div className="grid grid-cols-2 gap-3">
@@ -392,7 +363,6 @@ const LibraryView = ({ onSelectMovie }) => {
                                 </div>
                             </div>
 
-                            {/* Rating */}
                             <div>
                                 <div className="flex justify-between items-center mb-3">
                                     <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Calificación Mínima</h4>
@@ -405,7 +375,6 @@ const LibraryView = ({ onSelectMovie }) => {
                                 </div>
                             </div>
 
-                            {/* Runtime */}
                             <div>
                                 <h4 className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-widest">Duración</h4>
                                 <div className="grid grid-cols-3 gap-2">
@@ -415,7 +384,6 @@ const LibraryView = ({ onSelectMovie }) => {
                                 </div>
                             </div>
 
-                            {/* Decades */}
                             <div>
                                 <h4 className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-widest">Década</h4>
                                 <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
@@ -424,13 +392,11 @@ const LibraryView = ({ onSelectMovie }) => {
                                 </div>
                             </div>
 
-                            {/* Streaming Platforms */}
                             <StreamingProviderFilter
                                 selected={selectedPlatforms}
                                 onChange={setSelectedPlatforms}
                             />
 
-                            {/* Genres */}
                             <div>
                                 <div className="flex justify-between items-center mb-3">
                                     <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Géneros</h4>
@@ -468,7 +434,7 @@ const LibraryView = ({ onSelectMovie }) => {
                 onClose={() => setIsCreateListOpen(false)}
                 onCreated={(newListId) => setSelectedListId(newListId)}
             />
-        </div >
+        </div>
     );
 };
 

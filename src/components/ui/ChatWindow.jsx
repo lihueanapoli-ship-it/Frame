@@ -11,15 +11,12 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useChat, getChatId } from '../../contexts/ChatContext';
 import { cn } from '../../lib/utils';
 
-// ─── Format timestamp ──────────────────────────────────────────────────────────
 const formatMsgTime = (ts) => {
     if (!ts?.toDate) return '';
     const d = ts.toDate();
-    // 24-hour format, no am/pm
     return d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
 };
 
-// ─── Movie Share Bubble ────────────────────────────────────────────────────────
 const MovieBubble = ({ msg, isOwn, onOpenMovie }) => (
     <div className={cn("flex flex-col gap-1", isOwn ? "items-end" : "items-start")}>
         <button
@@ -37,7 +34,6 @@ const MovieBubble = ({ msg, isOwn, onOpenMovie }) => (
                         className="w-full h-28 object-cover group-hover:brightness-75 transition-all"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                    {/* Hover overlay */}
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <div className="flex items-center gap-1.5 bg-black/70 backdrop-blur-sm rounded-full px-3 py-1.5">
                             <EyeIcon className="w-3.5 h-3.5 text-white" />
@@ -73,7 +69,6 @@ const MovieBubble = ({ msg, isOwn, onOpenMovie }) => (
     </div>
 );
 
-// ─── List Share Bubble ──────────────────────────────────────────────────────────
 const ListBubble = ({ msg, isOwn }) => (
     <div className={cn("flex flex-col gap-1", isOwn ? "items-end" : "items-start")}>
         <div className={cn(
@@ -100,7 +95,6 @@ const ListBubble = ({ msg, isOwn }) => (
     </div>
 );
 
-// ─── Text Bubble ───────────────────────────────────────────────────────────────
 const TextBubble = ({ msg, isOwn }) => (
     <div className={cn("flex flex-col gap-0.5", isOwn ? "items-end" : "items-start")}>
         <div className={cn(
@@ -115,7 +109,6 @@ const TextBubble = ({ msg, isOwn }) => (
     </div>
 );
 
-// ─── Message Bubble wrapper with delete ───────────────────────────────────────
 const MessageBubble = ({ msg, isOwn, chatId, onOpenMovie }) => {
     const [showDelete, setShowDelete] = useState(false);
     const longPressTimer = useRef(null);
@@ -130,7 +123,6 @@ const MessageBubble = ({ msg, isOwn, chatId, onOpenMovie }) => {
         setShowDelete(false);
     };
 
-    // Long press for mobile
     const handleTouchStart = () => {
         longPressTimer.current = setTimeout(() => setShowDelete(true), 500);
     };
@@ -146,7 +138,6 @@ const MessageBubble = ({ msg, isOwn, chatId, onOpenMovie }) => {
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
         >
-            {/* Delete button — appears on hover (desktop) or long-press (mobile) */}
             <AnimatePresence>
                 {showDelete && (
                     <motion.button
@@ -166,7 +157,6 @@ const MessageBubble = ({ msg, isOwn, chatId, onOpenMovie }) => {
                 )}
             </AnimatePresence>
 
-            {/* The actual bubble */}
             <div>
                 {msg.type === 'movie_share' ? (
                     <MovieBubble msg={msg} isOwn={isOwn} onOpenMovie={onOpenMovie} />
@@ -180,7 +170,6 @@ const MessageBubble = ({ msg, isOwn, chatId, onOpenMovie }) => {
     );
 };
 
-// ─── Chat Window ──────────────────────────────────────────────────────────────
 const ChatWindow = () => {
     const { openChat, closeChat, sendMessage, markAsRead, openMovieDetail } = useChat();
     const { user } = useAuth();
@@ -188,13 +177,12 @@ const ChatWindow = () => {
     const [text, setText] = useState('');
     const [isMinimized, setIsMinimized] = useState(false);
     const [sending, setSending] = useState(false);
-    const [friendOnline, setFriendOnline] = useState(false); // real-time presence
+    const [friendOnline, setFriendOnline] = useState(false);
     const bottomRef = useRef(null);
     const inputRef = useRef(null);
 
     const chatId = openChat && user ? getChatId(user.uid, openChat.uid) : null;
 
-    // Subscribe to friend's presence in real time
     useEffect(() => {
         if (!openChat?.uid) { setFriendOnline(false); return; }
         const unsub = onSnapshot(doc(db, 'users', openChat.uid), (snap) => {
@@ -203,7 +191,6 @@ const ChatWindow = () => {
         return () => unsub();
     }, [openChat?.uid]);
 
-    // Subscribe to messages
     useEffect(() => {
         if (!chatId) { setMessages([]); return; }
         const q = query(
@@ -217,14 +204,12 @@ const ChatWindow = () => {
         return () => unsub();
     }, [chatId]);
 
-    // Scroll to bottom on new messages
     useEffect(() => {
         if (messages.length > 0 && !isMinimized) {
             bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
         }
     }, [messages.length, isMinimized]);
 
-    // On open: unminimize, mark as read, focus input
     useEffect(() => {
         if (!openChat) return;
         setIsMinimized(false);
@@ -232,7 +217,6 @@ const ChatWindow = () => {
         setTimeout(() => inputRef.current?.focus(), 350);
     }, [openChat?.uid]);
 
-    // Mark as read while window is open and new messages arrive
     useEffect(() => {
         if (openChat && messages.length > 0 && !isMinimized) {
             markAsRead(openChat.uid);
@@ -247,14 +231,13 @@ const ChatWindow = () => {
         try {
             await sendMessage(openChat.uid, { type: 'text', text: trimmed });
         } catch (_) {
-            setText(trimmed); // restore on error
+            setText(trimmed);
         } finally {
             setSending(false);
         }
         inputRef.current?.focus();
     };
 
-    // Open movie detail from chat
     const handleOpenMovie = useCallback((movie) => {
         if (movie?.id) openMovieDetail(movie);
     }, [openMovieDetail]);
@@ -274,7 +257,6 @@ const ChatWindow = () => {
                         transition: 'max-height 0.3s cubic-bezier(0.25, 1, 0.5, 1)',
                     }}
                 >
-                    {/* Header */}
                     <div
                         className="flex items-center gap-3 px-4 py-3 bg-[#151515] border-b border-white/[0.06] cursor-pointer select-none shrink-0"
                         onClick={() => setIsMinimized(m => !m)}
@@ -285,7 +267,6 @@ const ChatWindow = () => {
                                 alt=""
                                 className="w-8 h-8 rounded-full object-cover border border-white/10"
                             />
-                            {/* Presence dot: green = online, red = offline */}
                             <span className={cn(
                                 "absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[#151515] transition-colors duration-700",
                                 friendOnline ? "bg-green-500" : "bg-red-500"
@@ -316,7 +297,6 @@ const ChatWindow = () => {
                         </div>
                     </div>
 
-                    {/* Messages */}
                     <div
                         className="flex-1 overflow-y-auto py-4 px-3 space-y-3 custom-scrollbar"
                         style={{ maxHeight: '390px' }}
@@ -341,7 +321,6 @@ const ChatWindow = () => {
                         <div ref={bottomRef} />
                     </div>
 
-                    {/* Input */}
                     {!isMinimized && (
                         <div className="flex items-center gap-2 px-3 py-3 bg-[#151515] border-t border-white/[0.06] shrink-0">
                             <input

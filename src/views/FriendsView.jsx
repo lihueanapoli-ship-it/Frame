@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
-import { useUserProfile } from '../contexts/UserProfileContext'; // Reuse this context for social stuff
+import { useUserProfile } from '../contexts/UserProfileContext';
 import {
     UsersIcon,
     UserPlusIcon,
@@ -48,9 +48,8 @@ const FriendsView = () => {
     const [listRequests, setListRequests] = useState([]);
     const [sentRequests, setSentRequests] = useState([]);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
-    const [onlineStatus, setOnlineStatus] = useState({}); // { [uid]: boolean }
+    const [onlineStatus, setOnlineStatus] = useState({});
 
-    // ── Real-time presence listener for each friend ──
     useEffect(() => {
         if (friends.length === 0) return;
         const unsubs = friends.map(friend =>
@@ -62,13 +61,11 @@ const FriendsView = () => {
             })
         );
         return () => unsubs.forEach(u => u());
-    }, [friends.length]); // re-run when friend list size changes
+    }, [friends.length]);
 
-    // --- REALTIME DATA FETCHING ---
     useEffect(() => {
         if (!user) return;
 
-        // 1. Listen to Friend Requests (Received)
         const qRequests = query(
             collection(db, 'friendRequests'),
             where('toUid', '==', user.uid),
@@ -78,7 +75,6 @@ const FriendsView = () => {
             setRequests(snap.docs.map(d => ({ requestId: d.id, ...d.data() })));
         });
 
-        // 2. Listen to Sent Requests (to know pending status)
         const qSent = query(
             collection(db, 'friendRequests'),
             where('fromUid', '==', user.uid),
@@ -88,15 +84,10 @@ const FriendsView = () => {
             setSentRequests(snap.docs.map(d => ({ requestId: d.id, ...d.data() })));
         });
 
-        // 3. Listen to My Friends List (from user document)
-        // Ideally we keep a subcollection 'friends' but for MVP we can use an array 'friendUids' in user doc 
-        // OR a 'friendships' collection. 
-        // Let's go with a subcollection `users/{uid}/friends` for scalability and realtime listening.
         const qFriends = collection(db, 'users', user.uid, 'friends');
         const unsubFriends = onSnapshot(qFriends, async (snap) => {
             const basicFriends = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
 
-            // Fetch watched count for each friend to display Rank
             const friendsWithStats = await Promise.all(basicFriends.map(async (f) => {
                 try {
                     const userSnap = await getDoc(doc(db, 'users', f.uid));
@@ -111,7 +102,6 @@ const FriendsView = () => {
             setFriends(friendsWithStats);
         });
 
-        // 4. Listen to List Requests (Received)
         const qListReq = query(
             collection(db, 'listRequests'),
             where('toUid', '==', user.uid),
@@ -129,15 +119,8 @@ const FriendsView = () => {
         };
     }, [user]);
 
-    // --- ACTIONS ---
-
     const sendRequest = async (targetUser) => {
         if (targetUser.uid === user.uid) return;
-
-        // Use a composite ID to prevent duplicates easily: from_to
-        // But auto-generating and querying is safer for permissions. 
-        // Let's just addDoc and let the backend/security rules handle logic or frontend check.
-        // Check if already friends or requested handled by UI state ideally.
 
         try {
             await addDoc(collection(db, 'friendRequests'), {
@@ -157,22 +140,14 @@ const FriendsView = () => {
 
     const acceptRequest = async (request) => {
         try {
-            // 1. Add to my friends subcollection
             const myFriendRef = doc(db, 'users', user.uid, 'friends', request.fromUid);
             await setDoc(myFriendRef, {
                 uid: request.fromUid,
                 displayName: request.fromName,
                 photoURL: request.fromPhoto,
-                searchName: request.fromName.toLowerCase(), // Add searchName for consistency
+                searchName: request.fromName.toLowerCase(),
                 since: serverTimestamp()
             });
-
-            // 2. Add me to their friends subcollection (This requires rules allowing write to other's subcollection OR Cloud Function)
-            // WITHOUT CLOUD FUNCTIONS: We need permissive rules for 'friends' subcollection if both define the relationship.
-            // EASIER MVP: Just update the request status to 'accepted' and handle the 'friends' logic here if rules allow.
-
-            // For now, let's assume we update the Request status, and we manually write both sides.
-            // * Requires updated Rules *
 
             const otherFriendRef = doc(db, 'users', request.fromUid, 'friends', user.uid);
             await setDoc(otherFriendRef, {
@@ -182,7 +157,6 @@ const FriendsView = () => {
                 since: serverTimestamp()
             });
 
-            // 3. Delete or Update Request
             await deleteDoc(doc(db, 'friendRequests', request.requestId));
 
         } catch (e) {
@@ -201,10 +175,8 @@ const FriendsView = () => {
 
     const removeFriend = async (friend) => {
         try {
-            // 1. Remove from MY list
             await deleteDoc(doc(db, 'users', user.uid, 'friends', friend.uid));
 
-            // 2. Try to remove from THEIR list (best effort)
             try {
                 await deleteDoc(doc(db, 'users', friend.uid, 'friends', user.uid));
             } catch (err) {
@@ -218,7 +190,6 @@ const FriendsView = () => {
         }
     };
 
-    // --- LIST REQUEST ACTIONS ---
     const acceptListRequest = async (req) => {
         try {
             await updateDoc(doc(db, 'lists', req.listId), {
@@ -241,7 +212,6 @@ const FriendsView = () => {
         }
     };
 
-    // Helper to check relationship status for UI
     const getRelationshipStatus = (targetUid) => {
         if (friends.some(f => f.uid === targetUid)) return 'friend';
         if (sentRequests.some(r => r.toUid === targetUid)) return 'sent';
@@ -251,7 +221,6 @@ const FriendsView = () => {
 
     return (
         <div className="min-h-screen pb-24 px-4 pt-8">
-            {/* HERO - AMIGOS */}
             <header className="mb-8 flex items-end justify-between border-b border-white/5 pb-6">
                 <div>
                     <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-2 tracking-tight">
@@ -270,7 +239,6 @@ const FriendsView = () => {
                 </button>
             </header>
 
-            {/* TABS */}
             <div className="flex gap-4 mb-8 overflow-x-auto pb-2">
                 <button
                     onClick={() => setActiveTab('friends')}
@@ -301,7 +269,6 @@ const FriendsView = () => {
                 </button>
             </div>
 
-            {/* CONTENT */}
             <div className="animate-fade-in">
                 {activeTab === 'friends' && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -322,12 +289,10 @@ const FriendsView = () => {
                                 >
                                     <div className="relative overflow-visible flex-shrink-0">
                                         <img src={friend.photoURL || "/logo.png"} alt="" className="w-12 h-12 rounded-full object-cover" />
-                                        {/* Presence dot: green = online, red = offline */}
                                         <div className={cn(
                                             "absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#111] transition-colors duration-700",
                                             onlineStatus[friend.uid] ? "bg-green-500" : "bg-red-500"
                                         )} />
-                                        {/* Unread messages badge — top-right */}
                                         {unreadPerFriend[friend.uid] > 0 && (
                                             <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-primary border-2 border-[#111] text-black text-[8px] font-black rounded-full flex items-center justify-center px-0.5 shadow-lg shadow-primary/50 animate-bounce">
                                                 {unreadPerFriend[friend.uid] > 9 ? '9+' : unreadPerFriend[friend.uid]}
@@ -341,7 +306,6 @@ const FriendsView = () => {
                                         </p>
                                     </div>
                                     <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                                        {/* Message */}
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
@@ -352,7 +316,6 @@ const FriendsView = () => {
                                         >
                                             <ChatBubbleOvalLeftEllipsisIcon className="w-5 h-5 group-hover/btn:scale-110 transition-transform" />
                                         </button>
-                                        {/* Remove Friend */}
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
@@ -378,7 +341,6 @@ const FriendsView = () => {
                             <div className="text-center py-12 text-gray-500">No hay solicitudes pendientes.</div>
                         )}
 
-                        {/* Received */}
                         {requests.length > 0 && (
                             <div className="space-y-2">
                                 <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Te han invitado</h3>
@@ -400,7 +362,6 @@ const FriendsView = () => {
                             </div>
                         )}
 
-                        {/* List Collaboration Requests */}
                         {listRequests.length > 0 && (
                             <div className="space-y-2 mt-8">
                                 <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Solicitudes de Listas</h3>
@@ -427,7 +388,6 @@ const FriendsView = () => {
                             </div>
                         )}
 
-                        {/* Sent */}
                         {sentRequests.length > 0 && (
                             <div className="space-y-2 mt-8">
                                 <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Enviadas</h3>
@@ -455,15 +415,13 @@ const FriendsView = () => {
                 isOpen={isSearchOpen}
                 onClose={() => setIsSearchOpen(false)}
                 onSelectUser={(user) => {
-                    navigate(`/u/${user.username || user.uid}`); // Prefer username if available
+                    navigate(`/u/${user.username || user.uid}`);
                     setIsSearchOpen(false);
                 }}
             />
-        </div >
+        </div>
     );
 };
-
-
 
 export default FriendsView;
 

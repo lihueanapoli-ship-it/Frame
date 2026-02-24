@@ -1,9 +1,7 @@
-// Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
-// Replace with your app's Firebase project configuration
 const firebaseConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
     authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -15,9 +13,8 @@ const firebaseConfig = {
 
 let app, db, auth;
 
-// Check if configuration is present to avoid crash
 if (!firebaseConfig.apiKey) {
-    console.error("❌ ERROR CRÍTICO: No se encontraron las claves de Firebase (VITE_FIREBASE_API_KEY está vacía). Verifica tus variables de entorno en Vercel.");
+    console.error("❌ ERROR CRÍTICO: No se encontraron las claves de Firebase.");
     db = null;
     auth = null;
 } else {
@@ -25,9 +22,8 @@ if (!firebaseConfig.apiKey) {
         app = initializeApp(firebaseConfig);
         db = getFirestore(app);
         auth = getAuth(app);
-        console.log("✅ Firebase inicializado correctamente desde " + window.location.hostname);
     } catch (e) {
-        console.error("Error inicializando Firebase (Verifica tus claves):", e);
+        console.error("Error inicializando Firebase:", e);
         db = null;
         auth = null;
     }

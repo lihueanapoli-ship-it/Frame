@@ -25,7 +25,6 @@ const BottomSheet = ({ isOpen, onClose, title, children }) => {
         <AnimatePresence>
             {isOpen && (
                 <>
-                    {/* Backdrop */}
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -34,7 +33,6 @@ const BottomSheet = ({ isOpen, onClose, title, children }) => {
                         className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
                     />
 
-                    {/* Sheet / Modal */}
                     <motion.div
                         drag={!isDesktop ? "y" : false}
                         dragConstraints={{ top: 0, bottom: 0 }}
@@ -58,14 +56,12 @@ const BottomSheet = ({ isOpen, onClose, title, children }) => {
                                 : "bottom-0 left-0 right-0 rounded-t-[3rem] border-t border-white/10 max-h-[92vh]"
                         )}
                     >
-                        {/* Handle bar (Mobile Only) */}
                         {!isDesktop && (
                             <div className="w-full flex justify-center pt-4 pb-2 group cursor-grab active:cursor-grabbing">
                                 <div className="w-12 h-1.5 bg-white/20 rounded-full group-hover:bg-white/40 transition-colors" />
                             </div>
                         )}
 
-                        {/* Header */}
                         <div className="flex justify-between items-center px-8 py-5 border-b border-white/5 bg-gradient-to-b from-white/[0.02] to-transparent">
                             <div>
                                 <h3 className="text-xl font-bold text-white tracking-tight">{title}</h3>
@@ -79,7 +75,6 @@ const BottomSheet = ({ isOpen, onClose, title, children }) => {
                             </button>
                         </div>
 
-                        {/* Content Scrollable */}
                         <div className="flex-1 overflow-y-auto px-8 py-6 pb-safe custom-scrollbar">
                             {children}
                         </div>
