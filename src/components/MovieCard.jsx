@@ -26,7 +26,6 @@ const MovieCard = ({ movie, onClick, rating, variant = 'default', onAddToWatchli
             }}
             onMouseEnter={() => {
                 setIsHovered(true);
-                playHover();
             }}
             onMouseLeave={() => setIsHovered(false)}
             className={cn(
