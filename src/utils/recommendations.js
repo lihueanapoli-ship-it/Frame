@@ -18,25 +18,34 @@ export async function getPersonalizedRecommendations(userData, expertiseLevel = 
         const watchedWithDetails = await fetchMovieDetails(watched);
         const profile = analyzeUserProfile(watchedWithDetails);
 
-        // Increase seeds from top-rated movies for better similarity
-        const [genreBased, similarBased, deepCuts] = await Promise.all([
-            getGenreBasedRecommendations(profile, watched, watchlist),
-            getSimilarBasedRecommendations(watchedWithDetails, watched, watchlist),
-            expertiseLevel === 'expert' || watched.length > 50
-                ? getDeepCuts(profile, watched, watchlist)
-                : Promise.resolve([])
+        if (profile.topGenres.length < 1) {
+            return { forYou: [], basedOnGenres: [], similar: [], deepCuts: [] };
+        }
+
+        // Calculate Average Threshold based on Top 3 Genres (or whatever is available)
+        const top3ForThreshold = profile.topGenres.slice(0, 3);
+        const avgOfTop3 = top3ForThreshold.reduce((sum, g) => sum + g.avgRating, 0) / top3ForThreshold.length;
+        const minThreshold = Math.floor(avgOfTop3); // e.g. 8.4 -> 8.0
+
+        console.log(`[Tu ADN] Top Genres: ${top3ForThreshold.map(g => g.name).join(', ')}`);
+        console.log(`[Tu ADN] Min Threshold: ${minThreshold}`);
+
+        // Fetch candidates centering on these top genres
+        const [genreBased, similarBased] = await Promise.all([
+            getGenreFocusedCandidates(profile, minThreshold, watched, watchlist),
+            getSimilarBasedRecommendations(watchedWithDetails, watched, watchlist)
         ]);
 
-        // Merge all candidates and REMOVE DUPLICATES BEFORE SCORING
-        const allCandidates = removeDuplicates([...genreBased, ...similarBased, ...deepCuts]);
+        const allCandidates = removeDuplicates([...genreBased, ...similarBased]);
 
-        const scoredMovies = scoreAndRank(allCandidates, profile);
+        // Filter and Rank strictly by Genre Intersection
+        const scoredMovies = rankByGenreIntersection(allCandidates, profile, minThreshold);
 
         return {
-            forYou: scoredMovies,
+            forYou: scoredMovies.slice(0, 50),
             basedOnGenres: removeDuplicates(genreBased).slice(0, 20),
             similar: removeDuplicates(similarBased).slice(0, 20),
-            deepCuts: removeDuplicates(deepCuts).slice(0, 15)
+            deepCuts: [] // Simplifying core ADN per request
         };
 
     } catch (error) {
@@ -58,7 +67,7 @@ async function fetchMovieDetails(movies) {
             release_date: cachedData.release_date || movie.release_date,
             runtime: cachedData.runtime || 0,
             userRating: movie.rating || 0,
-            popularity: movie.popularity || 0
+            popularity: cachedData.popularity || movie.popularity || 0
         };
     });
 
@@ -70,12 +79,11 @@ function analyzeUserProfile(watchedWithDetails) {
     const decades = {};
     let totalRating = 0;
     let ratedCount = 0;
-    let obscureCount = 0;
 
     watchedWithDetails.forEach(movie => {
         const rating = movie.userRating || 0;
 
-        if (movie.genres) {
+        if (movie.genres && rating > 0) {
             movie.genres.forEach(genre => {
                 if (!genreScores[genre.id]) {
                     genreScores[genre.id] = {
@@ -85,11 +93,7 @@ function analyzeUserProfile(watchedWithDetails) {
                         count: 0
                     };
                 }
-
-                // HEAVY WEIGHT: Ratings define the "ADN"
-                // 10 stars = 15 points, 1 star = 1 point, Unrated = 5 points
-                const weight = rating > 0 ? (rating > 7 ? rating * 1.5 : rating) : 5;
-                genreScores[genre.id].score += weight;
+                genreScores[genre.id].score += rating;
                 genreScores[genre.id].count += 1;
             });
         }
@@ -104,19 +108,15 @@ function analyzeUserProfile(watchedWithDetails) {
             totalRating += rating;
             ratedCount++;
         }
-
-        if (movie.popularity && movie.popularity < 30) {
-            obscureCount++;
-        }
     });
 
+    // Sort genres by average user rating
     const topGenres = Object.values(genreScores)
         .map(g => ({
             ...g,
-            avgRatingContribution: g.score / g.count,
-            percentage: Math.round((g.count / watchedWithDetails.length) * 100)
+            avgRating: g.score / g.count
         }))
-        .sort((a, b) => b.avgRatingContribution - a.avgRatingContribution || b.count - a.count);
+        .sort((a, b) => b.avgRating - a.avgRating || b.count - a.count);
 
     const topDecades = Object.entries(decades)
         .map(([decade, weight]) => ({ decade: parseInt(decade), weight }))
@@ -126,141 +126,88 @@ function analyzeUserProfile(watchedWithDetails) {
         topGenres,
         topDecades,
         avgRating: ratedCount > 0 ? totalRating / ratedCount : 7.0,
-        totalWatched: watchedWithDetails.length,
-        prefersPopular: calculatePopularityPreference(watchedWithDetails),
-        obscureRatio: obscureCount / Math.max(watchedWithDetails.length, 1)
+        totalWatched: watchedWithDetails.length
     };
 }
 
-function calculatePopularityPreference(movies) {
-    const avgPopularity = movies.reduce((sum, m) => sum + (m.popularity || 0), 0) / movies.length;
-    return avgPopularity > 40;
-}
-
-async function getGenreBasedRecommendations(profile, watched, watchlist) {
-    if (profile.topGenres.length === 0) return [];
+async function getGenreFocusedCandidates(profile, minThreshold, watched, watchlist) {
+    const top3Ids = profile.topGenres.slice(0, 3).map(g => g.id);
+    if (top3Ids.length === 0) return [];
 
     try {
-        // Focus on the top 3 genres with highest rating contribution
-        const topGenres = profile.topGenres.slice(0, 3);
-        const genrePromises = topGenres.map(g =>
-            discoverMovies({
-                with_genres: g.id,
-                sort_by: 'vote_average.desc',
-                'vote_count.gte': profile.prefersPopular ? 1500 : 200,
-                'vote_average.gte': Math.max(profile.avgRating - 0.5, 7.0),
-                'primary_release_date.gte': profile.topDecades.length > 0 ? `${profile.topDecades[0].decade - 10}-01-01` : '1900-01-01'
-            }).catch(() => [])
-        );
+        // Source 1: Strict intersection (ALL 3)
+        const strictPromise = top3Ids.length === 3
+            ? discoverMovies({
+                with_genres: top3Ids.join(','), // AND
+                'vote_average.gte': minThreshold,
+                'vote_count.gte': 100,
+                sort_by: 'vote_average.desc'
+            }) : Promise.resolve([]);
 
-        const results = await Promise.all(genrePromises);
-        const combined = results.flat();
+        // Source 2: Broad intersection (ANY of Top 3)
+        const broadPromise = discoverMovies({
+            with_genres: top3Ids.join('|'), // OR
+            'vote_average.gte': minThreshold,
+            'vote_count.gte': 500, // Higher count for quality when OR logic
+            sort_by: 'vote_average.desc'
+        });
 
-        return filterWatched(combined, watched, watchlist);
-    } catch (error) {
-        console.error('[Tu ADN] Error in genre-based:', error);
+        const [strict, broad] = await Promise.all([strictPromise, broadPromise]);
+
+        return filterWatched([...strict, ...broad], watched, watchlist);
+    } catch (e) {
+        console.error('[Tu ADN] Genre candidates error:', e);
         return [];
     }
 }
 
 async function getSimilarBasedRecommendations(watchedWithDetails, watched, watchlist) {
-    // Seed HEAVILY from what the user LOVED (9-10 stars)
     const lovedMovies = watchedWithDetails
         .filter(m => (m.userRating || 0) >= 9)
         .sort((a, b) => (b.userRating || 0) - (a.userRating || 0))
-        .slice(0, 8);
+        .slice(0, 5);
 
-    // Fallback to 8 stars if not enough 9-10
-    const likedMovies = watchedWithDetails
-        .filter(m => (m.userRating || 0) === 8)
-        .slice(0, 4);
-
-    const seeds = [...lovedMovies, ...likedMovies];
-
-    if (seeds.length === 0) return [];
+    if (lovedMovies.length === 0) return [];
 
     try {
-        const similarPromises = seeds.map(movie =>
+        const similarPromises = lovedMovies.map(movie =>
             getSimilarMovies(movie.id).catch(() => [])
         );
 
-        const similarResults = await Promise.all(similarPromises);
-        const allSimilar = similarResults.flat();
-
-        return filterWatched(allSimilar, watched, watchlist);
+        const results = await Promise.all(similarPromises);
+        return filterWatched(results.flat(), watched, watchlist);
     } catch (error) {
-        console.error('[Tu ADN] Error in similar-based:', error);
         return [];
     }
 }
 
-async function getDeepCuts(profile, watched, watchlist) {
-    if (profile.topGenres.length === 0) return [];
+function rankByGenreIntersection(movies, profile, threshold) {
+    const top3Ids = profile.topGenres.slice(0, 3).map(g => g.id);
 
-    try {
-        const topGenreId = profile.topGenres[0].id;
+    return movies
+        .map(movie => {
+            const intersection = (movie.genre_ids || []).filter(id => top3Ids.includes(id)).length;
 
-        const movies = await discoverMovies({
-            with_genres: topGenreId,
-            sort_by: 'vote_average.desc',
-            'vote_count.gte': 80,
-            'vote_count.lte': 1000,
-            'vote_average.gte': 7.4
-        });
+            // Tiered Scoring:
+            // 3 matches = base 100
+            // 2 matches = base 50
+            // 1 match = base 10
+            // 0 matches = -1000 (Filter out)
+            let score = 0;
+            if (intersection === 3) score = 100;
+            else if (intersection === 2) score = 50;
+            else if (intersection === 1) score = 10;
+            else score = -1000;
 
-        return filterWatched(movies, watched, watchlist);
-    } catch (error) {
-        console.error('[Tu ADN] Error in deep cuts:', error);
-        return [];
-    }
-}
-
-function scoreAndRank(movies, profile) {
-    const topGenreIds = profile.topGenres.slice(0, 5).map(g => g.id);
-    const favoriteDecades = profile.topDecades.slice(0, 3).map(d => d.decade);
-
-    const scored = movies.map(movie => {
-        let score = 0;
-
-        if (movie.genre_ids) {
-            const matches = movie.genre_ids.filter(id => topGenreIds.includes(id));
-            if (matches.length > 0) {
-                // Exponential bonus for matching multiple favorite genres
-                score += Math.pow(matches.length, 2) * 5;
-
-                // Extra bonus for matching the #1 genre
-                if (matches.includes(topGenreIds[0])) score += 15;
+            // Rating bonus: How much it exceeds the threshold
+            if (movie.vote_average) {
+                score += (movie.vote_average - threshold) * 10;
             }
-        }
 
-        if (movie.vote_average) {
-            // Quality is important, but how close it is to user's average rating is better
-            const diff = Math.abs(movie.vote_average - profile.avgRating);
-            if (diff < 0.5) score += 20;
-            else if (diff < 1.0) score += 10;
-
-            // Absolute high quality bonus
-            if (movie.vote_average > 8.2) score += 10;
-        }
-
-        if (movie.release_date) {
-            const year = new Date(movie.release_date).getFullYear();
-            const decade = Math.floor(year / 10) * 10;
-            if (favoriteDecades.includes(decade)) {
-                score += favoriteDecades[0] === decade ? 15 : 7;
-            }
-        }
-
-        // Popularity alignment
-        if (profile.prefersPopular && movie.vote_count > 2000) score += 5;
-        if (profile.obscureRatio > 0.2 && movie.vote_count < 500) score += 12;
-
-        return { ...movie, tuAdnScore: score };
-    });
-
-    return scored
-        .sort((a, b) => b.tuAdnScore - a.tuAdnScore || b.vote_average - a.vote_average)
-        .slice(0, 50);
+            return { ...movie, tuAdnScore: score };
+        })
+        .filter(movie => movie.tuAdnScore > 0 && (movie.vote_average || 0) >= threshold)
+        .sort((a, b) => b.tuAdnScore - a.tuAdnScore || b.vote_average - a.vote_average);
 }
 
 function filterWatched(movies, watched, watchlist) {
