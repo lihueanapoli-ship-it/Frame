@@ -4,12 +4,13 @@ import { useUserProfile } from '../contexts/UserProfileContext';
 import { useMovies } from '../contexts/MovieContext';
 import { getPersonalizedRecommendations } from '../utils/recommendations';
 import HeroCarousel from '../components/domain/HeroCarousel';
-import { Loader2, ChevronRight, Sparkles } from 'lucide-react';
+import { Loader2, ChevronRight, Sparkles, Filter } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Link } from 'react-router-dom';
 import MovieCard from '../components/MovieCard';
+import ExclusionModal from '../components/ui/ExclusionModal';
 
-const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, variant = 'default', isEmpty = false, emptyMessage, showAll = false }) => {
+const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, variant = 'default', isEmpty = false, emptyMessage, showAll = false, headerAction }) => {
     const [isHovered, setIsHovered] = useState(false);
     const scrollRef = useRef(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -48,6 +49,7 @@ const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, vari
             <section className="mb-8 content-visibility-auto" id={categoryId}>
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-2xl md:text-3xl font-display text-white">{title}</h2>
+                    {headerAction}
                 </div>
                 <div className="bg-surface/30 border border-white/10 rounded-xl p-8 text-center">
                     <Sparkles className="w-12 h-12 text-primary/50 mx-auto mb-4" />
@@ -68,11 +70,14 @@ const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, vari
                         </p>
                     )}
                 </div>
-                {categoryId && !showAll && movies.length > 0 && (
-                    <Link to={`/category/${categoryId}`} className="text-primary hover:text-primary-hover transition-colors flex items-center gap-1 text-sm">
-                        <span>Ver todo</span><ChevronRight className="w-4 h-4" />
-                    </Link>
-                )}
+                <div className="flex items-center gap-4">
+                    {headerAction}
+                    {categoryId && !showAll && movies.length > 0 && (
+                        <Link to={`/category/${categoryId}`} className="text-primary hover:text-primary-hover transition-colors flex items-center gap-1 text-sm">
+                            <span>Ver todo</span><ChevronRight className="w-4 h-4" />
+                        </Link>
+                    )}
+                </div>
             </div>
             <div ref={scrollRef}
                 className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory select-none touch-auto"
@@ -96,8 +101,9 @@ const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, vari
 const DiscoverView = ({ onSelectMovie }) => {
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState({ trending: [], must_watch: [], short: [], conversation: [], tech: [], argentina: [], thriller: [], romance: [], real_life: [], sagas: [], classic_author: [], forYou: [] });
-    const { expertiseLevel, trackBehavior } = useUserProfile();
+    const { profile, updateProfile, expertiseLevel, trackBehavior } = useUserProfile();
     const { watched, watchlist } = useMovies();
+    const [showExclusionModal, setShowExclusionModal] = useState(false);
 
     useEffect(() => {
         fetchInitialData();
@@ -108,7 +114,7 @@ const DiscoverView = ({ onSelectMovie }) => {
         if (watched.length > 0) {
             fetchPersonalizedRecommendations();
         }
-    }, [watched, expertiseLevel]);
+    }, [watched, expertiseLevel, profile?.preferences?.excludedGenres, profile?.preferences?.excludedCountries]);
 
     const fetchInitialData = async () => {
         try {
@@ -146,12 +152,19 @@ const DiscoverView = ({ onSelectMovie }) => {
 
     const fetchPersonalizedRecommendations = async () => {
         try {
-            const userData = { movieData: { watched, watchlist } };
+            const userData = {
+                movieData: { watched, watchlist },
+                preferences: profile?.preferences || {}
+            };
             const recommendations = await getPersonalizedRecommendations(userData, expertiseLevel);
             setData(prev => ({ ...prev, forYou: recommendations.forYou || [] }));
         } catch (error) {
             console.error('Error fetching recommendations:', error);
         }
+    };
+
+    const handleSaveExclusions = async (newPreferences) => {
+        await updateProfile({ preferences: newPreferences });
     };
 
     if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>;
@@ -177,10 +190,47 @@ const DiscoverView = ({ onSelectMovie }) => {
 
             <div className="space-y-6 mt-8">
                 {watched.length > 0 ? (
-                    <MovieSection title="Tu ADN" subtitle="Películas seleccionadas para tu perfil cinematográfico único" movies={data.forYou} onSelectMovie={onSelectMovie} variant="personalized" categoryId="for_you" />
+                    <MovieSection
+                        title="Tu ADN"
+                        subtitle="Películas seleccionadas para tu perfil cinematográfico único"
+                        movies={data.forYou}
+                        onSelectMovie={onSelectMovie}
+                        variant="personalized"
+                        categoryId="for_you"
+                        headerAction={
+                            <button
+                                onClick={() => setShowExclusionModal(true)}
+                                className="p-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 hover:border-white/20 transition-all text-gray-400 hover:text-white group flex items-center gap-2"
+                                title="Configurar exclusiones"
+                            >
+                                <Filter className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                <span className="text-xs font-bold hidden sm:inline">FILTRAR ADN</span>
+                            </button>
+                        }
+                    />
                 ) : (
-                    <MovieSection title="Tu ADN" isEmpty={true} emptyMessage="Marcá películas como vistas para descubrir tu perfil cinematográfico único y recibir recomendaciones personalizadas basadas en tus gustos." />
+                    <MovieSection
+                        title="Tu ADN"
+                        isEmpty={true}
+                        emptyMessage="Marcá películas como vistas para descubrir tu perfil cinematográfico único y recibir recomendaciones personalizadas basadas en tus gustos."
+                        headerAction={
+                            <button
+                                onClick={() => setShowExclusionModal(true)}
+                                className="p-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 hover:border-white/20 transition-all text-gray-400 hover:text-white group flex items-center gap-2"
+                            >
+                                <Filter className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                <span className="text-xs font-bold hidden sm:inline">FILTRAR ADN</span>
+                            </button>
+                        }
+                    />
                 )}
+
+                <ExclusionModal
+                    isOpen={showExclusionModal}
+                    onClose={() => setShowExclusionModal(false)}
+                    preferences={profile?.preferences}
+                    onSave={handleSaveExclusions}
+                />
                 <MovieSection title="Los Infaltables" subtitle="Clásicos que todo el mundo ama" movies={data.must_watch} onSelectMovie={onSelectMovie} categoryId="must_watch" />
                 <MovieSection title="Cortitas y al Pie" subtitle="90 minutos o menos. Directo al grano sin filtros" movies={data.short} onSelectMovie={onSelectMovie} categoryId="short" />
                 <MovieSection title="Mate y Sobremesa" subtitle="Historias que todo el mundo ama y que no podés no haber visto" movies={data.conversation} onSelectMovie={onSelectMovie} categoryId="conversation" />

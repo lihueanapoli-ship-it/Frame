@@ -9,6 +9,7 @@ import { getGenresForMovies } from './genreCache';
 
 export async function getPersonalizedRecommendations(userData, expertiseLevel = 'novice') {
     const { watched = [], watchlist = [] } = userData?.movieData || {};
+    const preferences = userData?.preferences || {};
 
     if (watched.length === 0) {
         return { forYou: [], basedOnGenres: [], similar: [], deepCuts: [] };
@@ -22,28 +23,29 @@ export async function getPersonalizedRecommendations(userData, expertiseLevel = 
             return { forYou: [], basedOnGenres: [], similar: [], deepCuts: [] };
         }
 
-        // Calculate Average Threshold based on Top 3 Genres (or whatever is available)
         const top3ForThreshold = profile.topGenres.slice(0, 3);
         const avgOfTop3 = top3ForThreshold.reduce((sum, g) => sum + g.avgRating, 0) / (top3ForThreshold.length || 1);
-        const minThreshold = Math.floor(avgOfTop3); // e.g. 8.4 -> 8.0
+        const minThreshold = Math.floor(avgOfTop3);
 
         console.log(`[Tu ADN] Top Genres: ${top3ForThreshold.map(g => g.name).join(', ')}`);
         console.log(`[Tu ADN] Target Min Rating: ${minThreshold}`);
 
-        // Fetch candidates centering on these top genres
-        // We'll fetch multiple pages to ensure we reach the 50 movies goal
         const [genreBased, similarBased] = await Promise.all([
             getGenreFocusedCandidates(profile, minThreshold, watched, watchlist),
             getSimilarBasedRecommendations(watchedWithDetails, watched, watchlist)
         ]);
 
         let allCandidates = removeDuplicates([...genreBased, ...similarBased]);
+
+        // --- APPLY EXCLUSIONS ---
+        allCandidates = filterByExclusions(allCandidates, preferences);
+
         let scoredMovies = rankByGenreIntersection(allCandidates, profile, minThreshold);
 
-        // Fallback: if we still don't have 50 movies, broaden the search
         if (scoredMovies.length < 50 && top3ForThreshold.length > 0) {
             const moreCandidates = await getBroadGenreCandidates(profile, minThreshold, watched, watchlist);
-            allCandidates = removeDuplicates([...allCandidates, ...moreCandidates]);
+            const filteredMore = filterByExclusions(moreCandidates, preferences);
+            allCandidates = removeDuplicates([...allCandidates, ...filteredMore]);
             scoredMovies = rankByGenreIntersection(allCandidates, profile, minThreshold);
         }
 
@@ -51,13 +53,36 @@ export async function getPersonalizedRecommendations(userData, expertiseLevel = 
             forYou: scoredMovies.slice(0, 50),
             basedOnGenres: removeDuplicates(genreBased).slice(0, 20),
             similar: removeDuplicates(similarBased).slice(0, 20),
-            deepCuts: [] // Simplifying core ADN per request
+            deepCuts: []
         };
 
     } catch (error) {
         console.error('[Tu ADN] ❌ Error:', error);
         return { forYou: [], basedOnGenres: [], similar: [], deepCuts: [] };
     }
+}
+
+function filterByExclusions(movies, preferences) {
+    const { excludedGenres = [], excludedCountries = [] } = preferences;
+
+    if (excludedGenres.length === 0 && excludedCountries.length === 0) return movies;
+
+    return movies.filter(movie => {
+        // Check genres
+        const genreIds = movie.genre_ids || [];
+        const hasExcludedGenre = genreIds.some(id => excludedGenres.includes(id));
+        if (hasExcludedGenre) return false;
+
+        // Check countries
+        // Note: Production countries might be ISO codes in production_countries array
+        const countries = movie.production_countries || [];
+        const hasExcludedCountry = countries.some(c =>
+            excludedCountries.includes(c.iso_3166_1) || excludedCountries.includes(c.name)
+        );
+        if (hasExcludedCountry) return false;
+
+        return true;
+    });
 }
 
 async function fetchMovieDetails(movies) {

@@ -61,6 +61,20 @@ export const UserProfileProvider = ({ children }) => {
                         data.privacySettings = { profile: 'public', lists: 'public' };
                         needsUpdate = true;
                     }
+                    // Fix missing Preferences
+                    if (!data.preferences) {
+                        data.preferences = { theme: 'dark', language: 'es-MX', reducedMotion: false, excludedGenres: [], excludedCountries: [] };
+                        needsUpdate = true;
+                    } else {
+                        if (data.preferences.excludedGenres === undefined) {
+                            data.preferences.excludedGenres = [];
+                            needsUpdate = true;
+                        }
+                        if (data.preferences.excludedCountries === undefined) {
+                            data.preferences.excludedCountries = [];
+                            needsUpdate = true;
+                        }
+                    }
                     // Fix missing Custom Lists
                     if (!data.customLists) {
                         data.customLists = [];
@@ -98,7 +112,9 @@ export const UserProfileProvider = ({ children }) => {
                         preferences: {
                             theme: 'dark',
                             language: 'es-MX',
-                            reducedMotion: false
+                            reducedMotion: false,
+                            excludedGenres: [],
+                            excludedCountries: []
                         },
                         // Fase 5: Social & Monetization Foundation
                         username: user.displayName ? user.displayName.replace(/\s+/g, '').toLowerCase() + Math.floor(Math.random() * 1000) : `user${Math.floor(Math.random() * 10000)}`,
