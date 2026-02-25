@@ -147,14 +147,14 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-4 sm:pt-24">
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-2">
             <motion.div
                 variants={overlayVariants}
                 initial="hidden"
                 animate="visible"
                 exit="exit"
                 onClick={onClose}
-                className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                className="absolute inset-0 bg-black/90 backdrop-blur-md"
             />
 
             <motion.div
@@ -162,7 +162,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                 initial="hidden"
                 animate="visible"
                 exit="exit"
-                className="relative w-full max-w-6xl mx-auto bg-background rounded-t-xl sm:rounded-xl overflow-hidden shadow-2xl h-[85vh] flex flex-col border border-white/10"
+                className="relative w-full max-w-7xl mx-auto bg-background rounded-t-2xl sm:rounded-2xl overflow-hidden shadow-2xl h-[94vh] flex flex-col border border-white/10"
             >
                 <button
                     onClick={onClose}
@@ -175,7 +175,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
 
                     <div
                         className={cn(
-                            "relative h-[30vh] sm:h-[50vh] w-full bg-black overflow-hidden group",
+                            "relative h-[40vh] sm:h-[60vh] w-full bg-black overflow-hidden group",
                             videoKey && showVideo ? "cursor-pointer" : ""
                         )}
                         onClick={() => {
