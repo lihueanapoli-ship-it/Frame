@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getCustomCollection, getTrendingMovies, getTopRatedMovies, getMoviesByGenre } from '../api/tmdb';
 import { getPersonalizedRecommendations } from '../utils/recommendations';
 import { useMovies } from '../contexts/MovieContext';
+import { useUserProfile } from '../contexts/UserProfileContext';
 import MovieCard from '../components/MovieCard';
 import { ArrowLeftIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { Loader2 } from 'lucide-react';
@@ -11,6 +12,7 @@ const CategoryView = ({ onSelectMovie }) => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { watched, watchlist } = useMovies();
+    const { profile, expertiseLevel } = useUserProfile();
     const [movies, setMovies] = useState([]);
     const [loading, setLoading] = useState(true);
     const [title, setTitle] = useState('');
@@ -32,9 +34,10 @@ const CategoryView = ({ onSelectMovie }) => {
                     if (watched.length > 0) {
                         if (allRecommendations.length === 0 || reset) {
                             const userData = {
-                                movieData: { watched, watchlist }
+                                movieData: { watched, watchlist },
+                                preferences: profile?.preferences || {}
                             };
-                            const recommendations = await getPersonalizedRecommendations(userData, 'intermediate');
+                            const recommendations = await getPersonalizedRecommendations(userData, expertiseLevel || 'intermediate');
                             const allRecs = recommendations.forYou || [];
 
                             const uniqueRecs = Array.from(new Map(allRecs.map(item => [item.id, item])).values());
@@ -112,7 +115,7 @@ const CategoryView = ({ onSelectMovie }) => {
         setLoading(true);
         fetchData(1, true, id);
         window.scrollTo(0, 0);
-    }, [id]);
+    }, [id, profile?.preferences?.excludedGenres, profile?.preferences?.excludedCountries, expertiseLevel]);
 
     const shuffle = async () => {
         let maxPage = 20;

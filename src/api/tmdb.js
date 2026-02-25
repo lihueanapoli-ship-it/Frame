@@ -304,3 +304,13 @@ export const getAvailableProvidersInRegion = async (region = 'AR') => {
         return [];
     }
 };
+
+export const getCountries = async () => {
+    try {
+        const response = await tmdbClient.get('/configuration/countries');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching countries:', error);
+        return [];
+    }
+};

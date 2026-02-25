@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { XMarkIcon, FunnelIcon, GlobeAltIcon, TagIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, FunnelIcon, GlobeAltIcon, TagIcon, CheckIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { cn } from '../../lib/utils';
+import { getCountries } from '../../api/tmdb';
+import { useEffect } from 'react';
 
 const GENRES = [
     { id: 28, name: 'Acción' },
@@ -42,7 +44,26 @@ const COMMON_COUNTRIES = [
 const ExclusionModal = ({ isOpen, onClose, preferences, onSave }) => {
     const [excludedGenres, setExcludedGenres] = useState(preferences?.excludedGenres || []);
     const [excludedCountries, setExcludedCountries] = useState(preferences?.excludedCountries || []);
+    const [allCountries, setAllCountries] = useState(COMMON_COUNTRIES);
     const [activeTab, setActiveTab] = useState('genres');
+    const [searchTerm, setSearchTerm] = useState('');
+
+    useEffect(() => {
+        if (isOpen) {
+            fetchCountries();
+        }
+    }, [isOpen]);
+
+    const fetchCountries = async () => {
+        const countries = await getCountries();
+        if (countries && countries.length > 0) {
+            // Sort countries: English name (or native if preferred, but usually we use translated)
+            const sorted = countries
+                .map(c => ({ code: c.iso_3166_1, name: c.native_name || c.english_name }))
+                .sort((a, b) => a.name.localeCompare(b.name));
+            setAllCountries(sorted);
+        }
+    };
 
     const toggleGenre = (genreId) => {
         setExcludedGenres(prev =>
@@ -156,29 +177,50 @@ const ExclusionModal = ({ isOpen, onClose, preferences, onSave }) => {
                                 ))}
                             </div>
                         ) : (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                {COMMON_COUNTRIES.map(country => (
-                                    <button
-                                        key={country.code}
-                                        onClick={() => toggleCountry(country.code)}
-                                        className={cn(
-                                            "flex items-center justify-between p-3 rounded-xl border transition-all group",
-                                            excludedCountries.includes(country.code)
-                                                ? "bg-red-500/10 border-red-500/50 text-white shadow-[0_0_15px_rgba(239,68,68,0.1)]"
-                                                : "bg-white/[0.03] border-white/5 text-gray-400 hover:border-white/20 hover:text-gray-200"
-                                        )}
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs font-mono text-gray-500">{country.code}</span>
-                                            <span className="text-sm font-medium">{country.name}</span>
-                                        </div>
-                                        {excludedCountries.includes(country.code) ? (
-                                            <GlobeAltIcon className="w-4 h-4 text-red-500" />
-                                        ) : (
-                                            <div className="w-4 h-4 rounded-full border border-white/10 group-hover:border-white/30" />
-                                        )}
-                                    </button>
-                                ))}
+                            <div className="space-y-4">
+                                {/* Search Bar */}
+                                <div className="relative">
+                                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                                    <input
+                                        type="text"
+                                        placeholder="Buscar país (ej: Taiwan, Checa...)"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-primary/50 transition-all"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                    {allCountries
+                                        .filter(c =>
+                                            c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                            c.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                            excludedCountries.includes(c.code)
+                                        )
+                                        .map(country => (
+                                            <button
+                                                key={country.code}
+                                                onClick={() => toggleCountry(country.code)}
+                                                className={cn(
+                                                    "flex items-center justify-between p-3 rounded-xl border transition-all group",
+                                                    excludedCountries.includes(country.code)
+                                                        ? "bg-red-500/10 border-red-500/50 text-white shadow-[0_0_15px_rgba(239,68,68,0.1)]"
+                                                        : "bg-white/[0.03] border-white/5 text-gray-400 hover:border-white/20 hover:text-gray-200"
+                                                )}
+                                            >
+                                                <div className="flex items-center gap-2 overflow-hidden">
+                                                    <span className="text-[10px] font-mono text-gray-500 flex-shrink-0">{country.code}</span>
+                                                    <span className="text-sm font-medium truncate">{country.name}</span>
+                                                </div>
+                                                {excludedCountries.includes(country.code) ? (
+                                                    <GlobeAltIcon className="w-4 h-4 text-red-500 flex-shrink-0" />
+                                                ) : (
+                                                    <div className="w-4 h-4 rounded-full border border-white/10 group-hover:border-white/30 flex-shrink-0" />
+                                                )}
+                                            </button>
+                                        ))
+                                    }
+                                </div>
                             </div>
                         )}
 
