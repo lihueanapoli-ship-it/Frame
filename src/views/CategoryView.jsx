@@ -5,19 +5,21 @@ import { getPersonalizedRecommendations } from '../utils/recommendations';
 import { useMovies } from '../contexts/MovieContext';
 import { useUserProfile } from '../contexts/UserProfileContext';
 import MovieCard from '../components/MovieCard';
-import { ArrowLeftIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import ExclusionModal from '../components/ui/ExclusionModal';
+import { ArrowLeftIcon, ChevronDownIcon, FunnelIcon } from '@heroicons/react/24/outline';
 import { Loader2 } from 'lucide-react';
 
 const CategoryView = ({ onSelectMovie }) => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { watched, watchlist } = useMovies();
-    const { profile, expertiseLevel } = useUserProfile();
+    const { profile, expertiseLevel, updateProfile } = useUserProfile();
     const [movies, setMovies] = useState([]);
     const [loading, setLoading] = useState(true);
     const [title, setTitle] = useState('');
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
+    const [showExclusionModal, setShowExclusionModal] = useState(false);
 
     const [allRecommendations, setAllRecommendations] = useState([]);
     const [displayCount, setDisplayCount] = useState(20);
@@ -143,6 +145,12 @@ const CategoryView = ({ onSelectMovie }) => {
         }
     };
 
+    const handleSaveExclusions = async (newPreferences) => {
+        await updateProfile({ preferences: newPreferences });
+        setAllRecommendations([]);
+        fetchData(1, true, id);
+    };
+
     const canLoadMore = id === 'for_you'
         ? displayCount < allRecommendations.length
         : hasMore;
@@ -153,6 +161,16 @@ const CategoryView = ({ onSelectMovie }) => {
                 <div className="flex items-center gap-4">
                     <h1 className="text-2xl font-display font-bold tracking-widest uppercase text-white">{title}</h1>
                 </div>
+
+                {id === 'for_you' && (
+                    <button
+                        onClick={() => setShowExclusionModal(true)}
+                        className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-2 rounded-xl transition-all group"
+                    >
+                        <FunnelIcon className="w-4 h-4 text-primary" />
+                        <span className="text-sm font-bold text-white tracking-widest uppercase">Filtrar ADN</span>
+                    </button>
+                )}
 
                 {id !== 'for_you' && (
                     <button
@@ -207,6 +225,14 @@ const CategoryView = ({ onSelectMovie }) => {
                     )}
                 </>
             )}
+
+            <ExclusionModal
+                isOpen={showExclusionModal}
+                onClose={() => setShowExclusionModal(false)}
+                preferences={profile?.preferences}
+                onSave={handleSaveExclusions}
+                recommendations={allRecommendations}
+            />
         </div>
     );
 };
