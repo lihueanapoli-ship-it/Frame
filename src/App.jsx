@@ -161,7 +161,7 @@ const AppContent = () => {
     return (
         <div className="min-h-screen bg-background text-white font-sans selection:bg-primary selection:text-white">
             <header className="sticky top-0 z-[100] w-full backdrop-blur-xl bg-background/90 border-b border-white/5 transition-all duration-300">
-                <div className="flex h-14 md:h-20 items-center w-full px-4 max-w-7xl mx-auto justify-between relative">
+                <div className="flex h-16 md:h-24 items-center w-full px-4 max-w-7xl mx-auto justify-between relative pt-safe sm:pt-2">
                     <div className="flex items-center gap-1.5 z-10">
                         {!isHome && (
                             <button
@@ -180,9 +180,7 @@ const AppContent = () => {
                             setLogoKey(prev => prev + 1);
                         }} className="font-bold text-lg tracking-tight hover:text-primary transition-colors cursor-pointer group">
                             <div className="flex items-center gap-3 active:scale-95 transition-transform">
-                                <div className="scale-90">
-                                    <DynamicLogo />
-                                </div>
+                                <DynamicLogo />
                                 <span className="font-display text-3xl tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400 group-hover:from-primary group-hover:to-cyan-400 transition-all duration-300">
                                     FRAME
                                 </span>

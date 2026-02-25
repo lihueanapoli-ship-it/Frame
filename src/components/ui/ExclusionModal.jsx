@@ -62,8 +62,22 @@ const ExclusionModal = ({ isOpen, onClose, preferences, onSave, recommendations 
             let originCountries = movie.origin_country || [];
             if (typeof originCountries === 'string') originCountries = [originCountries];
 
+            const processedCodes = new Set();
+
             originCountries.forEach(code => {
-                if (code) counts[code] = (counts[code] || 0) + 1;
+                if (code) {
+                    counts[code] = (counts[code] || 0) + 1;
+                    processedCodes.add(code);
+                }
+            });
+
+            const prodCountries = movie.production_countries || [];
+            prodCountries.forEach(c => {
+                const code = c.iso_3166_1;
+                if (code && !processedCodes.has(code)) {
+                    counts[code] = (counts[code] || 0) + 1;
+                    processedCodes.add(code);
+                }
             });
         });
         setCountryCounts(counts);
