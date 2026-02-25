@@ -76,25 +76,29 @@ function filterByExclusions(movies, preferences) {
         const genreIds = movie.genre_ids || [];
         const hasExcludedGenre = genreIds.some(id => excludedGenres.includes(id));
         if (hasExcludedGenre) {
-            console.log(`[Tu ADN] Filtered (Genre): ${movie.title || movie.name} (${genreIds})`);
+            console.log(`[Tu ADN] Filtered (Genre): ${movie.title || movie.name}`);
             return false;
         }
 
         // --- COUNTRY FILTERING ---
         const countries = movie.production_countries || [];
-        // TMDB 'origin_country' can sometimes be a string or an array of strings in different endpoints
         let originCountries = movie.origin_country || [];
         if (typeof originCountries === 'string') originCountries = [originCountries];
 
         const hasExcludedCountry =
-            countries.some(c =>
-                (c.iso_3166_1 && excludedCountries.includes(c.iso_3166_1)) ||
-                (c.name && excludedCountries.includes(c.name))
-            ) ||
-            originCountries.some(code => excludedCountries.includes(code));
+            countries.some(c => {
+                const code = (c.iso_3166_1 || '').toUpperCase();
+                const name = (c.name || '').toLowerCase();
+                return excludedCountries.some(exCode =>
+                    exCode.toUpperCase() === code || name.includes(exCode.toLowerCase())
+                );
+            }) ||
+            originCountries.some(code =>
+                excludedCountries.some(exCode => exCode.toUpperCase() === code.toUpperCase())
+            );
 
         if (hasExcludedCountry) {
-            console.log(`[Tu ADN] Filtered (Country): ${movie.title || movie.name} (Countries: ${originCountries.join(',') || 'none'})`);
+            console.log(`[Tu ADN] Filtered (Country): ${movie.title || movie.name} (Codes: ${originCountries.join(',')})`);
             return false;
         }
 

@@ -49,6 +49,7 @@ export async function getGenresForMovies(movies, onProgress) {
                         release_date: details.release_date || null,
                         runtime: details.runtime || 0,
                         production_countries: details.production_countries || [],
+                        origin_country: details.origin_country || [],
                         popularity: details.popularity || 0
                     };
                     hasChanges = true;
