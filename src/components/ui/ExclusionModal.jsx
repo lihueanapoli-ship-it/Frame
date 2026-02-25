@@ -49,6 +49,18 @@ const ExclusionModal = ({ isOpen, onClose, preferences, onSave, recommendations 
     const [searchTerm, setSearchTerm] = useState('');
     const [countryCounts, setCountryCounts] = useState({});
 
+    // Body scroll lock
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
     useEffect(() => {
         if (isOpen) {
             fetchCountries();
@@ -59,24 +71,26 @@ const ExclusionModal = ({ isOpen, onClose, preferences, onSave, recommendations 
         // Calculate country counts from recommendations
         const counts = {};
         recommendations.forEach(movie => {
-            let originCountries = movie.origin_country || [];
-            if (typeof originCountries === 'string') originCountries = [originCountries];
-
             const processedCodes = new Set();
 
+            // Check origin_country
+            let originCountries = movie.origin_country || [];
+            if (typeof originCountries === 'string') originCountries = [originCountries];
             originCountries.forEach(code => {
-                if (code) {
-                    counts[code] = (counts[code] || 0) + 1;
-                    processedCodes.add(code);
+                const upperCode = (code || '').toUpperCase();
+                if (upperCode && !processedCodes.has(upperCode)) {
+                    counts[upperCode] = (counts[upperCode] || 0) + 1;
+                    processedCodes.add(upperCode);
                 }
             });
 
+            // Check production_countries
             const prodCountries = movie.production_countries || [];
             prodCountries.forEach(c => {
-                const code = c.iso_3166_1;
-                if (code && !processedCodes.has(code)) {
-                    counts[code] = (counts[code] || 0) + 1;
-                    processedCodes.add(code);
+                const upperCode = (c.iso_3166_1 || '').toUpperCase();
+                if (upperCode && !processedCodes.has(upperCode)) {
+                    counts[upperCode] = (counts[upperCode] || 0) + 1;
+                    processedCodes.add(upperCode);
                 }
             });
         });
