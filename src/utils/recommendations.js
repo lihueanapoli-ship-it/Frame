@@ -76,7 +76,6 @@ function filterByExclusions(movies, preferences) {
         const genreIds = movie.genre_ids || [];
         const hasExcludedGenre = genreIds.some(id => excludedGenres.includes(id));
         if (hasExcludedGenre) {
-            console.log(`[Tu ADN] Filtered (Genre): ${movie.title || movie.name}`);
             return false;
         }
 
@@ -98,7 +97,6 @@ function filterByExclusions(movies, preferences) {
             );
 
         if (hasExcludedCountry) {
-            console.log(`[Tu ADN] Filtered (Country): ${movie.title || movie.name} (Codes: ${originCountries.join(',')})`);
             return false;
         }
 

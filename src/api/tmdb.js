@@ -247,12 +247,12 @@ export const getTrendingMovies = async (page = 1) => {
 };
 
 export const getPosterUrl = (path, size = 'w500') => {
-    if (!path) return 'https://via.placeholder.com/500x750?text=No+Poster';
+    if (!path) return 'https://placehold.co/500x750/1a1a1a/ffffff?text=No+Poster';
     return `https://image.tmdb.org/t/p/${size}${path}`;
 };
 
 export const getBackdropUrl = (path, size = 'w1280') => {
-    if (!path) return null;
+    if (!path) return 'https://placehold.co/1280x720/1a1a1a/ffffff?text=No+Backdrop';
     return `https://image.tmdb.org/t/p/${size}${path}`;
 }
 
