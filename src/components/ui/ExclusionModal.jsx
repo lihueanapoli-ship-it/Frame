@@ -53,15 +53,17 @@ const ExclusionModal = ({ isOpen, onClose, preferences, onSave, recommendations 
         if (isOpen) {
             fetchCountries();
         }
-    }, [isOpen]);
+    }, [isOpen, recommendations]);
 
     const fetchCountries = async () => {
         // Calculate country counts from recommendations
         const counts = {};
         recommendations.forEach(movie => {
-            const countries = movie.origin_country || [];
-            countries.forEach(code => {
-                counts[code] = (counts[code] || 0) + 1;
+            let originCountries = movie.origin_country || [];
+            if (typeof originCountries === 'string') originCountries = [originCountries];
+
+            originCountries.forEach(code => {
+                if (code) counts[code] = (counts[code] || 0) + 1;
             });
         });
         setCountryCounts(counts);
