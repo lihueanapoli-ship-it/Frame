@@ -220,7 +220,7 @@ const AppContent = () => {
                 </div>
             </header>
 
-            <main className="container max-w-7xl mx-auto px-4 py-3 sm:py-6 md:py-8 sm:px-6 lg:px-8 pb-28 md:pb-32">
+            <main className="container max-w-7xl mx-auto px-4 py-1 md:py-2 sm:px-6 lg:px-8 pb-28 md:pb-32">
                 <Suspense fallback={<RouteFallback />}>
                     <Routes>
                         <Route path="/" element={<DiscoverView onSelectMovie={setSelectedMovie} />} />

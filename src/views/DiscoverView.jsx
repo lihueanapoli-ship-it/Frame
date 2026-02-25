@@ -61,11 +61,11 @@ const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, vari
 
     return (
         <section className="mb-8 content-visibility-auto min-h-[300px]" id={categoryId} onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
-            <div className="flex items-center justify-between mb-4">
-                <div>
-                    <h2 className="text-2xl md:text-3xl font-display text-white mb-1">{title}</h2>
+            <div className="flex items-center justify-between mb-3">
+                <div className="flex flex-col min-w-0">
+                    <h2 className="text-xl md:text-2xl font-display text-white tracking-widest uppercase">{title}</h2>
                     {subtitle && (
-                        <p className={cn("text-sm text-gray-400 transition-all duration-300", isHovered ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1")}>
+                        <p className={cn("text-[10px] md:text-xs text-gray-400 transition-all duration-300 line-clamp-1", isHovered ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1")}>
                             {subtitle}
                         </p>
                     )}
@@ -184,8 +184,8 @@ const DiscoverView = ({ onSelectMovie }) => {
     if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>;
 
     return (
-        <div className="pb-16 pt-4 md:pt-8">
-            <header className="mb-4 md:mb-8 flex items-end justify-between border-b border-white/5 pb-4 md:pb-6 overflow-hidden">
+        <div className="pb-16">
+            <header className="mb-2 md:mb-4 flex items-end justify-between border-b border-white/5 pb-2 md:pb-4 overflow-hidden">
                 <div className="relative w-full">
                     <div className="animate-slide-in-left">
                         <h1 className="text-3xl md:text-6xl font-display font-bold text-white mb-1 md:mb-2 tracking-tight">
@@ -202,11 +202,10 @@ const DiscoverView = ({ onSelectMovie }) => {
                 <HeroCarousel movies={data.trending.slice(0, 5)} onSelectMovie={onSelectMovie} />
             </div>
 
-            <div className="space-y-6 mt-8">
+            <div className="space-y-6 mt-6">
                 {watched.length > 0 ? (
                     <MovieSection
                         title="Tu ADN"
-                        subtitle="Películas seleccionadas para tu perfil cinematográfico único"
                         movies={data.forYou}
                         onSelectMovie={onSelectMovie}
                         variant="personalized"
@@ -250,16 +249,16 @@ const DiscoverView = ({ onSelectMovie }) => {
                     onSave={handleSaveExclusions}
                     recommendations={data.forYou}
                 />
-                <MovieSection title="Los Infaltables" subtitle="Clásicos que todo el mundo ama" movies={data.must_watch} onSelectMovie={onSelectMovie} categoryId="must_watch" />
-                <MovieSection title="Cortitas y al Pie" subtitle="90 minutos o menos. Directo al grano sin filtros" movies={data.short} onSelectMovie={onSelectMovie} categoryId="short" />
-                <MovieSection title="Mate y Sobremesa" subtitle="Historias que todo el mundo ama y que no podés no haber visto" movies={data.conversation} onSelectMovie={onSelectMovie} categoryId="conversation" />
-                <MovieSection title="El Laboratorio" subtitle="Sci-fi, distopías y aventuras futuristas" movies={data.tech} onSelectMovie={onSelectMovie} categoryId="tech" />
-                <MovieSection title="El Aguante" subtitle="Cine argentino en su máximo esplendor" movies={data.argentina} onSelectMovie={onSelectMovie} categoryId="argentina" variant="argentina" />
-                <MovieSection title="Pulso a Mil" subtitle="Thriller, suspenso y adrenalina pura" movies={data.thriller} onSelectMovie={onSelectMovie} categoryId="thriller" variant="thriller" />
-                <MovieSection title="Primera Cita" subtitle="Romance, comedia y lo mejor de ambos mundos" movies={data.romance} onSelectMovie={onSelectMovie} categoryId="romance" variant="romance" />
-                <MovieSection title="Misiones de Verdad" subtitle="Casos reales que demuestran que la posta supera la ficción" movies={data.real_life} onSelectMovie={onSelectMovie} categoryId="real_life" variant="documentary" />
-                <MovieSection title="Viaje de Ida" subtitle="Sagas y trilogías. Garantía Total" movies={data.sagas} onSelectMovie={onSelectMovie} categoryId="sagas" variant="saga" />
-                <MovieSection title="Solo para Locos" subtitle="Filtro de autor. Técnica, encuadre y alma para los que buscamos el cine en estado puro." movies={data.classic_author} onSelectMovie={onSelectMovie} categoryId="classic_author" variant="cult" />
+                <MovieSection title="Los Infaltables" movies={data.must_watch} onSelectMovie={onSelectMovie} categoryId="must_watch" />
+                <MovieSection title="Cortitas y al Pie" movies={data.short} onSelectMovie={onSelectMovie} categoryId="short" />
+                <MovieSection title="Mate y Sobremesa" movies={data.conversation} onSelectMovie={onSelectMovie} categoryId="conversation" />
+                <MovieSection title="El Laboratorio" movies={data.tech} onSelectMovie={onSelectMovie} categoryId="tech" />
+                <MovieSection title="El Aguante" movies={data.argentina} onSelectMovie={onSelectMovie} categoryId="argentina" variant="argentina" />
+                <MovieSection title="Pulso a Mil" movies={data.thriller} onSelectMovie={onSelectMovie} categoryId="thriller" variant="thriller" />
+                <MovieSection title="Primera Cita" movies={data.romance} onSelectMovie={onSelectMovie} categoryId="romance" variant="romance" />
+                <MovieSection title="Misiones de Verdad" movies={data.real_life} onSelectMovie={onSelectMovie} categoryId="real_life" variant="documentary" />
+                <MovieSection title="Viaje de Ida" movies={data.sagas} onSelectMovie={onSelectMovie} categoryId="sagas" variant="saga" />
+                <MovieSection title="Solo para Locos" movies={data.classic_author} onSelectMovie={onSelectMovie} categoryId="classic_author" variant="cult" />
             </div>
         </div>
     );
