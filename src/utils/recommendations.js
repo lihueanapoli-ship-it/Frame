@@ -37,13 +37,17 @@ export async function getPersonalizedRecommendations(userData, expertiseLevel = 
 
         let allCandidates = removeDuplicates([...genreBased, ...similarBased]);
 
+        // --- HYDRATE CANDIDATES (to get countries) ---
+        allCandidates = await hydrateMovieData(allCandidates);
+
         // --- APPLY EXCLUSIONS ---
         allCandidates = filterByExclusions(allCandidates, preferences);
 
         let scoredMovies = rankByGenreIntersection(allCandidates, profile, minThreshold);
 
         if (scoredMovies.length < 50 && top3ForThreshold.length > 0) {
-            const moreCandidates = await getBroadGenreCandidates(profile, minThreshold, watched, watchlist);
+            let moreCandidates = await getBroadGenreCandidates(profile, minThreshold, watched, watchlist);
+            moreCandidates = await hydrateMovieData(moreCandidates);
             const filteredMore = filterByExclusions(moreCandidates, preferences);
             allCandidates = removeDuplicates([...allCandidates, ...filteredMore]);
             scoredMovies = rankByGenreIntersection(allCandidates, profile, minThreshold);
@@ -73,12 +77,14 @@ function filterByExclusions(movies, preferences) {
         const hasExcludedGenre = genreIds.some(id => excludedGenres.includes(id));
         if (hasExcludedGenre) return false;
 
-        // Check countries
-        // Note: Production countries might be ISO codes in production_countries array
+        // Check countries (Comprehensive check)
         const countries = movie.production_countries || [];
-        const hasExcludedCountry = countries.some(c =>
-            excludedCountries.includes(c.iso_3166_1) || excludedCountries.includes(c.name)
-        );
+        const originCountries = movie.origin_country || []; // TMDB often provides this in search/discover results
+
+        const hasExcludedCountry =
+            countries.some(c => excludedCountries.includes(c.iso_3166_1) || excludedCountries.includes(c.name)) ||
+            originCountries.some(code => excludedCountries.includes(code));
+
         if (hasExcludedCountry) return false;
 
         return true;
@@ -86,21 +92,29 @@ function filterByExclusions(movies, preferences) {
 }
 
 async function fetchMovieDetails(movies) {
+    return await hydrateMovieData(movies, true);
+}
+
+async function hydrateMovieData(movies, isWatched = false) {
+    if (!movies || movies.length === 0) return [];
+
     const cache = await getGenresForMovies(movies);
 
     const results = movies.map(movie => {
         const cachedData = cache[movie.id];
-        if (!cachedData) return null;
+        // If it's not in cache and not watched (candidates), we keep the original object but try to use what we have
+        const base = cachedData || {};
 
         return {
             ...movie,
-            genres: cachedData.genres || [],
-            genre_ids: cachedData.genres ? cachedData.genres.map(g => g.id) : movie.genre_ids,
-            production_countries: cachedData.production_countries || [],
-            release_date: cachedData.release_date || movie.release_date,
-            runtime: cachedData.runtime || 0,
-            userRating: movie.rating || 0,
-            popularity: cachedData.popularity || movie.popularity || 0
+            genres: base.genres || movie.genres || [],
+            genre_ids: base.genres ? base.genres.map(g => g.id) : (movie.genre_ids || []),
+            production_countries: base.production_countries || movie.production_countries || [],
+            release_date: base.release_date || movie.release_date,
+            runtime: base.runtime || movie.runtime || 0,
+            userRating: isWatched ? (movie.rating || 0) : 0,
+            popularity: base.popularity || movie.popularity || 0,
+            origin_country: movie.origin_country || base.origin_country || []
         };
     });
 
