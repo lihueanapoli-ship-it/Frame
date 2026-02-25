@@ -24,11 +24,17 @@ export async function getGenresForMovies(movies, onProgress) {
     const cache = loadCache();
     let hasChanges = false;
 
-    const missing = movies.filter(m => !cache[m.id]);
-
-    if (missing.length === 0) {
-        return cache;
-    }
+    const missing = movies.filter(m => {
+        const cached = cache[m.id];
+        if (!cached) return true;
+        // Migration: If record exists but missing production_countries, we need to re-fetch
+        if (!cached.production_countries || cached.production_countries.length === 0) {
+            // Check if it was specifically a known empty country list or if it's missing (undefined)
+            // Usually TMDB gives [] for no countries, but undefined means it's an old cache entry
+            if (cached.production_countries === undefined) return true;
+        }
+        return false;
+    });
 
     const BATCH_SIZE = 5;
     for (let i = 0; i < missing.length; i += BATCH_SIZE) {

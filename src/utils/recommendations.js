@@ -72,20 +72,31 @@ function filterByExclusions(movies, preferences) {
     if (excludedGenres.length === 0 && excludedCountries.length === 0) return movies;
 
     return movies.filter(movie => {
-        // Check genres
+        // --- GENRE FILTERING ---
         const genreIds = movie.genre_ids || [];
         const hasExcludedGenre = genreIds.some(id => excludedGenres.includes(id));
-        if (hasExcludedGenre) return false;
+        if (hasExcludedGenre) {
+            console.log(`[Tu ADN] Filtered (Genre): ${movie.title || movie.name} (${genreIds})`);
+            return false;
+        }
 
-        // Check countries (Comprehensive check)
+        // --- COUNTRY FILTERING ---
         const countries = movie.production_countries || [];
-        const originCountries = movie.origin_country || []; // TMDB often provides this in search/discover results
+        // TMDB 'origin_country' can sometimes be a string or an array of strings in different endpoints
+        let originCountries = movie.origin_country || [];
+        if (typeof originCountries === 'string') originCountries = [originCountries];
 
         const hasExcludedCountry =
-            countries.some(c => excludedCountries.includes(c.iso_3166_1) || excludedCountries.includes(c.name)) ||
+            countries.some(c =>
+                (c.iso_3166_1 && excludedCountries.includes(c.iso_3166_1)) ||
+                (c.name && excludedCountries.includes(c.name))
+            ) ||
             originCountries.some(code => excludedCountries.includes(code));
 
-        if (hasExcludedCountry) return false;
+        if (hasExcludedCountry) {
+            console.log(`[Tu ADN] Filtered (Country): ${movie.title || movie.name} (Countries: ${originCountries.join(',') || 'none'})`);
+            return false;
+        }
 
         return true;
     });
@@ -98,6 +109,7 @@ async function fetchMovieDetails(movies) {
 async function hydrateMovieData(movies, isWatched = false) {
     if (!movies || movies.length === 0) return [];
 
+    // getGenresForMovies handles loading, re-fetching missing/incomplete records, and saving the cache.
     const cache = await getGenresForMovies(movies);
 
     const results = movies.map(movie => {
