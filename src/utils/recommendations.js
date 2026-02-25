@@ -2,7 +2,8 @@ import {
     discoverMovies,
     getMoviesByGenre,
     getSimilarMovies,
-    getMovieDetails
+    getMovieDetails,
+    getTrendingMovies
 } from '../api/tmdb';
 
 import { getGenresForMovies } from './genreCache';
@@ -43,18 +44,36 @@ export async function getPersonalizedRecommendations(userData, expertiseLevel = 
         // --- APPLY EXCLUSIONS ---
         allCandidates = filterByExclusions(allCandidates, preferences);
 
+        // --- PRE-SCORE CANDIDATES ---
         let scoredMovies = rankByGenreIntersection(allCandidates, profile, minThreshold);
 
-        if (scoredMovies.length < 50 && top3ForThreshold.length > 0) {
-            let moreCandidates = await getBroadGenreCandidates(profile, minThreshold, watched, watchlist);
-            moreCandidates = await hydrateMovieData(moreCandidates);
-            const filteredMore = filterByExclusions(moreCandidates, preferences);
-            allCandidates = removeDuplicates([...allCandidates, ...filteredMore]);
-            scoredMovies = rankByGenreIntersection(allCandidates, profile, minThreshold);
+        // --- IF LACKING RESULTS, BROADEN SEARCH ---
+        if (scoredMovies.length < 50) {
+            console.log(`[Tu ADN] Only ${scoredMovies.length} results. Broadening search...`);
+            const fallbackThreshold = Math.max(6, minThreshold - 1);
+            let extraCandidates = await getBroadGenreCandidates(profile, fallbackThreshold, watched, watchlist);
+            extraCandidates = await hydrateMovieData(extraCandidates);
+            const filteredExtra = filterByExclusions(extraCandidates, preferences);
+
+            allCandidates = removeDuplicates([...allCandidates, ...filteredExtra]);
+            scoredMovies = rankByGenreIntersection(allCandidates, profile, fallbackThreshold);
         }
 
+        // --- IF STILL LACKING, ADD TRENDING FALLBACK ---
+        if (scoredMovies.length < 50) {
+            console.log(`[Tu ADN] Still only ${scoredMovies.length}. Adding trending fallback...`);
+            const trending = await getTrendingMovies(1);
+            const hydratedTrending = await hydrateMovieData(trending);
+            const filteredTrending = filterByExclusions(hydratedTrending, preferences);
+            allCandidates = removeDuplicates([...allCandidates, ...filteredTrending]);
+            scoredMovies = rankByGenreIntersection(allCandidates, profile, 5); // Very low threshold for fallback
+        }
+
+        // --- FINAL REORDER AND SLICE ---
+        const finalForYou = scoredMovies.slice(0, 50);
+
         return {
-            forYou: scoredMovies.slice(0, 50),
+            forYou: finalForYou,
             basedOnGenres: removeDuplicates(genreBased).slice(0, 20),
             similar: removeDuplicates(similarBased).slice(0, 20),
             deepCuts: []
