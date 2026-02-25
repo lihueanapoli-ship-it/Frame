@@ -156,19 +156,19 @@ const CategoryView = ({ onSelectMovie }) => {
         : hasMore;
 
     return (
-        <div className="min-h-screen pb-24 pt-24 px-4 max-w-7xl mx-auto">
-            <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div className="min-h-screen pb-24 px-4 max-w-7xl mx-auto">
+            <header className="flex items-center justify-between gap-4 mb-8">
                 <div className="flex items-center gap-4">
-                    <h1 className="text-2xl font-display font-bold tracking-widest uppercase text-white">{title}</h1>
+                    <h1 className="text-xl md:text-2xl font-display font-bold tracking-widest uppercase text-white">{title}</h1>
                 </div>
 
                 {id === 'for_you' && (
                     <button
                         onClick={() => setShowExclusionModal(true)}
-                        className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-2 rounded-xl transition-all group"
+                        className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 px-3 md:px-4 py-2 rounded-xl transition-all group"
                     >
-                        <FunnelIcon className="w-4 h-4 text-primary" />
-                        <span className="text-sm font-bold text-white tracking-widest uppercase">Filtrar ADN</span>
+                        <FunnelIcon className="w-3.5 h-3.5 text-primary" />
+                        <span className="text-xs md:text-sm font-bold text-white tracking-widest uppercase">Filtrar</span>
                     </button>
                 )}
 

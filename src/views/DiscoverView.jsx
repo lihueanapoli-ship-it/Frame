@@ -221,7 +221,7 @@ const DiscoverView = ({ onSelectMovie }) => {
                                     title="Configurar exclusiones"
                                 >
                                     <Filter className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                                    <span className="text-xs font-bold hidden sm:inline">FILTRAR ADN</span>
+                                    <span className="text-xs font-bold hidden sm:inline">FILTRAR</span>
                                 </button>
                             </div>
                         }
@@ -237,7 +237,7 @@ const DiscoverView = ({ onSelectMovie }) => {
                                 className="p-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 hover:border-white/20 transition-all text-gray-400 hover:text-white group flex items-center gap-2"
                             >
                                 <Filter className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                                <span className="text-xs font-bold hidden sm:inline">FILTRAR ADN</span>
+                                <span className="text-xs font-bold hidden sm:inline">FILTRAR</span>
                             </button>
                         }
                     />
