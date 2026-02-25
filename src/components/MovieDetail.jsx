@@ -166,7 +166,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
             >
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 z-[70] p-2.5 bg-black/60 hover:bg-black/80 backdrop-blur-md rounded-full text-white transition-colors cursor-pointer shadow-lg border border-white/10"
+                    className="absolute top-4 right-4 z-[110] p-2.5 bg-black/60 hover:bg-black/80 backdrop-blur-md rounded-full text-white transition-colors cursor-pointer shadow-lg border border-white/10 pointer-events-auto"
                 >
                     <XMarkIcon className="w-6 h-6" />
                 </button>
@@ -545,13 +545,6 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 z-[100] bg-black flex flex-col justify-center items-center"
                     >
-                        <button
-                            onClick={() => setIsFullVideoOpen(false)}
-                            className="absolute top-6 right-6 z-50 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-md transition-all transform hover:scale-110"
-                        >
-                            <XMarkIcon className="w-8 h-8" />
-                        </button>
-
                         <div className="w-full h-full max-w-7xl max-h-screen aspect-video relative">
                             <iframe
                                 title="Trailer Fullscreen"
@@ -562,6 +555,13 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                 allowFullScreen
                             />
                         </div>
+
+                        <button
+                            onClick={() => setIsFullVideoOpen(false)}
+                            className="absolute top-6 right-6 z-[120] p-3 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-md transition-all transform hover:scale-110 pointer-events-auto"
+                        >
+                            <XMarkIcon className="w-8 h-8" />
+                        </button>
                     </motion.div>
                 )}
             </AnimatePresence>
