@@ -147,7 +147,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-2">
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
             <motion.div
                 variants={overlayVariants}
                 initial="hidden"
@@ -162,14 +162,16 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                 initial="hidden"
                 animate="visible"
                 exit="exit"
-                className="relative w-full max-w-7xl mx-auto bg-background rounded-t-2xl sm:rounded-2xl overflow-hidden shadow-2xl h-[94vh] flex flex-col border border-white/10"
+                className="relative w-full max-w-7xl mx-auto bg-background rounded-t-2xl sm:rounded-2xl overflow-hidden shadow-2xl h-[98vh] sm:h-[94vh] flex flex-col border border-white/10"
             >
-                <button
-                    onClick={onClose}
-                    className="absolute top-4 right-4 z-[110] p-2.5 bg-black/60 hover:bg-black/80 backdrop-blur-md rounded-full text-white transition-colors cursor-pointer shadow-lg border border-white/10 pointer-events-auto"
-                >
-                    <XMarkIcon className="w-6 h-6" />
-                </button>
+                {!isFullVideoOpen && (
+                    <button
+                        onClick={onClose}
+                        className="absolute top-4 right-4 z-[110] p-2.5 bg-black/60 hover:bg-black/80 backdrop-blur-md rounded-full text-white transition-colors cursor-pointer shadow-lg border border-white/10 pointer-events-auto"
+                    >
+                        <XMarkIcon className="w-6 h-6" />
+                    </button>
+                )}
 
                 <div className="flex-1 overflow-y-auto overscroll-contain relative">
 
@@ -335,7 +337,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                 </div>
 
 
-                <div className="p-4 bg-surface-elevated/95 backdrop-blur-xl border-t border-white/10 z-50">
+                <div className="p-4 bg-surface-elevated/95 backdrop-blur-xl border-t border-white/10 z-[60] relative">
                     {user && (
                         <div className="flex justify-end mb-3">
                             <button
