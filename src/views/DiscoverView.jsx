@@ -10,7 +10,7 @@ import { Link } from 'react-router-dom';
 import MovieCard from '../components/MovieCard';
 import ExclusionModal from '../components/ui/ExclusionModal';
 
-const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, variant = 'default', isEmpty = false, emptyMessage, showAll = false, headerAction }) => {
+const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, variant = 'default', isEmpty = false, emptyMessage, showAll = false, headerAction, isLoading: isSectionLoading }) => {
     const [isHovered, setIsHovered] = useState(false);
     const scrollRef = useRef(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -80,7 +80,10 @@ const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, vari
                 </div>
             </div>
             <div ref={scrollRef}
-                className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory select-none touch-auto"
+                className={cn(
+                    "flex gap-3 md:gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory select-none touch-auto transition-all duration-500",
+                    isSectionLoading ? "opacity-30 scale-[0.98] blur-[2px] pointer-events-none" : "opacity-100 scale-100 blur-0"
+                )}
                 onMouseDown={handleMouseDown} onMouseLeave={handleMouseLeave} onMouseUp={handleMouseUp} onMouseMove={handleMouseMove}>
                 {isLoading ? (
                     Array.from({ length: 5 }).map((_, i) => (
@@ -100,6 +103,7 @@ const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, vari
 
 const DiscoverView = ({ onSelectMovie }) => {
     const [loading, setLoading] = useState(true);
+    const [adnLoading, setAdnLoading] = useState(false);
     const [data, setData] = useState({ trending: [], must_watch: [], short: [], conversation: [], tech: [], argentina: [], thriller: [], romance: [], real_life: [], sagas: [], classic_author: [], forYou: [] });
     const { profile, updateProfile, expertiseLevel, trackBehavior } = useUserProfile();
     const { watched, watchlist } = useMovies();
@@ -111,10 +115,17 @@ const DiscoverView = ({ onSelectMovie }) => {
     }, []);
 
     useEffect(() => {
-        if (watched.length > 0) {
+        if (watched.length > 0 && profile) {
             fetchPersonalizedRecommendations();
         }
-    }, [watched, expertiseLevel, profile?.preferences?.excludedGenres, profile?.preferences?.excludedCountries]);
+    }, [
+        watched.length,
+        expertiseLevel,
+        profile?.preferences?.excludedGenres?.length,
+        profile?.preferences?.excludedCountries?.length,
+        JSON.stringify(profile?.preferences?.excludedGenres || []),
+        JSON.stringify(profile?.preferences?.excludedCountries || [])
+    ]);
 
     const fetchInitialData = async () => {
         try {
@@ -151,6 +162,7 @@ const DiscoverView = ({ onSelectMovie }) => {
     };
 
     const fetchPersonalizedRecommendations = async () => {
+        setAdnLoading(true);
         try {
             const userData = {
                 movieData: { watched, watchlist },
@@ -160,6 +172,8 @@ const DiscoverView = ({ onSelectMovie }) => {
             setData(prev => ({ ...prev, forYou: recommendations.forYou || [] }));
         } catch (error) {
             console.error('Error fetching recommendations:', error);
+        } finally {
+            setAdnLoading(false);
         }
     };
 
@@ -197,15 +211,19 @@ const DiscoverView = ({ onSelectMovie }) => {
                         onSelectMovie={onSelectMovie}
                         variant="personalized"
                         categoryId="for_you"
+                        isLoading={adnLoading}
                         headerAction={
-                            <button
-                                onClick={() => setShowExclusionModal(true)}
-                                className="p-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 hover:border-white/20 transition-all text-gray-400 hover:text-white group flex items-center gap-2"
-                                title="Configurar exclusiones"
-                            >
-                                <Filter className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                                <span className="text-xs font-bold hidden sm:inline">FILTRAR ADN</span>
-                            </button>
+                            <div className="flex items-center gap-2">
+                                {adnLoading && <Loader2 className="w-4 h-4 text-primary animate-spin" />}
+                                <button
+                                    onClick={() => setShowExclusionModal(true)}
+                                    className="p-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 hover:border-white/20 transition-all text-gray-400 hover:text-white group flex items-center gap-2"
+                                    title="Configurar exclusiones"
+                                >
+                                    <Filter className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                    <span className="text-xs font-bold hidden sm:inline">FILTRAR ADN</span>
+                                </button>
+                            </div>
                         }
                     />
                 ) : (
