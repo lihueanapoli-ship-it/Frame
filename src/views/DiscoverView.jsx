@@ -248,6 +248,7 @@ const DiscoverView = ({ onSelectMovie }) => {
                     onClose={() => setShowExclusionModal(false)}
                     preferences={profile?.preferences}
                     onSave={handleSaveExclusions}
+                    recommendations={data.forYou}
                 />
                 <MovieSection title="Los Infaltables" subtitle="Clásicos que todo el mundo ama" movies={data.must_watch} onSelectMovie={onSelectMovie} categoryId="must_watch" />
                 <MovieSection title="Cortitas y al Pie" subtitle="90 minutos o menos. Directo al grano sin filtros" movies={data.short} onSelectMovie={onSelectMovie} categoryId="short" />

@@ -41,12 +41,13 @@ const COMMON_COUNTRIES = [
     { code: 'IN', name: 'India' }
 ];
 
-const ExclusionModal = ({ isOpen, onClose, preferences, onSave }) => {
+const ExclusionModal = ({ isOpen, onClose, preferences, onSave, recommendations = [] }) => {
     const [excludedGenres, setExcludedGenres] = useState(preferences?.excludedGenres || []);
     const [excludedCountries, setExcludedCountries] = useState(preferences?.excludedCountries || []);
     const [allCountries, setAllCountries] = useState(COMMON_COUNTRIES);
     const [activeTab, setActiveTab] = useState('genres');
     const [searchTerm, setSearchTerm] = useState('');
+    const [countryCounts, setCountryCounts] = useState({});
 
     useEffect(() => {
         if (isOpen) {
@@ -55,12 +56,30 @@ const ExclusionModal = ({ isOpen, onClose, preferences, onSave }) => {
     }, [isOpen]);
 
     const fetchCountries = async () => {
+        // Calculate country counts from recommendations
+        const counts = {};
+        recommendations.forEach(movie => {
+            const countries = movie.origin_country || [];
+            countries.forEach(code => {
+                counts[code] = (counts[code] || 0) + 1;
+            });
+        });
+        setCountryCounts(counts);
+
         const countries = await getCountries();
         if (countries && countries.length > 0) {
-            // Sort countries: English name (or native if preferred, but usually we use translated)
             const sorted = countries
-                .map(c => ({ code: c.iso_3166_1, name: c.native_name || c.english_name }))
-                .sort((a, b) => a.name.localeCompare(b.name));
+                .map(c => ({
+                    code: c.iso_3166_1,
+                    name: c.native_name || c.english_name,
+                    count: counts[c.iso_3166_1] || 0
+                }))
+                .sort((a, b) => {
+                    // Primary sort: count (descending)
+                    if (b.count !== a.count) return b.count - a.count;
+                    // Secondary sort: alphabetical
+                    return a.name.localeCompare(b.name);
+                });
             setAllCountries(sorted);
         }
     };
@@ -210,7 +229,17 @@ const ExclusionModal = ({ isOpen, onClose, preferences, onSave }) => {
                                             >
                                                 <div className="flex items-center gap-2 overflow-hidden">
                                                     <span className="text-[10px] font-mono text-gray-500 flex-shrink-0">{country.code}</span>
-                                                    <span className="text-sm font-medium truncate">{country.name}</span>
+                                                    <div className="flex flex-col min-w-0">
+                                                        <span className="text-sm font-medium truncate">{country.name}</span>
+                                                        {country.count > 0 && (
+                                                            <div className="flex items-center gap-1">
+                                                                <div className="w-1 h-1 rounded-full bg-primary" />
+                                                                <span className="text-[10px] text-primary/80 font-bold uppercase tracking-tighter">
+                                                                    {country.count} {country.count === 1 ? 'película' : 'películas'}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                                 {excludedCountries.includes(country.code) ? (
                                                     <GlobeAltIcon className="w-4 h-4 text-red-500 flex-shrink-0" />
