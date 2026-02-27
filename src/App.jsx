@@ -15,6 +15,7 @@ import WelcomeView from './views/WelcomeView';
 import DiscoverView from './views/DiscoverView';
 import BottomNav from './components/navigation/BottomNav';
 import DynamicLogo from './components/ui/DynamicLogo';
+import BottomSheet from './components/ui/BottomSheet';
 import { Toaster } from 'sonner';
 
 const LibraryView = lazy(() => import('./views/LibraryView'));
