@@ -226,7 +226,7 @@ const FriendsView = () => {
                     <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-2 tracking-tight">
                         CÍRCULO <span className="text-primary">SOCIAL</span>
                     </h1>
-                    <p className="font-mono text-xs md:text-sm text-gray-400">
+                    <p className="font-mono text-[10px] md:text-sm text-gray-400 uppercase tracking-widest">
                         PANTALLA COMPARTIDA
                     </p>
                 </div>
@@ -239,33 +239,36 @@ const FriendsView = () => {
                 </button>
             </header>
 
-            <div className="flex gap-4 mb-8 overflow-x-auto pb-2">
+            <div className="flex p-1 bg-white/5 rounded-2xl mb-8 items-center max-w-sm">
                 <button
                     onClick={() => setActiveTab('friends')}
                     className={cn(
-                        "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors border",
+                        "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all duration-300",
                         activeTab === 'friends'
-                            ? "bg-white text-black border-white"
-                            : "bg-surface text-gray-400 border-white/10 hover:text-white"
+                            ? "bg-white text-black shadow-lg"
+                            : "text-gray-500 hover:text-white"
                     )}
                 >
                     <UsersIcon className="w-4 h-4" />
-                    Mis Amigos
+                    Amigos
                 </button>
                 <button
                     onClick={() => setActiveTab('requests')}
                     className={cn(
-                        "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-500 border relative",
+                        "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all duration-300 relative",
                         activeTab === 'requests'
-                            ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+                            ? "bg-white text-black shadow-lg"
                             : ((requests.length > 0 || listRequests.length > 0)
-                                ? "animate-alarm"
-                                : "bg-surface text-gray-400 border-white/10 hover:text-white"
+                                ? "animate-alarm text-primary"
+                                : "text-gray-500 hover:text-white"
                             )
                     )}
                 >
                     <ChatBubbleLeftEllipsisIcon className="w-4 h-4" />
                     Solicitudes
+                    {(requests.length > 0 || listRequests.length > 0) && activeTab !== 'requests' && (
+                        <span className="absolute top-2 right-4 w-2 h-2 bg-primary rounded-full animate-pulse" />
+                    )}
                 </button>
             </div>
 

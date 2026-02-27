@@ -208,14 +208,14 @@ const SearchView = ({ onSelectMovie }) => {
                 <button
                     onClick={() => setIsFilterOpen(true)}
                     className={cn(
-                        "flex items-center justify-center w-[52px] h-[52px] rounded-xl border transition-all relative",
+                        "flex items-center justify-center w-[52px] h-[52px] md:w-[60px] md:h-[60px] rounded-xl border transition-all relative shrink-0 active:scale-90",
                         activeFilterCount > 0
                             ? "bg-primary text-black border-primary shadow-lg shadow-primary/20"
                             : "bg-surface-elevated text-gray-400 border-white/10 hover:text-white hover:bg-white/10"
                     )}
                     title="Filtros Avanzados"
                 >
-                    <AdjustmentsHorizontalIcon className="w-6 h-6" />
+                    <AdjustmentsHorizontalIcon className="w-6 h-6 md:w-7 md:h-7" />
                     {activeFilterCount > 0 && (
                         <span className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 rounded-full text-[10px] flex items-center justify-center font-bold text-white border-2 border-[#121212]">
                             {activeFilterCount}

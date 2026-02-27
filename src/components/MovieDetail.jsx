@@ -358,7 +358,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                         if (!user) { loginWithGoogle(); return; }
                                         setShowDropdown(!showDropdown);
                                     }}
-                                    className="w-full flex items-center justify-center gap-2 py-4 rounded-xl bg-white/10 hover:bg-white/15 text-white font-semibold transition-all border border-white/10 backdrop-blur-md"
+                                    className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-semibold transition-all border border-white/10 backdrop-blur-md active:scale-95 touch-manipulation"
                                 >
                                     <PlusIcon className="w-5 h-5" />
                                     <span>Quiero verla</span>
@@ -395,7 +395,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                     if (!user) { loginWithGoogle(); return; }
                                     handleMoveToWatched();
                                 }}
-                                className="flex-1 flex items-center justify-center gap-2 py-4 rounded-xl bg-white text-black font-bold hover:bg-gray-100 transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95"
+                                className="flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl bg-white text-black font-bold hover:bg-gray-100 transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95 touch-manipulation"
                             >
                                 <CheckIcon className="w-5 h-5" />
                                 <span>Ya la vi</span>
@@ -483,7 +483,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                 </button>
                             </div>
 
-                            <div className="flex justify-between items-center px-1" onMouseLeave={() => setHoverRating(0)}>
+                            <div className="flex justify-between items-center px-0.5" onMouseLeave={() => setHoverRating(0)}>
                                 {Array.from({ length: 10 }, (_, i) => i + 1).map(star => {
                                     const isActive = (hoverRating || userRating) >= star;
                                     return (
@@ -493,8 +493,8 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                             triggerConfetti();
                                             playSuccess();
                                             addToWatched(movie, star);
-                                        }} className="group p-1 sm:p-1.5 transition-transform hover:scale-125 focus:outline-none">
-                                            {isActive ? <StarIconSolid className={cn("w-6 h-6 sm:w-8 sm:h-8 transition-colors duration-200", star <= 4 ? "text-red-500" : star <= 7 ? "text-yellow-500" : "text-primary")} /> : <StarIcon className="w-6 h-6 sm:w-8 sm:h-8 text-gray-700 group-hover:text-gray-500 transition-colors" />}
+                                        }} className="group p-1.5 sm:p-2 transition-transform hover:scale-125 focus:outline-none flex-1 flex justify-center touch-manipulation">
+                                            {isActive ? <StarIconSolid className={cn("w-6 h-6 xs:w-7 xs:h-7 sm:w-8 sm:h-8 transition-colors duration-200", star <= 4 ? "text-red-500" : star <= 7 ? "text-yellow-500" : "text-primary")} /> : <StarIcon className="w-6 h-6 xs:w-7 xs:h-7 sm:w-8 sm:h-8 text-gray-700 group-hover:text-gray-500 transition-colors" />}
                                         </button>
                                     );
                                 })}

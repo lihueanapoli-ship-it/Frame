@@ -40,13 +40,19 @@ const RankCard = ({ rank, currentCount }) => {
 };
 
 const AchievementBadge = ({ icon, title, desc, unlocked }) => (
-    <div className={cn("min-w-[140px] h-36 bg-surface border flex flex-col items-center justify-center p-4 transition-all duration-300 relative group overflow-hidden", unlocked ? "border-primary/30 bg-primary/5 hover:border-primary/60" : "border-white/5 opacity-40 grayscale")}>
-        {unlocked && <div className="absolute top-0 right-0 w-8 h-8 bg-primary/20 blur-xl rounded-full" />}
-        <div className={cn("w-12 h-12 rounded-full flex items-center justify-center mb-3 transition-transform group-hover:scale-110", unlocked ? "bg-primary/20 text-primary" : "bg-white/5 text-gray-500")}>
-            <span className="text-2xl">{icon}</span>
+    <div className={cn(
+        "min-w-[120px] h-32 bg-surface border flex flex-col items-center justify-center p-3 transition-all duration-300 relative group overflow-hidden rounded-xl",
+        unlocked ? "border-primary/30 bg-primary/5 hover:border-primary/60" : "border-white/5 opacity-40 grayscale"
+    )}>
+        {unlocked && <div className="absolute top-0 right-0 w-6 h-6 bg-primary/20 blur-xl rounded-full" />}
+        <div className={cn(
+            "w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-transform group-hover:scale-110",
+            unlocked ? "bg-primary/20 text-primary" : "bg-white/5 text-gray-500"
+        )}>
+            <span className="text-xl">{icon}</span>
         </div>
-        <span className={cn("font-display font-bold text-xs text-center mb-1", unlocked ? "text-white" : "text-gray-500")}>{title}</span>
-        <span className="font-mono text-[9px] text-center text-gray-500 leading-tight">{desc}</span>
+        <span className={cn("font-display font-bold text-[10px] text-center mb-0.5", unlocked ? "text-white" : "text-gray-500")}>{title}</span>
+        <span className="font-mono text-[8px] text-center text-gray-500 leading-tight px-1">{desc}</span>
     </div>
 );
 
@@ -143,7 +149,7 @@ const StatsView = () => {
                     <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-2 tracking-tight">
                         ADN <span className="text-primary">CINEMATOGRÁFICO</span>
                     </h1>
-                    <p className="font-mono text-xs md:text-sm text-gray-400">
+                    <p className="font-mono text-[10px] md:text-sm text-gray-400">
                         ANÁLISIS DE TELEMETRÍA :: USUARIO {user.displayName?.toUpperCase().split(' ')[0]}
                     </p>
                 </div>
@@ -207,7 +213,11 @@ const StatsView = () => {
                             <ResponsiveContainer width="100%" height={250}>
                                 <RadarChart cx="50%" cy="50%" outerRadius="70%" data={currentRadarData}>
                                     <PolarGrid stroke="#333" />
-                                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#9CA3AF', fontSize: 10, fontFamily: 'monospace' }} />
+                                    <PolarAngleAxis
+                                        dataKey="subject"
+                                        tick={{ fill: '#9CA3AF', fontSize: 9, fontFamily: 'monospace' }}
+                                        tickFormatter={(val) => val.length > 10 ? val.substring(0, 8) + '...' : val}
+                                    />
                                     <PolarRadiusAxis angle={30} domain={[0, 'auto']} tick={false} axisLine={false} />
                                     <Radar name="Stats" dataKey="A" stroke={radarMode === 'consumption' ? "#00F0FF" : "#EC4899"} strokeWidth={2} fill={radarMode === 'consumption' ? "#00F0FF" : "#EC4899"} fillOpacity={0.2} />
                                     <Tooltip contentStyle={{ backgroundColor: '#121212', borderColor: '#333', color: '#fff' }} itemStyle={{ color: '#00F0FF', fontFamily: 'monospace' }} />
@@ -250,8 +260,8 @@ const StatsView = () => {
             </div>
 
             <div className="mt-8">
-                <h3 className="font-mono text-xs text-gray-500 uppercase mb-4">LOGROS</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <h3 className="font-mono text-[10px] text-gray-500 uppercase mb-4 tracking-widest">LOGROS CUMPLIDOS</h3>
+                <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                     {achievements.map(badge => <AchievementBadge key={badge.id} {...badge} />)}
                 </div>
             </div>

@@ -90,7 +90,7 @@ const AppContent = () => {
         return (
             <div className="flex items-center gap-3 md:gap-4">
                 <div className="hidden sm:flex flex-col items-end">
-                    <span className="text-[9px] font-mono text-primary uppercase tracking-[0.2em] mb-0.5">En Escena</span>
+                    <span className="text-[10px] font-mono text-primary uppercase tracking-[0.2em] mb-0.5">En Escena</span>
                     <span className="text-sm font-display font-bold text-white tracking-wide leading-none">
                         {firstName.toUpperCase()}
                     </span>
@@ -99,7 +99,7 @@ const AppContent = () => {
                 <div className="relative">
                     <button
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        className="relative group focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-full"
+                        className="relative group focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-full active:scale-90 transition-transform"
                         aria-label={`Menú de usuario: ${user?.displayName || 'Perfil'}`}
                         aria-expanded={isMenuOpen}
                     >
@@ -107,61 +107,106 @@ const AppContent = () => {
                         <img
                             src={user?.photoURL || "/logo.png"}
                             alt={`Foto de perfil de ${user?.displayName || 'usuario'}`}
-                            className="relative w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-black object-cover"
+                            className="relative w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-black object-cover shadow-xl"
                             width="48"
                             height="48"
                         />
                     </button>
 
-                    {isMenuOpen && (
-                        <>
-                            <div className="fixed inset-0 z-40" onClick={() => setIsMenuOpen(false)} />
-
-                            <div
-                                className="absolute right-0 mt-2 w-64 rounded-xl bg-surface border border-white/10 shadow-2xl z-50 overflow-hidden animate-fade-in-fast"
-                            >
-                                <div className="px-4 py-4 border-b border-white/5 bg-white/5">
-                                    <p className="text-sm text-white font-semibold truncate">{user.displayName}</p>
-                                    <p className="text-xs text-gray-400 truncate font-mono mt-1">{user.email}</p>
+                    {/* Desktop Menu */}
+                    <div className="hidden md:block">
+                        {isMenuOpen && (
+                            <>
+                                <div className="fixed inset-0 z-40" onClick={() => setIsMenuOpen(false)} />
+                                <div className="absolute right-0 mt-2 w-64 rounded-xl bg-surface border border-white/10 shadow-2xl z-50 overflow-hidden animate-fade-in-fast">
+                                    <div className="px-4 py-4 border-b border-white/5 bg-white/5">
+                                        <p className="text-sm text-white font-semibold truncate">{user.displayName}</p>
+                                        <p className="text-xs text-gray-400 truncate font-mono mt-1">{user.email}</p>
+                                    </div>
+                                    <div className="p-2 space-y-1">
+                                        <button
+                                            onClick={() => { setIsMenuOpen(false); setIsFeedbackOpen(true); }}
+                                            className="w-full text-left flex items-center gap-3 px-3 py-2.5 text-sm text-gray-200 hover:text-white hover:bg-white/10 rounded-lg transition-all group"
+                                        >
+                                            <div className="p-1.5 bg-primary/10 rounded-md group-hover:bg-primary/20 transition-colors">
+                                                <ChatBubbleLeftRightIcon className="w-4 h-4 text-primary" />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="font-medium">Danos tu opinión</span>
+                                                <span className="text-[10px] text-gray-500">Ayúdanos a mejorar</span>
+                                            </div>
+                                        </button>
+                                        <div className="h-px bg-white/5 my-1" />
+                                        <button
+                                            onClick={() => { logout(); setIsMenuOpen(false); }}
+                                            className="w-full text-left flex items-center gap-3 px-3 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors group"
+                                        >
+                                            <div className="p-1.5 bg-red-500/10 rounded-md group-hover:bg-red-500/20 transition-colors">
+                                                <ArrowLeftOnRectangleIcon className="w-4 h-4 text-red-400" />
+                                            </div>
+                                            <span className="font-medium">Cerrar Sesión</span>
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="p-2 space-y-1">
+                            </>
+                        )}
+                    </div>
+
+                    {/* Mobile Menu as BottomSheet */}
+                    <div className="md:hidden">
+                        <BottomSheet
+                            isOpen={isMenuOpen}
+                            onClose={() => setIsMenuOpen(false)}
+                            title="Mi Cuenta"
+                        >
+                            <div className="space-y-6">
+                                <div className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10">
+                                    <img src={user.photoURL || "/logo.png"} className="w-16 h-16 rounded-full border-2 border-primary/50" alt="" />
+                                    <div className="flex-1 overflow-hidden">
+                                        <p className="text-lg font-bold text-white truncate">{user.displayName}</p>
+                                        <p className="text-xs text-gray-500 font-mono truncate">{user.email}</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-3">
                                     <button
                                         onClick={() => { setIsMenuOpen(false); setIsFeedbackOpen(true); }}
-                                        className="w-full text-left flex items-center gap-3 px-3 py-2.5 text-sm text-gray-200 hover:text-white hover:bg-white/10 rounded-lg transition-all group"
+                                        className="w-full flex items-center gap-4 p-4 bg-surface rounded-2xl border border-white/5 active:scale-95 transition-all text-left"
                                     >
-                                        <div className="p-1.5 bg-primary/10 rounded-md group-hover:bg-primary/20 transition-colors">
-                                            <ChatBubbleLeftRightIcon className="w-4 h-4 text-primary" />
+                                        <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                                            <ChatBubbleLeftRightIcon className="w-5 h-5 text-primary" />
                                         </div>
-                                        <div className="flex flex-col">
-                                            <span className="font-medium">Danos tu opinión</span>
-                                            <span className="text-[10px] text-gray-500">Ayúdanos a mejorar</span>
+                                        <div>
+                                            <p className="font-semibold text-white">Danos tu opinión</p>
+                                            <p className="text-xs text-gray-400">Ayúdanos a mejorar la plataforma</p>
                                         </div>
                                     </button>
-
-                                    <div className="h-px bg-white/5 my-1" />
 
                                     <button
                                         onClick={() => { logout(); setIsMenuOpen(false); }}
-                                        className="w-full text-left flex items-center gap-3 px-3 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors group"
+                                        className="w-full flex items-center gap-4 p-4 bg-red-500/5 rounded-2xl border border-red-500/10 active:scale-95 transition-all text-left"
                                     >
-                                        <div className="p-1.5 bg-red-500/10 rounded-md group-hover:bg-red-500/20 transition-colors">
-                                            <ArrowLeftOnRectangleIcon className="w-4 h-4 text-red-400" />
+                                        <div className="w-10 h-10 bg-red-500/10 rounded-xl flex items-center justify-center">
+                                            <ArrowLeftOnRectangleIcon className="w-5 h-5 text-red-400" />
                                         </div>
-                                        <span className="font-medium">Cerrar Sesión</span>
+                                        <div>
+                                            <p className="font-semibold text-red-400">Cerrar Sesión</p>
+                                            <p className="text-xs text-red-900/40">Desconectar cuenta</p>
+                                        </div>
                                     </button>
                                 </div>
                             </div>
-                        </>
-                    )}
+                        </BottomSheet>
+                    </div>
                 </div>
             </div>
         );
     };
 
     return (
-        <div className="min-h-screen bg-background text-white font-sans selection:bg-primary selection:text-white">
+        <div className="min-h-screen bg-background text-white font-sans selection:bg-primary selection:text-white pb-safe">
             <header className="sticky top-0 z-[100] w-full backdrop-blur-xl bg-background/90 border-b border-white/5 transition-all duration-300">
-                <div className="flex h-14 md:h-16 items-center w-full px-4 max-w-7xl mx-auto justify-between relative pt-safe sm:pt-1">
+                <div className="flex h-16 md:h-20 items-center w-full px-4 max-w-7xl mx-auto justify-between relative pt-safe sm:pt-2">
                     <div className="flex items-center gap-1.5 z-10">
                         {!isHome && (
                             <button
@@ -243,10 +288,10 @@ const AppContent = () => {
                 </div>
             </footer>
 
-            <div className="md:hidden pb-32 flex justify-center opacity-30 mt-8">
+            <div className="md:hidden pb-32 flex justify-center opacity-30 mt-8 mb-4">
                 <div className="flex flex-col items-center gap-1">
-                    <span className="font-mono text-[8px] uppercase tracking-[0.3em] text-white/50">Created By</span>
-                    <span className="font-display font-bold text-[10px] tracking-widest text-white">LIHUE NAPOLI</span>
+                    <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/50">Created By</span>
+                    <span className="font-display font-bold text-[12px] tracking-widest text-white">LIHUE NAPOLI</span>
                 </div>
             </div>
 

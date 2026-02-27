@@ -73,12 +73,14 @@ const SearchBar = ({ onSelectMovie, onSearchCallback }) => {
                     </div>
                 )}
                 {!isLoading && query && (
-                    <div
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
+                    <button
+                        type="button"
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer group/clear active:scale-90 transition-transform p-3"
                         onClick={() => { setQuery(''); setIsOpen(false); }}
+                        aria-label="Borrar búsqueda"
                     >
-                        <X className="h-5 w-5 text-gray-400 hover:text-white transition-colors" />
-                    </div>
+                        <X className="h-5 w-5 text-gray-400 group-hover/clear:text-white transition-colors" />
+                    </button>
                 )}
             </div>
 
