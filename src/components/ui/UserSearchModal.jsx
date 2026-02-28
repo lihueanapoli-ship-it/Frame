@@ -1,128 +1,165 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { XMarkIcon, UserCircleIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, MagnifyingGlassIcon, UserPlusIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { db } from '../../api/firebase';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
-import { Loader2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { useUserProfile } from '../../contexts/UserProfileContext';
+import { cn } from '../../lib/utils';
+import { Link } from 'react-router-dom';
 
-const UserSearchModal = ({ isOpen, onClose, onSelectUser }) => {
-    const navigate = useNavigate();
-    const [searchQuery, setSearchQuery] = useState('');
+const UserSearchModal = ({ isOpen, onClose }) => {
+    const { user: currentUser } = useAuth();
+    const { sendFriendRequest, getFriendshipStatus } = useUserProfile();
+    const [searchTerm, setSearchTerm] = useState('');
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [actionLoading, setActionLoading] = useState({});
 
-    useEffect(() => {
-        const timeoutId = setTimeout(async () => {
-            if (searchQuery.trim().length > 1) {
-                setLoading(true);
-                try {
-                    // Search by lowercase 'searchName' for case-insensitive robust search
-                    const term = searchQuery.toLowerCase().trim();
-                    const q = query(
-                        collection(db, 'users'),
-                        where('searchName', '>=', term),
-                        where('searchName', '<=', term + '\uf8ff'),
-                        limit(10)
-                    );
-                    const snap = await getDocs(q);
-                    const foundUsers = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
-                    setResults(foundUsers);
-                } catch (e) {
-                    console.error("Search error", e);
-                    setResults([]);
-                } finally {
-                    setLoading(false);
-                }
-            } else {
-                setResults([]);
-            }
-        }, 300);
+    const handleSearch = async (val) => {
+        setSearchTerm(val);
+        if (val.trim().length < 2) {
+            setResults([]);
+            return;
+        }
 
-        return () => clearTimeout(timeoutId);
-    }, [searchQuery]);
+        setLoading(true);
+        try {
+            const term = val.toLowerCase().trim();
+            const q = query(
+                collection(db, 'userProfiles'),
+                where('username', '>=', term),
+                where('username', '<=', term + '\uf8ff'),
+                limit(10)
+            );
+            const snap = await getDocs(q);
+            const users = snap.docs
+                .map(d => ({ uid: d.id, ...d.data() }))
+                .filter(u => u.uid !== currentUser?.uid);
+
+            // Fetch statuses
+            const usersWithStatus = await Promise.all(users.map(async u => ({
+                ...u,
+                status: await getFriendshipStatus(u.uid)
+            })));
+
+            setResults(usersWithStatus);
+        } catch (error) {
+            console.error(error);
+        }
+        setLoading(false);
+    };
+
+    const handleConnect = async (targetUser) => {
+        if (!currentUser) return;
+        setActionLoading(prev => ({ ...prev, [targetUser.uid]: true }));
+        try {
+            await sendFriendRequest(targetUser);
+            setResults(prev => prev.map(u => u.uid === targetUser.uid ? { ...u, status: 'sent' } : u));
+        } catch (error) {
+            console.error(error);
+        }
+        setActionLoading(prev => ({ ...prev, [targetUser.uid]: false }));
+    };
 
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[160] flex items-center justify-center p-4">
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                         onClick={onClose}
+                        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
                     />
 
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        transition={{ duration: 0.2 }}
-                        className="relative w-[calc(100%-2rem)] sm:w-full max-w-7xl bg-[#0F0F0F] border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden z-50 p-6 md:p-8 flex flex-col h-[92vh] sm:h-[94vh] my-auto"
+                        className="relative w-[calc(100%-2rem)] sm:w-full max-w-7xl bg-[#0F0F0F] border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden h-[92vh] sm:h-[94vh] my-auto flex flex-col"
                     >
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-display font-bold text-white">Buscar Amigos</h2>
-                            <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white">
+                        {/* Header */}
+                        <div className="px-6 py-5 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
+                            <div>
+                                <h3 className="text-xl font-bold text-white tracking-tight">Buscar Cinéfilos</h3>
+                                <div className="h-1 w-8 bg-primary rounded-full mt-1 opacity-50" />
+                            </div>
+                            <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors">
                                 <XMarkIcon className="w-6 h-6" />
                             </button>
                         </div>
 
-                        <div className="relative mb-6">
-                            <input
-                                type="text"
-                                name="searchUsers"
-                                id="search-users-input"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Escribe un nombre y apellido..."
-                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors"
-                                autoFocus
-                            />
+                        <div className="flex-1 overflow-y-auto p-6 md:p-10 flex flex-col custom-scrollbar">
+                            <div className="relative mb-8">
+                                <MagnifyingGlassIcon className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                                <input
+                                    type="text"
+                                    value={searchTerm}
+                                    onChange={e => handleSearch(e.target.value)}
+                                    placeholder="Buscar por nombre de usuario..."
+                                    className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 pl-14 pr-6 text-white text-lg focus:outline-none focus:border-primary/50 transition-all font-display"
+                                />
+                                {loading && (
+                                    <div className="absolute right-5 top-1/2 -translate-y-1/2">
+                                        <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex-1">
+                                {results.length > 0 ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {results.map(res => (
+                                            <div key={res.uid} className="flex items-center justify-between p-4 bg-white/[0.02] border border-white/5 rounded-2xl hover:bg-white/[0.04] transition-all group">
+                                                <Link to={`/u/${res.username}`} onClick={onClose} className="flex items-center gap-4 flex-1 min-w-0">
+                                                    <img src={res.photoURL || "/logo.png"} className="w-12 h-12 rounded-full object-cover border border-white/10" alt="" />
+                                                    <div className="truncate">
+                                                        <p className="font-bold text-white truncate">{res.displayName}</p>
+                                                        <p className="text-xs text-gray-500 font-mono">@{res.username}</p>
+                                                    </div>
+                                                </Link>
+
+                                                {res.status === 'friend' ? (
+                                                    <span className="p-2 text-green-500 bg-green-500/10 rounded-full"><CheckIcon className="w-5 h-5" /></span>
+                                                ) : res.status === 'sent' ? (
+                                                    <span className="text-[10px] font-bold text-primary uppercase tracking-widest bg-primary/10 px-3 py-1.5 rounded-full ring-1 ring-primary/20">Enviado</span>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => handleConnect(res)}
+                                                        disabled={actionLoading[res.uid]}
+                                                        className="p-2.5 bg-primary/10 text-primary rounded-full hover:bg-primary hover:text-black transition-all active:scale-90 disabled:opacity-50"
+                                                    >
+                                                        <UserPlusIcon className="w-5 h-5" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : searchTerm.length > 1 && !loading ? (
+                                    <div className="text-center py-20 bg-white/[0.01] rounded-3xl border border-white/5 border-dashed">
+                                        <p className="text-gray-500">No encontramos a ningún cinéfilo con ese nombre.</p>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-20 flex flex-col items-center">
+                                        <div className="w-16 h-16 bg-white/[0.02] rounded-full flex items-center justify-center mb-4">
+                                            <MagnifyingGlassIcon className="w-8 h-8 text-gray-700" />
+                                        </div>
+                                        <p className="text-gray-500 text-sm max-w-xs">Buscá a tus amigos por su @usuario para compartir listas y ver qué están mirando.</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2">
-                            {loading ? (
-                                <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 text-primary animate-spin" /></div>
-                            ) : results.length > 0 ? (
-                                results.map(userResult => (
-                                    <button
-                                        key={userResult.uid}
-                                        onClick={() => {
-                                            if (onSelectUser) {
-                                                onSelectUser(userResult);
-                                            } else {
-                                                // If we had a public profile page: navigate(`/u/${userResult.uid}`);
-                                            }
-                                            onClose();
-                                        }}
-                                        className="w-full text-left flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 cursor-pointer transition-colors group"
-                                    >
-                                        <div className="w-10 h-10 rounded-full bg-white/10 overflow-hidden border border-white/10">
-                                            {userResult.photoURL ? (
-                                                <img src={userResult.photoURL} alt="" className="w-full h-full object-cover" />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center bg-primary/20 text-primary font-bold">
-                                                    {userResult.displayName?.charAt(0).toUpperCase()}
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-white group-hover:text-primary transition-colors">{userResult.displayName}</p>
-                                            <p className="text-xs text-gray-500 font-mono">{userResult.email}</p>
-                                        </div>
-                                    </button>
-                                ))
-                            ) : searchQuery ? (
-                                <div className="text-center py-8 text-gray-500">
-                                    <UserCircleIcon className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                                    <p>No se encontraron usuarios.</p>
-                                </div>
-                            ) : (
-                                <div className="text-center py-8 text-gray-600 font-mono text-xs">
-                                    Escribe para empezar a buscar...
-                                </div>
-                            )}
+                        {/* Footer */}
+                        <div className="p-6 border-t border-white/5 bg-white/[0.02] flex justify-center">
+                            <button
+                                onClick={onClose}
+                                className="px-8 py-3 bg-white/5 hover:bg-white/10 rounded-full text-sm font-bold text-white transition-all active:scale-95"
+                            >
+                                Cerrar
+                            </button>
                         </div>
                     </motion.div>
                 </div>

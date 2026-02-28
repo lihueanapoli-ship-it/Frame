@@ -1,181 +1,144 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { XMarkIcon, LinkIcon, ArrowDownTrayIcon, ShareIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, ShareIcon, LinkIcon, EnvelopeIcon, ChatBubbleLeftRightIcon, CheckIcon, DevicePhoneMobileIcon } from '@heroicons/react/24/outline';
+import { cn } from '../../lib/utils';
 import html2canvas from 'html2canvas';
+import { toast } from 'sonner';
 
 const ShareModal = ({ isOpen, onClose, data }) => {
-    // data expected: { title, subtitle, movies: [], type: 'list'|'profile', url }
-    const [isGenerating, setIsGenerating] = useState(false);
     const [copied, setCopied] = useState(false);
-    const cardRef = useRef(null);
+    const [generating, setGenerating] = useState(false);
 
-    if (!isOpen) return null;
+    const shareUrl = `${window.location.origin}${data.type === 'movie' ? `/movie/${data.id}` : `/lists/${data.id}`}`;
 
-    const handleCopyLink = async () => {
-        try {
-            await navigator.clipboard.writeText(window.location.href);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        } catch (err) {
-            console.error('Failed to copy', err);
-        }
-    };
-
-    const handleDownloadImage = async () => {
-        if (!cardRef.current) return;
-        setIsGenerating(true);
-        try {
-            // Wait for images to load ideally, but basic delay helps
-            await new Promise(r => setTimeout(r, 500));
-
-            const canvas = await html2canvas(cardRef.current, {
-                useCORS: true,
-                scale: 2, // Retina quality
-                backgroundColor: '#000000',
-                logging: false
-            });
-
-            const link = document.createElement('a');
-            link.download = `FRAME_${data.title.replace(/\s+/g, '_')}.png`;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-        } catch (err) {
-            console.error('Generation failed', err);
-            alert('No se pudo generar la imagen. Intenta de nuevo.');
-        } finally {
-            setIsGenerating(false);
-        }
+    const handleCopyLink = () => {
+        navigator.clipboard.writeText(shareUrl);
+        setCopied(true);
+        toast.success("Enlace copiado al portapapeles");
+        setTimeout(() => setCopied(false), 2000);
     };
 
     const handleNativeShare = async () => {
         if (navigator.share) {
             try {
                 await navigator.share({
-                    title: 'FRAME - ' + data.title,
-                    text: `Mira esta colección en FRAME: ${data.title}`,
-                    url: window.location.href,
+                    title: data.title,
+                    text: data.subtitle || 'Mirá esto en FRAME',
+                    url: shareUrl,
                 });
             } catch (err) {
-                console.log('Share canceled');
+                console.error(err);
             }
         } else {
             handleCopyLink();
         }
     };
 
-    // Prepare visuals
-    const posterCollage = data.movies?.slice(0, 4) || [];
-
     return (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={onClose}
-                className="absolute inset-0 bg-black/90 backdrop-blur-md"
-            />
+        <AnimatePresence>
+            {isOpen && (
+                <div className="fixed inset-0 z-[160] flex items-center justify-center p-4">
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={onClose}
+                        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                    />
 
-            <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="relative w-[calc(100%-2rem)] sm:w-full max-w-7xl bg-[#0F0F0F] border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col h-[92vh] sm:h-[94vh] my-auto"
-            >
-                {/* Header */}
-                <div className="p-4 flex justify-between items-center border-b border-white/5">
-                    <h3 className="text-white font-bold font-display text-lg">Compartir</h3>
-                    <button onClick={onClose}><XMarkIcon className="w-6 h-6 text-gray-400" /></button>
-                </div>
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                        transition={{ duration: 0.2 }}
+                        className="relative w-[calc(100%-2rem)] sm:w-full max-w-7xl bg-[#0F0F0F] border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden h-[92vh] sm:h-[94vh] my-auto flex flex-col"
+                    >
+                        {/* Header */}
+                        <div className="px-6 py-5 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
+                            <div>
+                                <h3 className="text-xl font-bold text-white tracking-tight">Compartir</h3>
+                                <div className="h-1 w-8 bg-primary rounded-full mt-1 opacity-50" />
+                            </div>
+                            <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors">
+                                <XMarkIcon className="w-6 h-6" />
+                            </button>
+                        </div>
 
-                <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center gap-6">
-
-                    {/* VISUAL CARD PREVIEW (What gets downloaded) */}
-                    <div className="relative group shadow-2xl rounded-2xl overflow-hidden">
-                        <div
-                            ref={cardRef}
-                            className="w-[280px] h-[420px] bg-gradient-to-br from-[#1a1a1a] to-black relative flex flex-col p-6 border-[8px] border-white text-center selection:bg-none"
-                            style={{ fontFamily: 'Inter, sans-serif' }}
-                        >
-                            {/* Background Blur */}
-                            {posterCollage[0] && (
-                                <img
-                                    src={`https://image.tmdb.org/t/p/w500${posterCollage[0].poster_path}`}
-                                    className="absolute inset-0 w-full h-full object-cover opacity-30 blur-xl grayscale"
-                                    crossOrigin="anonymous"
-                                    alt=""
-                                />
-                            )}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
-
-                            {/* Content */}
-                            <div className="relative z-10 flex flex-col h-full items-center">
-                                {/* Logo */}
-                                <div className="mb-4">
-                                    <span className="font-bold tracking-widest text-xs border border-white px-2 py-1 text-white uppercase">FRAME</span>
-                                </div>
-
-                                {/* Collage */}
-                                <div className="grid grid-cols-2 gap-2 w-full aspect-square mb-6">
-                                    {posterCollage.map((m, i) => (
-                                        <div key={i} className="rounded-lg overflow-hidden relative aspect-[2/3] shadow-lg border border-white/10">
-                                            <img
-                                                src={`https://image.tmdb.org/t/p/w342${m.poster_path}`}
-                                                className="w-full h-full object-cover"
-                                                crossOrigin="anonymous"
-                                                alt=""
-                                            />
+                        <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-10 custom-scrollbar">
+                            {/* Preview Card */}
+                            <div className="relative group max-w-sm mx-auto">
+                                <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-3xl blur opacity-75 group-hover:opacity-100 transition duration-1000"></div>
+                                <div className="relative bg-[#111] border border-white/10 rounded-2xl overflow-hidden p-6 aspect-[9/16] flex flex-col justify-between shadow-2xl">
+                                    <div className="flex items-start justify-between">
+                                        <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/10">
+                                            <ShareIcon className="w-6 h-6 text-primary" />
                                         </div>
-                                    ))}
-                                </div>
+                                        <span className="text-[10px] font-mono font-bold tracking-[0.3em] text-white/30 uppercase vertical-text">FRAME APP</span>
+                                    </div>
 
-                                <div className="mt-auto pb-4">
-                                    <h2 className="text-2xl font-bold text-white font-display leading-tight mb-1">{data.title}</h2>
-                                    <p className="text-xs text-gray-400 uppercase tracking-widest">{data.subtitle || 'Colección Personal'}</p>
+                                    <div>
+                                        <h4 className="text-3xl font-display font-bold text-white mb-2 leading-none uppercase tracking-tighter">{data.title}</h4>
+                                        <p className="text-primary font-mono text-xs font-bold tracking-widest uppercase">{data.subtitle}</p>
+                                        <div className="h-px w-12 bg-white/20 my-4"></div>
+                                        <p className="text-[10px] text-gray-500 font-mono leading-relaxed">Descubierto en tu cine personal. FRAME: Enfocá tu pasión.</p>
+                                    </div>
                                 </div>
+                            </div>
+
+                            {/* Options */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                                <button
+                                    onClick={handleCopyLink}
+                                    className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/5 transition-all group"
+                                >
+                                    <div className="p-3 bg-white/5 rounded-xl group-hover:bg-primary group-hover:text-black transition-all">
+                                        {copied ? <CheckIcon className="w-5 h-5" /> : <LinkIcon className="w-5 h-5" />}
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="font-bold text-sm text-white">Copiar enlace</p>
+                                        <p className="text-[10px] text-gray-500">Para pegar donde quieras</p>
+                                    </div>
+                                </button>
+
+                                <button
+                                    onClick={handleNativeShare}
+                                    className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/5 transition-all group"
+                                >
+                                    <div className="p-3 bg-white/5 rounded-xl group-hover:bg-primary group-hover:text-black transition-all">
+                                        <DevicePhoneMobileIcon className="w-5 h-5" />
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="font-bold text-sm text-white">Compartir sistema</p>
+                                        <p className="text-[10px] text-gray-500">Usar apps nativas</p>
+                                    </div>
+                                </button>
+
+                                <button
+                                    className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/5 transition-all group"
+                                >
+                                    <div className="p-3 bg-white/5 rounded-xl group-hover:bg-primary group-hover:text-black transition-all">
+                                        <ChatBubbleLeftRightIcon className="w-5 h-5" />
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="font-bold text-sm text-white">WhatsApp</p>
+                                        <p className="text-[10px] text-gray-500">Enviar a un contacto</p>
+                                    </div>
+                                </button>
                             </div>
                         </div>
 
-                        {/* Overlay hint */}
-                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                            <span className="text-white font-bold text-sm flex items-center gap-2"><ArrowDownTrayIcon className="w-4 h-4" /> Vista Previa</span>
+                        <div className="p-6 border-t border-white/5 bg-white/[0.02] flex justify-center">
+                            <button
+                                onClick={onClose}
+                                className="px-8 py-3 bg-white/5 hover:bg-white/10 rounded-full text-sm font-bold text-white transition-all active:scale-95"
+                            >
+                                Listo
+                            </button>
                         </div>
-                    </div>
-
-                    {/* Main Actions */}
-                    <div className="w-full grid grid-cols-2 gap-3">
-                        <button
-                            onClick={handleNativeShare}
-                            className="col-span-2 py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
-                        >
-                            <ShareIcon className="w-5 h-5" /> Compartir
-                        </button>
-
-                        <button
-                            onClick={handleCopyLink}
-                            className="py-3 bg-white/5 border border-white/10 text-white font-medium rounded-xl hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
-                        >
-                            {copied ? <CheckIcon className="w-5 h-5 text-green-400" /> : <LinkIcon className="w-5 h-5" />}
-                            {copied ? 'Copiado' : 'Copiar Link'}
-                        </button>
-
-                        <button
-                            onClick={handleDownloadImage}
-                            disabled={isGenerating}
-                            className="py-3 bg-white/5 border border-white/10 text-white font-medium rounded-xl hover:bg-white/10 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                        >
-                            {isGenerating ? (
-                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            ) : (
-                                <ArrowDownTrayIcon className="w-5 h-5" />
-                            )}
-                            Guardar Imagen
-                        </button>
-                    </div>
-
+                    </motion.div>
                 </div>
-            </motion.div>
-        </div>
+            )}
+        </AnimatePresence>
     );
 };
 

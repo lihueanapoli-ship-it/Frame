@@ -1,127 +1,135 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { XMarkIcon, UserPlusIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import { useAuth } from '../../contexts/AuthContext';
+import { XMarkIcon, UserPlusIcon, CheckIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { db } from '../../api/firebase';
-import { collection, onSnapshot, doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { cn } from '../../lib/utils';
+import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
 
 const CollaboratorModal = ({ isOpen, onClose, listId, currentCollaborators = [] }) => {
-    const { user } = useAuth();
-    const [friends, setFriends] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const { user: currentUser } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
+    const [results, setResults] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [actionLoading, setActionLoading] = useState({});
 
-    useEffect(() => {
-        if (!user || !isOpen) return;
-
-        setLoading(true);
-        // Fetch 'following' from UserProfiles (New Social System)
-        const unsub = onSnapshot(collection(db, 'userProfiles', user.uid, 'following'), (snap) => {
-            const friendsData = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
-            setFriends(friendsData);
-            setLoading(false);
-        });
-
-        return () => unsub();
-    }, [user, isOpen]);
-
-    const handleInvite = async (friend) => {
-        if (currentCollaborators.includes(friend.uid)) {
-            toast.info(`${friend.displayName} ya es colaborador.`);
+    const handleSearch = async (val) => {
+        setSearchTerm(val);
+        if (val.trim().length < 2) {
+            setResults([]);
             return;
         }
 
+        setLoading(true);
+        try {
+            const term = val.toLowerCase().trim();
+            const q = query(
+                collection(db, 'userProfiles'),
+                where('username', '>=', term),
+                where('username', '<=', term + '\uf8ff'),
+                limit(5)
+            );
+            const snap = await getDocs(q);
+            setResults(snap.docs
+                .map(d => ({ uid: d.id, ...d.data() }))
+                .filter(u => u.uid !== currentUser?.uid && !currentCollaborators.includes(u.uid))
+            );
+        } catch (error) {
+            console.error(error);
+        }
+        setLoading(false);
+    };
+
+    const handleInvite = async (targetUser) => {
+        setActionLoading(prev => ({ ...prev, [targetUser.uid]: true }));
         try {
             const listRef = doc(db, 'lists', listId);
             await updateDoc(listRef, {
-                collaborators: arrayUnion(friend.uid)
+                collaborators: arrayUnion(targetUser.uid)
             });
-            toast.success(`${friend.displayName} agregado como colaborador`);
-            onClose(); // Optional: Close modal or keep open to add more
+            toast.success(`${targetUser.displayName} añadido como colaborador`);
+            setResults(prev => prev.filter(u => u.uid !== targetUser.uid));
         } catch (error) {
-            console.error("Error adding collaborator", error);
-            toast.error("Error al invitar colaborador");
+            console.error(error);
+            toast.error("Error al añadir colaborador");
         }
+        setActionLoading(prev => ({ ...prev, [targetUser.uid]: false }));
     };
 
-    const filteredFriends = friends.filter(f =>
-        f.displayName.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    if (!isOpen) return null;
-
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="relative w-[calc(100%-2rem)] sm:w-full max-w-7xl bg-[#0F0F0F] border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col h-[92vh] sm:h-[94vh] my-auto"
-            >
-                <div className="p-6 border-b border-white/5 flex justify-between items-center">
-                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                        <UserPlusIcon className="w-6 h-6 text-primary" />
-                        Invitar Colaboradores
-                    </h2>
-                    <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white">
-                        <XMarkIcon className="w-5 h-5" />
-                    </button>
-                </div>
-
-                <div className="p-4 border-b border-white/5">
-                    <div className="relative">
-                        <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                        <input
-                            type="text"
-                            placeholder="Buscar amigo..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors"
-                        />
-                    </div>
-                </div>
-
-                <div className="max-h-[60vh] overflow-y-auto p-2">
-                    {loading ? (
-                        <div className="text-center py-8 text-gray-500">Cargando amigos...</div>
-                    ) : filteredFriends.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500">
-                            {searchTerm ? "No se encontraron resultados" : "No tienes amigos para invitar aún."}
+        <AnimatePresence>
+            {isOpen && (
+                <div className="fixed inset-0 z-[160] flex items-center justify-center p-4">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                        className="relative w-[calc(100%-2rem)] sm:w-full max-w-7xl bg-[#0F0F0F] border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden h-[92vh] sm:h-[94vh] my-auto flex flex-col"
+                    >
+                        <div className="px-6 py-5 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
+                            <div>
+                                <h3 className="text-xl font-bold text-white tracking-tight">Añadir Colaboradores</h3>
+                                <div className="h-1 w-8 bg-primary rounded-full mt-1 opacity-50" />
+                            </div>
+                            <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors">
+                                <XMarkIcon className="w-6 h-6" />
+                            </button>
                         </div>
-                    ) : (
-                        <div className="space-y-1">
-                            {filteredFriends.map(friend => {
-                                const isAdded = currentCollaborators.includes(friend.uid);
-                                return (
-                                    <button
-                                        key={friend.uid}
-                                        onClick={() => handleInvite(friend)}
-                                        disabled={isAdded}
-                                        className="w-full flex items-center justify-between p-3 hover:bg-white/5 rounded-xl transition-colors group disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <img src={friend.photoURL || "/logo.png"} className="w-10 h-10 rounded-full object-cover" alt="" />
-                                            <div className="text-left">
-                                                <p className="font-bold text-white text-sm">{friend.displayName}</p>
-                                                <p className="text-xs text-gray-500">@{friend.displayName.replace(/\s+/g, '').toLowerCase()}</p>
+
+                        <div className="flex-1 overflow-y-auto p-6 md:p-10 flex flex-col custom-scrollbar">
+                            <div className="relative mb-8">
+                                <MagnifyingGlassIcon className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                                <input
+                                    type="text"
+                                    value={searchTerm}
+                                    onChange={e => handleSearch(e.target.value)}
+                                    placeholder="Buscar por @usuario para invitar..."
+                                    className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 pl-14 pr-6 text-white text-lg focus:outline-none focus:border-primary/50 transition-all font-display"
+                                />
+                            </div>
+
+                            <div className="flex-1">
+                                {results.length > 0 ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {results.map(res => (
+                                            <div key={res.uid} className="flex items-center justify-between p-4 bg-white/[0.02] border border-white/5 rounded-2xl">
+                                                <div className="flex items-center gap-4 flex-1 min-w-0">
+                                                    <img src={res.photoURL || "/logo.png"} className="w-10 h-10 rounded-full object-cover border border-white/10" alt="" />
+                                                    <div className="truncate">
+                                                        <p className="font-bold text-white truncate">{res.displayName}</p>
+                                                        <p className="text-[10px] text-gray-500 font-mono italic">@{res.username}</p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleInvite(res)}
+                                                    disabled={actionLoading[res.uid]}
+                                                    className="p-2 bg-primary/10 text-primary rounded-full hover:bg-primary hover:text-black transition-all disabled:opacity-50"
+                                                >
+                                                    <UserPlusIcon className="w-5 h-5" />
+                                                </button>
                                             </div>
-                                        </div>
-                                        {isAdded ? (
-                                            <span className="text-xs text-green-500 font-bold px-2 py-1 bg-green-500/10 rounded-full">Colaborador</span>
-                                        ) : (
-                                            <div className="p-2 bg-primary/10 text-primary rounded-full group-hover:bg-primary group-hover:text-black transition-colors">
-                                                <UserPlusIcon className="w-5 h-5" />
-                                            </div>
-                                        )}
-                                    </button>
-                                );
-                            })}
+                                        ))}
+                                    </div>
+                                ) : searchTerm.length > 1 && !loading ? (
+                                    <div className="text-center py-20 text-gray-500 italic">No se encontraron usuarios disponibles.</div>
+                                ) : (
+                                    <div className="text-center py-20 opacity-30 flex flex-col items-center">
+                                        <UserPlusIcon className="w-12 h-12 mb-4" />
+                                        <p className="text-sm">Buscá a alguien para colaborar en esta lista</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    )}
+
+                        <div className="p-6 border-t border-white/5 bg-white/[0.02] flex justify-center">
+                            <button onClick={onClose} className="px-8 py-3 bg-white/5 hover:bg-white/10 rounded-full text-sm font-bold text-white transition-all">Cerrar</button>
+                        </div>
+                    </motion.div>
                 </div>
-            </motion.div>
-        </div>
+            )}
+        </AnimatePresence>
     );
 };
 

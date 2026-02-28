@@ -1,361 +1,139 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-    XMarkIcon, PaperAirplaneIcon, ChevronDownIcon,
-    FilmIcon, ListBulletIcon, TrashIcon, EyeIcon
-} from '@heroicons/react/24/outline';
-import { db } from '../../api/firebase';
-import { collection, query, orderBy, onSnapshot, limit, deleteDoc, doc } from 'firebase/firestore';
+import { XMarkIcon, PaperAirplaneIcon, ChevronLeftIcon, UsersIcon, EllipsisVerticalIcon, PhoneIcon, VideoCameraIcon, ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
+import { useChat } from '../../contexts/ChatContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { useChat, getChatId } from '../../contexts/ChatContext';
 import { cn } from '../../lib/utils';
-
-const formatMsgTime = (ts) => {
-    if (!ts?.toDate) return '';
-    const d = ts.toDate();
-    return d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
-};
-
-const MovieBubble = ({ msg, isOwn, onOpenMovie }) => (
-    <div className={cn("flex flex-col gap-1", isOwn ? "items-end" : "items-start")}>
-        <button
-            onClick={() => onOpenMovie(msg.movie)}
-            className={cn(
-                "rounded-2xl overflow-hidden max-w-[210px] shadow-xl border text-left group transition-transform active:scale-[0.98]",
-                isOwn ? "border-primary/40 bg-primary/10" : "border-white/10 bg-[#1e1e1e]"
-            )}
-        >
-            {msg.movie?.poster_path ? (
-                <div className="relative">
-                    <img
-                        src={`https://image.tmdb.org/t/p/w300${msg.movie.poster_path}`}
-                        alt={msg.movie.title}
-                        className="w-full h-28 object-cover group-hover:brightness-75 transition-all"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="flex items-center gap-1.5 bg-black/70 backdrop-blur-sm rounded-full px-3 py-1.5">
-                            <EyeIcon className="w-3.5 h-3.5 text-white" />
-                            <span className="text-[10px] text-white font-bold">Ver detalles</span>
-                        </div>
-                    </div>
-                    <div className="absolute bottom-2 left-2 flex items-center gap-1">
-                        <FilmIcon className="w-3 h-3 text-primary" />
-                        <span className="text-[9px] font-mono text-primary uppercase tracking-widest font-bold">Recomendación</span>
-                    </div>
-                </div>
-            ) : (
-                <div className="h-16 bg-white/5 flex items-center justify-center">
-                    <FilmIcon className="w-8 h-8 text-gray-600" />
-                </div>
-            )}
-            <div className="p-3">
-                <p className="font-bold text-white text-sm leading-tight">{msg.movie?.title}</p>
-                <div className="flex items-center gap-2 mt-0.5">
-                    {msg.movie?.vote_average > 0 && (
-                        <span className="text-[10px] text-yellow-400 font-mono">⭐ {Number(msg.movie.vote_average).toFixed(1)}</span>
-                    )}
-                    {msg.movie?.release_date && (
-                        <span className="text-[10px] text-gray-500 font-mono">{msg.movie.release_date.split('-')[0]}</span>
-                    )}
-                </div>
-                {msg.text && (
-                    <p className="text-xs text-gray-400 mt-2 pt-2 border-t border-white/5 italic">"{msg.text}"</p>
-                )}
-            </div>
-        </button>
-        <span className="text-[9px] text-gray-600 font-mono px-1">{formatMsgTime(msg.createdAt)}</span>
-    </div>
-);
-
-const ListBubble = ({ msg, isOwn }) => (
-    <div className={cn("flex flex-col gap-1", isOwn ? "items-end" : "items-start")}>
-        <div className={cn(
-            "rounded-2xl overflow-hidden max-w-[210px] shadow-xl border",
-            isOwn ? "border-primary/40 bg-primary/10" : "border-white/10 bg-[#1e1e1e]"
-        )}>
-            <div className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                    <div className="w-7 h-7 rounded-lg bg-primary/20 flex items-center justify-center">
-                        <ListBulletIcon className="w-4 h-4 text-primary" />
-                    </div>
-                    <span className="text-[9px] font-mono text-primary uppercase tracking-widest font-bold">Lista compartida</span>
-                </div>
-                <p className="font-bold text-white text-sm">{msg.list?.name}</p>
-                <p className="text-[10px] text-gray-500 font-mono mt-0.5">
-                    {msg.list?.movieCount ?? 0} película{msg.list?.movieCount !== 1 ? 's' : ''}
-                </p>
-                {msg.text && (
-                    <p className="text-xs text-gray-400 mt-2 pt-2 border-t border-white/5 italic">"{msg.text}"</p>
-                )}
-            </div>
-        </div>
-        <span className="text-[9px] text-gray-600 font-mono px-1">{formatMsgTime(msg.createdAt)}</span>
-    </div>
-);
-
-const TextBubble = ({ msg, isOwn }) => (
-    <div className={cn("flex flex-col gap-0.5", isOwn ? "items-end" : "items-start")}>
-        <div className={cn(
-            "max-w-[75%] px-4 py-2.5 text-sm leading-relaxed shadow-sm",
-            isOwn
-                ? "bg-primary text-black rounded-2xl rounded-br-sm font-medium"
-                : "bg-[#1e1e1e] text-white border border-white/5 rounded-2xl rounded-bl-sm"
-        )}>
-            {msg.text}
-        </div>
-        <span className="text-[9px] text-gray-600 font-mono px-1">{formatMsgTime(msg.createdAt)}</span>
-    </div>
-);
-
-const MessageBubble = ({ msg, isOwn, chatId, onOpenMovie }) => {
-    const [showDelete, setShowDelete] = useState(false);
-    const longPressTimer = useRef(null);
-
-    const handleDelete = async (e) => {
-        e.stopPropagation();
-        try {
-            await deleteDoc(doc(db, 'chats', chatId, 'messages', msg.id));
-        } catch (err) {
-            console.error('Error deleting message:', err);
-        }
-        setShowDelete(false);
-    };
-
-    const handleTouchStart = () => {
-        longPressTimer.current = setTimeout(() => setShowDelete(true), 500);
-    };
-    const handleTouchEnd = () => {
-        clearTimeout(longPressTimer.current);
-    };
-
-    return (
-        <div
-            className={cn("group relative flex", isOwn ? "justify-end" : "justify-start")}
-            onMouseEnter={() => setShowDelete(true)}
-            onMouseLeave={() => setShowDelete(false)}
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-        >
-            <AnimatePresence>
-                {showDelete && (
-                    <motion.button
-                        initial={{ opacity: 0, scale: 0.7 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.7 }}
-                        transition={{ duration: 0.12 }}
-                        onClick={handleDelete}
-                        className={cn(
-                            "self-center flex-shrink-0 p-1.5 rounded-full bg-red-500/20 hover:bg-red-500/40 text-red-400 hover:text-red-300 transition-colors",
-                            isOwn ? "order-first mr-2" : "order-last ml-2"
-                        )}
-                        title="Borrar mensaje"
-                    >
-                        <TrashIcon className="w-3 h-3" />
-                    </motion.button>
-                )}
-            </AnimatePresence>
-
-            <div>
-                {msg.type === 'movie_share' ? (
-                    <MovieBubble msg={msg} isOwn={isOwn} onOpenMovie={onOpenMovie} />
-                ) : msg.type === 'list_share' ? (
-                    <ListBubble msg={msg} isOwn={isOwn} />
-                ) : (
-                    <TextBubble msg={msg} isOwn={isOwn} />
-                )}
-            </div>
-        </div>
-    );
-};
+import { Link } from 'react-router-dom';
 
 const ChatWindow = () => {
-    const { openChat, closeChat, sendMessage, markAsRead, openMovieDetail } = useChat();
+    const { isOpen, activeChat, closeChat, messages, sendMessage, markAsRead } = useChat();
     const { user } = useAuth();
-    const [messages, setMessages] = useState([]);
-    const [text, setText] = useState('');
-    const [isMinimized, setIsMinimized] = useState(false);
-    const [sending, setSending] = useState(false);
-    const [friendOnline, setFriendOnline] = useState(false);
-    const bottomRef = useRef(null);
-    const inputRef = useRef(null);
-
-    const chatId = openChat && user ? getChatId(user.uid, openChat.uid) : null;
+    const [inputValue, setInputValue] = useState('');
+    const scrollRef = useRef(null);
 
     useEffect(() => {
-        if (!openChat?.uid) { setFriendOnline(false); return; }
-        const unsub = onSnapshot(doc(db, 'users', openChat.uid), (snap) => {
-            setFriendOnline(snap.data()?.isOnline === true);
-        });
-        return () => unsub();
-    }, [openChat?.uid]);
-
-    useEffect(() => {
-        if (!chatId) { setMessages([]); return; }
-        const q = query(
-            collection(db, 'chats', chatId, 'messages'),
-            orderBy('createdAt', 'asc'),
-            limit(150)
-        );
-        const unsub = onSnapshot(q, (snap) => {
-            setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-        });
-        return () => unsub();
-    }, [chatId]);
-
-    useEffect(() => {
-        if (messages.length > 0 && !isMinimized) {
-            bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+        if (scrollRef.current) {
+            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
-    }, [messages.length, isMinimized]);
-
-    useEffect(() => {
-        if (!openChat) return;
-        setIsMinimized(false);
-        markAsRead(openChat.uid);
-        setTimeout(() => inputRef.current?.focus(), 350);
-    }, [openChat?.uid]);
-
-    useEffect(() => {
-        if (openChat && messages.length > 0 && !isMinimized) {
-            markAsRead(openChat.uid);
+        if (isOpen && activeChat) {
+            markAsRead(activeChat.uid);
         }
-    }, [messages.length, isMinimized, openChat?.uid]);
+    }, [messages, isOpen, activeChat]);
 
-    const handleSend = async () => {
-        const trimmed = text.trim();
-        if (!trimmed || !openChat || sending) return;
-        setSending(true);
-        setText('');
-        try {
-            await sendMessage(openChat.uid, { type: 'text', text: trimmed });
-        } catch (_) {
-            setText(trimmed);
-        } finally {
-            setSending(false);
-        }
-        inputRef.current?.focus();
+    const handleSend = (e) => {
+        e.preventDefault();
+        if (!inputValue.trim() || !activeChat) return;
+        sendMessage(activeChat.uid, { type: 'text', text: inputValue.trim() });
+        setInputValue('');
     };
 
-    const handleOpenMovie = useCallback((movie) => {
-        if (movie?.id) openMovieDetail(movie);
-    }, [openMovieDetail]);
+    if (!isOpen) return null;
 
-    return createPortal(
+    return (
         <AnimatePresence>
-            {openChat && (
+            <div className="fixed inset-0 z-[160] flex items-center justify-center p-4">
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={closeChat} className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+
                 <motion.div
-                    key={`chat-${openChat.uid}`}
-                    initial={{ y: 80, opacity: 0, scale: 0.97 }}
-                    animate={{ y: 0, opacity: 1, scale: 1 }}
-                    exit={{ y: 80, opacity: 0, scale: 0.95 }}
-                    transition={{ type: 'spring', damping: 28, stiffness: 360 }}
-                    className="fixed bottom-[88px] md:bottom-6 right-4 md:right-6 z-[200] w-[340px] max-w-[calc(100vw-2rem)] rounded-[2.5rem] overflow-hidden border border-white/10 shadow-[0_24px_64px_rgba(0,0,0,0.7)] flex flex-col bg-[#0F0F0F]"
-                    style={{
-                        maxHeight: isMinimized ? '58px' : '500px',
-                        transition: 'max-height 0.3s cubic-bezier(0.25, 1, 0.5, 1)',
-                    }}
+                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                    className="relative w-[calc(100%-2rem)] sm:w-full max-w-7xl bg-[#0F0F0F] border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden h-[92vh] sm:h-[94vh] my-auto flex flex-col"
                 >
-                    <div
-                        className="flex items-center gap-3 px-4 py-3 bg-[#151515] border-b border-white/[0.06] cursor-pointer select-none shrink-0"
-                        onClick={() => setIsMinimized(m => !m)}
-                    >
-                        <div className="relative">
-                            <img
-                                src={openChat.photoURL || '/logo.png'}
-                                alt=""
-                                className="w-8 h-8 rounded-full object-cover border border-white/10"
-                            />
-                            <span className={cn(
-                                "absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[#151515] transition-colors duration-700",
-                                friendOnline ? "bg-green-500" : "bg-red-500"
-                            )} />
+                    {/* Chat Header */}
+                    <div className="px-6 py-5 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+                        <div className="flex items-center gap-4">
+                            <button onClick={closeChat} className="p-2 hover:bg-white/10 rounded-full transition-colors"><ChevronLeftIcon className="w-6 h-6 text-gray-400" /></button>
+                            <img src={activeChat?.photoURL || "/logo.png"} className="w-10 h-10 rounded-full border border-white/10 object-cover" alt="" />
+                            <div>
+                                <h3 className="font-bold text-white text-lg leading-tight">{activeChat?.displayName}</h3>
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                    <span className="text-[10px] text-gray-500 font-mono uppercase tracking-widest">En Línea</span>
+                                </div>
+                            </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-white truncate leading-tight">{openChat.displayName}</p>
-                            <p className={cn(
-                                "text-[10px] font-mono transition-colors duration-700",
-                                friendOnline ? "text-green-400" : "text-red-400"
-                            )}>
-                                {friendOnline ? '● En línea' : '● Desconectado'}
-                            </p>
-                        </div>
-                        <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                            <button
-                                onClick={() => setIsMinimized(m => !m)}
-                                className="p-1.5 hover:bg-white/10 rounded-full transition-colors text-gray-500 hover:text-white"
-                            >
-                                <ChevronDownIcon className={cn("w-4 h-4 transition-transform duration-300", isMinimized ? "rotate-180" : "")} />
-                            </button>
-                            <button
-                                onClick={closeChat}
-                                className="p-1.5 hover:bg-white/10 rounded-full transition-colors text-gray-500 hover:text-white"
-                            >
-                                <XMarkIcon className="w-4 h-4" />
-                            </button>
+                        <div className="flex items-center gap-2">
+                            <button className="p-2.5 hover:bg-white/10 rounded-full text-gray-500 transition-colors"><PhoneIcon className="w-5 h-5" /></button>
+                            <button onClick={closeChat} className="p-2.5 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-all"><XMarkIcon className="w-6 h-6" /></button>
                         </div>
                     </div>
 
-                    <div
-                        className="flex-1 overflow-y-auto py-4 px-3 space-y-3 custom-scrollbar"
-                        style={{ maxHeight: '390px' }}
-                    >
+                    {/* Messages Area */}
+                    <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar bg-gradient-to-b from-transparent to-white/[0.01]">
                         {messages.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center text-center py-12 opacity-50">
-                                <span className="text-3xl mb-2">🎬</span>
-                                <p className="text-xs text-gray-500 font-mono">Sin mensajes aún</p>
-                                <p className="text-[10px] text-gray-600 mt-1">¡Recomendá una película!</p>
+                            <div className="h-full flex flex-col items-center justify-center opacity-20 italic space-y-4">
+                                <ChatBubbleLeftRightIcon className="w-12 h-12" />
+                                <p className="text-sm">Iniciá una conversación sobre cine...</p>
                             </div>
                         ) : (
-                            messages.map(msg => (
-                                <MessageBubble
-                                    key={msg.id}
-                                    msg={msg}
-                                    isOwn={msg.senderId === user?.uid}
-                                    chatId={chatId}
-                                    onOpenMovie={handleOpenMovie}
-                                />
-                            ))
+                            messages.map((msg, i) => {
+                                const isMe = msg.senderId === user?.uid;
+                                return (
+                                    <div key={msg.id || i} className={cn("flex w-full", isMe ? "justify-end" : "justify-start")}>
+                                        <div className={cn(
+                                            "max-w-[80%] px-4 py-3 rounded-2xl text-sm transition-all shadow-lg",
+                                            isMe ? "bg-primary text-black rounded-tr-none font-medium" : "bg-white/10 text-white rounded-tl-none border border-white/5"
+                                        )}>
+                                            {msg.content?.type === 'movie_share' ? (
+                                                <div className="space-y-3">
+                                                    <div className="bg-black/20 p-2 rounded-xl flex items-center gap-3 border border-black/10">
+                                                        <img src={`https://image.tmdb.org/t/p/w92${msg.content.movie.poster_path}`} className="w-12 h-18 rounded-md shadow-inner" alt="" />
+                                                        <div className="truncate">
+                                                            <p className="font-bold text-xs truncate uppercase">{msg.content.movie.title}</p>
+                                                            <p className="text-[9px] opacity-70">Recomendación</p>
+                                                        </div>
+                                                    </div>
+                                                    {msg.content.text && <p>{msg.content.text}</p>}
+                                                </div>
+                                            ) : msg.content?.type === 'list_share' ? (
+                                                <div className="space-y-3">
+                                                    <div className="bg-black/20 p-3 rounded-xl flex items-center gap-3 border border-black/10">
+                                                        <div className="p-2 bg-primary/20 rounded-lg"><UsersIcon className="w-5 h-5" /></div>
+                                                        <div className="truncate">
+                                                            <p className="font-bold text-xs truncate uppercase">{msg.content.list.name}</p>
+                                                            <p className="text-[9px] opacity-70">Lista Compartida</p>
+                                                        </div>
+                                                    </div>
+                                                    {msg.content.text && <p>{msg.content.text}</p>}
+                                                </div>
+                                            ) : (
+                                                <p className="leading-relaxed">{msg.content?.text}</p>
+                                            )}
+                                            <span className={cn("text-[9px] mt-1 block opacity-50 font-mono", isMe ? "text-black/60" : "text-gray-400")}>
+                                                {new Date(msg.timestamp?.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            })
                         )}
-                        <div ref={bottomRef} />
                     </div>
 
-                    {!isMinimized && (
-                        <div className="flex items-center gap-2 px-3 py-3 bg-[#151515] border-t border-white/[0.06] shrink-0">
+                    {/* Chat Input */}
+                    <form onSubmit={handleSend} className="p-6 border-t border-white/5 bg-white/[0.02]">
+                        <div className="flex items-center gap-3">
                             <input
-                                ref={inputRef}
+                                autoFocus
                                 type="text"
-                                value={text}
-                                onChange={e => setText(e.target.value)}
-                                onKeyDown={e => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault();
-                                        handleSend();
-                                    }
-                                }}
+                                value={inputValue}
+                                onChange={e => setInputValue(e.target.value)}
                                 placeholder="Escribí un mensaje..."
-                                maxLength={500}
-                                className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/30 transition-all"
+                                className="flex-1 bg-white/[0.05] border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-primary/40 transition-all font-medium"
                             />
                             <button
-                                onClick={handleSend}
-                                disabled={!text.trim() || sending}
-                                className={cn(
-                                    "p-2.5 rounded-xl flex-shrink-0 transition-all active:scale-95",
-                                    text.trim() && !sending
-                                        ? "bg-primary text-black hover:opacity-90 shadow-lg shadow-primary/20"
-                                        : "bg-white/5 text-gray-600 cursor-not-allowed"
-                                )}
+                                type="submit"
+                                disabled={!inputValue.trim()}
+                                className="p-4 bg-primary text-black rounded-2xl hover:brightness-110 active:scale-90 transition-all shadow-lg shadow-primary/20 disabled:opacity-30 disabled:active:scale-100"
                             >
-                                <PaperAirplaneIcon className="w-4 h-4" />
+                                <PaperAirplaneIcon className="w-6 h-6" />
                             </button>
                         </div>
-                    )}
+                    </form>
                 </motion.div>
-            )}
-        </AnimatePresence>,
-        document.body
+            </div>
+        </AnimatePresence>
     );
 };
 
