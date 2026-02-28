@@ -45,7 +45,7 @@ const BottomSheet = ({ isOpen, onClose, title, children }) => {
                         className={cn(
                             "fixed z-[70] bg-[#0F0F0F] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden",
                             "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
-                            "w-[calc(100%-2rem)] max-w-2xl max-h-[85vh] rounded-[2.5rem]"
+                            "w-[calc(100%-2rem)] sm:w-full max-w-7xl h-[92vh] sm:h-[94vh] rounded-[2.5rem]"
                         )}
                     >
                         <div className="flex justify-between items-center px-6 md:px-8 py-5 border-b border-white/5 bg-gradient-to-b from-white/[0.02] to-transparent shrink-0">

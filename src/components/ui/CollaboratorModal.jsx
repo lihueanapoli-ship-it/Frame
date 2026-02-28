@@ -57,7 +57,7 @@ const CollaboratorModal = ({ isOpen, onClose, listId, currentCollaborators = [] 
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="relative w-[calc(100%-2rem)] max-w-2xl bg-[#0F0F0F] border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[85vh]"
+                className="relative w-[calc(100%-2rem)] sm:w-full max-w-7xl bg-[#0F0F0F] border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col h-[92vh] sm:h-[94vh] my-auto"
             >
                 <div className="p-6 border-b border-white/5 flex justify-between items-center">
                     <h2 className="text-xl font-bold text-white flex items-center gap-2">
