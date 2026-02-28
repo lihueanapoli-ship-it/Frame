@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { XMarkIcon, FunnelIcon, GlobeAltIcon, TagIcon, CheckIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { cn } from '../../lib/utils';
@@ -77,7 +78,7 @@ const ExclusionModal = ({ isOpen, onClose, preferences, onSave, recommendations 
         }
     };
 
-    return (
+    return createPortal(
         <AnimatePresence>
             {isOpen && (
                 <div className="fixed inset-0 z-[160] flex items-center justify-center p-[30px]">
@@ -173,7 +174,8 @@ const ExclusionModal = ({ isOpen, onClose, preferences, onSave, recommendations 
                     </motion.div>
                 </div>
             )}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 };
 
