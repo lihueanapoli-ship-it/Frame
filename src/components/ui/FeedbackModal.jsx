@@ -107,10 +107,10 @@ const FeedbackModal = ({ isOpen, onClose }) => {
         formData.append("👤 Usuario", userName);
         formData.append("📧 Contacto", userEmail);
 
-        if (answers.overall) formData.append("🌟 Experiencia General", `${answers.overall}/5 Estrellas`);
+        if (answers.overall) formData.append("🌟 Experiencia General", `${answers.overall}/10 Estrellas`);
         if (answers.usability) formData.append("🧠 Usabilidad", answers.usability === 'easy' ? 'Fácil' : answers.usability === 'medium' ? 'Normal' : 'Difícil');
         if (answers.speed) formData.append("⚡ Velocidad", answers.speed === 'fast' ? 'Rápida' : answers.speed === 'ok' ? 'Normal' : 'Lenta');
-        if (answers.design) formData.append("🎨 Diseño", `${answers.design}/5 Estrellas`);
+        if (answers.design) formData.append("🎨 Diseño", `${answers.design}/10 Estrellas`);
         if (answers.nps !== null) formData.append("❤️ Recomendaría", answers.nps ? 'SÍ' : 'NO');
 
         formData.append("📱 Dispositivo", techInfo.platform);
@@ -155,7 +155,7 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="relative w-full max-w-7xl h-[92vh] sm:h-[94vh] bg-[#0F0F0F] border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col"
+                        className="relative w-full max-w-7xl h-[88vh] sm:h-[90vh] bg-[#0F0F0F] border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col"
                     >
                         {!submitted && (
                             <button onClick={handleClose} className="absolute top-4 right-4 p-2 text-gray-500 hover:text-white transition-colors z-10"><XMarkIcon className="w-5 h-5" /></button>
