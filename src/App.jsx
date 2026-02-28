@@ -91,7 +91,7 @@ const AppContent = () => {
         const firstName = user?.displayName?.split(' ')[0] || 'Cinéfilo';
 
         return (
-            <div className="flex items-center gap-3 md:gap-4">
+            <div className="flex items-center gap-3 md:gap-4 h-full">
                 <div className="hidden sm:flex flex-col items-end">
                     <span className="text-[10px] font-mono text-primary uppercase tracking-[0.2em] mb-0.5">En Escena</span>
                     <span className="text-sm font-display font-bold text-white tracking-wide leading-none">
@@ -102,93 +102,87 @@ const AppContent = () => {
                 <div className="relative">
                     <button
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        className="relative group focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-full active:scale-90 transition-transform"
-                        aria-label={`Menú de usuario: ${user?.displayName || 'Perfil'}`}
-                        aria-expanded={isMenuOpen}
+                        className="relative group focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-full active:scale-95 transition-all w-10 h-10 md:w-12 md:h-12"
                     >
                         <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-purple-600 rounded-full opacity-75 group-hover:opacity-100 blur transition duration-200" />
                         <img
                             src={user?.photoURL || "/logo.png"}
-                            alt={`Foto de perfil de ${user?.displayName || 'usuario'}`}
-                            className="relative w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-black object-cover shadow-xl"
-                            width="48"
-                            height="48"
+                            alt=""
+                            className="relative w-full h-full rounded-full border-2 border-black object-cover shadow-xl"
                         />
                     </button>
 
-                    {/* Unified User Menu Dropdown */}
                     <AnimatePresence>
-                        {isMenuOpen && !loading && (
+                        {isMenuOpen && (
                             createPortal(
-                                <>
+                                <div className="fixed inset-0 z-[160] flex items-start justify-end p-4">
+                                    {/* Glassmorphism Backdrop */}
                                     <motion.div
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
                                         exit={{ opacity: 0 }}
-                                        className="fixed inset-0 z-[110] bg-black/90 backdrop-blur-md cursor-default transition-colors p-4 flex items-start justify-end"
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            setIsMenuOpen(false);
-                                        }}
+                                        onClick={() => setIsMenuOpen(false)}
+                                        className="absolute inset-0 bg-black/95 backdrop-blur-xl cursor-default"
+                                    />
+
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.9, y: -20, x: 20 }}
+                                        animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
+                                        exit={{ opacity: 0, scale: 0.9, y: -20, x: 20 }}
+                                        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                                        className="relative z-[170] w-[280px] mt-20 sm:mt-16 bg-[#0F0F0F] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.8)] rounded-[2.5rem] overflow-hidden flex flex-col pointer-events-auto"
                                     >
-                                        <motion.div
-                                            initial={{ opacity: 0, scale: 0.95, y: -20 }}
-                                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                                            exit={{ opacity: 0, scale: 0.95, y: -20 }}
-                                            className="w-[280px] md:w-64 rounded-[2.5rem] bg-[#0F0F0F] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.8)] z-[120] overflow-hidden pointer-events-auto mt-20"
-                                            onClick={(e) => e.stopPropagation()}
-                                        >
-                                            {/* User Info Header */}
-                                            <div className="px-5 py-5 border-b border-white/5 bg-gradient-to-b from-white/[0.03] to-transparent">
-                                                <div className="flex items-center gap-3 mb-1">
-                                                    <div className="w-10 h-10 rounded-full border border-primary/30 p-0.5">
-                                                        <img src={user?.photoURL || "/logo.png"} className="w-full h-full rounded-full object-cover" alt="" />
-                                                    </div>
-                                                    <div className="flex-1 overflow-hidden">
-                                                        <p className="text-sm font-bold text-white truncate">{user?.displayName || 'Cinéfilo'}</p>
-                                                        <p className="text-[10px] text-gray-400 truncate font-mono">{user?.email}</p>
-                                                    </div>
+                                        {/* Profile Card Header */}
+                                        <div className="px-6 py-8 border-b border-white/5 bg-gradient-to-b from-white/[0.04] to-transparent">
+                                            <div className="flex flex-col items-center text-center">
+                                                <div className="w-20 h-20 rounded-full border-2 border-primary p-1 shadow-glow mb-4">
+                                                    <img src={user?.photoURL || "/logo.png"} className="w-full h-full rounded-full object-cover" alt="" />
                                                 </div>
+                                                <h3 className="text-lg font-bold text-white tracking-tight">{user?.displayName || 'Cinéfilo'}</h3>
+                                                <p className="text-[10px] text-gray-500 font-mono uppercase tracking-[0.2em] mt-1">{user?.email}</p>
                                             </div>
+                                        </div>
 
-                                            {/* Menu Actions */}
-                                            <div className="p-2 space-y-1">
-                                                <button
-                                                    onClick={() => { setIsMenuOpen(false); setIsFeedbackOpen(true); }}
-                                                    className="w-full text-left flex items-center gap-3 px-3 py-3 text-sm text-gray-200 hover:text-white hover:bg-white/10 rounded-xl transition-all group active:scale-95"
-                                                >
-                                                    <div className="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
-                                                        <ChatBubbleLeftRightIcon className="w-4 h-4 text-primary" />
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        <span className="font-semibold text-xs text-white">Danos tu opinión</span>
-                                                        <span className="text-[9px] text-gray-500 font-mono">Feedback de usuario</span>
-                                                    </div>
-                                                </button>
+                                        {/* Action Buttons */}
+                                        <div className="p-3 space-y-2">
+                                            <button
+                                                onClick={() => { setIsMenuOpen(false); setIsFeedbackOpen(true); }}
+                                                className="w-full flex items-center gap-4 px-5 py-5 text-gray-400 hover:text-white hover:bg-white/5 rounded-[1.8rem] transition-all group active:scale-[0.98]"
+                                            >
+                                                <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 group-hover:scale-110 transition-all">
+                                                    <ChatBubbleLeftRightIcon className="w-5 h-5 text-primary" />
+                                                </div>
+                                                <div className="flex flex-col items-start overflow-hidden">
+                                                    <span className="font-bold text-sm text-white">Enviar opinión</span>
+                                                    <span className="text-[10px] text-gray-500 font-mono truncate">Tu feedback nos hace mejores</span>
+                                                </div>
+                                            </button>
 
-                                                <div className="h-px bg-white/5 my-1 mx-2" />
+                                            <button
+                                                onClick={() => { setIsMenuOpen(false); logout(); }}
+                                                className="w-full flex items-center gap-4 px-5 py-5 text-gray-400 hover:text-red-400 hover:bg-red-500/5 rounded-[1.8rem] transition-all group active:scale-[0.98]"
+                                            >
+                                                <div className="w-10 h-10 rounded-2xl bg-red-500/10 flex items-center justify-center group-hover:bg-red-500/20 group-hover:scale-110 transition-all">
+                                                    <ArrowLeftOnRectangleIcon className="w-5 h-5 text-red-500" />
+                                                </div>
+                                                <div className="flex flex-col items-start overflow-hidden">
+                                                    <span className="font-bold text-sm">Cerrar Sesión</span>
+                                                    <span className="text-[10px] text-red-900/40 font-mono uppercase tracking-widest">Hasta pronto</span>
+                                                </div>
+                                            </button>
+                                        </div>
 
-                                                <button
-                                                    onClick={() => { logout(); setIsMenuOpen(false); }}
-                                                    className="w-full text-left flex items-center gap-3 px-3 py-3 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-all group active:scale-95"
-                                                >
-                                                    <div className="p-2 bg-red-500/10 rounded-lg group-hover:bg-red-500/20 transition-colors">
-                                                        <ArrowLeftOnRectangleIcon className="w-4 h-4 text-red-400" />
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        <span className="font-semibold text-xs text-red-400">Cerrar Sesión</span>
-                                                        <span className="text-[9px] text-red-900/40 font-mono uppercase">Fin de sesión</span>
-                                                    </div>
-                                                </button>
-                                            </div>
-                                        </motion.div>
+                                        {/* Footer Decorative Block */}
+                                        <div className="px-6 py-4 bg-white/[0.02] border-t border-white/5 text-center">
+                                            <span className="text-[8px] font-mono text-gray-600 uppercase tracking-[0.4em]">FRAME v2.0 // MISSION CONTROL</span>
+                                        </div>
                                     </motion.div>
-                                </>
-                                , document.body)
+                                </div>,
+                                document.body
+                            )
                         )}
                     </AnimatePresence>
-                </div >
+                </div>
             </div>
         );
     };
