@@ -556,21 +556,21 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[200] bg-black flex flex-col justify-center items-center"
+                        className="fixed inset-0 z-[200] bg-black flex flex-col"
                     >
-                        {/* Close button rendered above everything — outside iframe capture zone */}
-                        {createPortal(
+                        {/* Close bar: SIBLING to iframe, never overlaps → immune to iframe focus/event capture */}
+                        <div className="flex items-center justify-end px-4 py-3 bg-black flex-shrink-0 border-b border-white/5">
                             <button
                                 onClick={() => setIsFullVideoOpen(false)}
-                                className="fixed top-5 right-5 z-[9999] p-3 bg-black/70 hover:bg-black/90 border border-white/20 rounded-full text-white backdrop-blur-md transition-all active:scale-95 shadow-2xl"
-                                style={{ touchAction: 'manipulation' }}
+                                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-full text-white text-sm font-semibold transition-all active:scale-95"
                             >
-                                <XMarkIcon className="w-7 h-7" />
-                            </button>,
-                            document.body
-                        )}
+                                <XMarkIcon className="w-5 h-5" />
+                                Cerrar
+                            </button>
+                        </div>
 
-                        <div className="w-full h-full relative">
+                        {/* Iframe fills remaining height — does NOT touch the button bar */}
+                        <div className="flex-1 min-h-0">
                             <iframe
                                 title="Trailer Fullscreen"
                                 src={`https://www.youtube.com/embed/${videoKey}?autoplay=1&mute=0&controls=1&modestbranding=1&rel=0&showinfo=0`}
