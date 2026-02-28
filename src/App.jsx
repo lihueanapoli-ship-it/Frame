@@ -40,6 +40,102 @@ const RouteFallback = () => (
     </div>
 );
 
+const UserMenu = ({ user, loading, logout, isMenuOpen, setIsMenuOpen, setIsFeedbackOpen }) => {
+    if (loading) return <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/10 animate-pulse" />;
+
+    const firstName = user?.displayName?.split(' ')[0] || 'Cinéfilo';
+
+    return (
+        <div className="flex items-center gap-3 md:gap-4 h-full">
+            <div className="hidden sm:flex flex-col items-end">
+                <span className="text-[10px] font-mono text-primary uppercase tracking-[0.2em] mb-0.5">En Escena</span>
+                <span className="text-sm font-display font-bold text-white tracking-wide leading-none">
+                    {firstName.toUpperCase()}
+                </span>
+            </div>
+
+            <div className="relative">
+                <button
+                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    className="relative group focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-full active:scale-95 transition-all w-10 h-10 md:w-12 md:h-12"
+                >
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-purple-600 rounded-full opacity-75 group-hover:opacity-100 blur transition duration-200" />
+                    <img
+                        src={user?.photoURL || "/logo.png"}
+                        alt=""
+                        className="relative w-full h-full rounded-full border-2 border-black object-cover shadow-xl"
+                    />
+                </button>
+
+                <AnimatePresence>
+                    {isMenuOpen && createPortal(
+                        <div className="fixed inset-0 z-[200] flex items-start justify-end p-4">
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setIsMenuOpen(false)}
+                                className="absolute inset-0 bg-black/80 backdrop-blur-lg cursor-default"
+                            />
+
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9, y: -20, x: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
+                                exit={{ opacity: 0, scale: 0.9, y: -20, x: 20 }}
+                                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                                className="relative z-[210] w-[280px] mt-20 bg-[#0F0F0F] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.8)] rounded-[2.5rem] overflow-hidden flex flex-col pointer-events-auto"
+                            >
+                                <div className="px-6 py-8 border-b border-white/5 bg-gradient-to-b from-white/[0.04] to-transparent">
+                                    <div className="flex flex-col items-center text-center">
+                                        <div className="w-20 h-20 rounded-full border-2 border-primary p-1 shadow-glow mb-4">
+                                            <img src={user?.photoURL || "/logo.png"} className="w-full h-full rounded-full object-cover" alt="" />
+                                        </div>
+                                        <h3 className="text-lg font-bold text-white tracking-tight">{user?.displayName || 'Cinéfilo'}</h3>
+                                        <p className="text-[10px] text-gray-500 font-mono uppercase tracking-[0.2em] mt-1">{user?.email}</p>
+                                    </div>
+                                </div>
+
+                                <div className="p-3 space-y-2">
+                                    <button
+                                        onClick={() => { setIsMenuOpen(false); setIsFeedbackOpen(true); }}
+                                        className="w-full flex items-center gap-4 px-5 py-5 text-gray-400 hover:text-white hover:bg-white/5 rounded-[1.8rem] transition-all group active:scale-[0.98]"
+                                    >
+                                        <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 group-hover:scale-110 transition-all">
+                                            <ChatBubbleLeftRightIcon className="w-5 h-5 text-primary" />
+                                        </div>
+                                        <div className="flex flex-col items-start overflow-hidden">
+                                            <span className="font-bold text-sm text-white">Enviar opinión</span>
+                                            <span className="text-[10px] text-gray-500 font-mono truncate">Tu feedback nos hace mejores</span>
+                                        </div>
+                                    </button>
+
+                                    <button
+                                        onClick={() => { setIsMenuOpen(false); logout(); }}
+                                        className="w-full flex items-center gap-4 px-5 py-5 text-gray-400 hover:text-red-400 hover:bg-red-500/5 rounded-[1.8rem] transition-all group active:scale-[0.98]"
+                                    >
+                                        <div className="w-10 h-10 rounded-2xl bg-red-500/10 flex items-center justify-center group-hover:bg-red-500/20 group-hover:scale-110 transition-all">
+                                            <ArrowLeftOnRectangleIcon className="w-5 h-5 text-red-500" />
+                                        </div>
+                                        <div className="flex flex-col items-start overflow-hidden">
+                                            <span className="font-bold text-sm">Cerrar Sesión</span>
+                                            <span className="text-[10px] text-red-900/40 font-mono uppercase tracking-widest">Hasta pronto</span>
+                                        </div>
+                                    </button>
+                                </div>
+
+                                <div className="px-6 py-4 bg-white/[0.02] border-t border-white/5 text-center">
+                                    <span className="text-[8px] font-mono text-gray-600 uppercase tracking-[0.4em]">FRAME v2.0 // MISSION CONTROL</span>
+                                </div>
+                            </motion.div>
+                        </div>,
+                        document.body
+                    )}
+                </AnimatePresence>
+            </div>
+        </div>
+    );
+};
+
 const AppContent = () => {
     const [selectedMovie, setSelectedMovie] = useState(null);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -81,112 +177,6 @@ const AppContent = () => {
         );
     };
 
-    const UserMenuSkeleton = () => (
-        <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/10 animate-pulse" />
-    );
-
-    const UserMenu = () => {
-        if (loading) return <UserMenuSkeleton />;
-
-        const firstName = user?.displayName?.split(' ')[0] || 'Cinéfilo';
-
-        return (
-            <div className="flex items-center gap-3 md:gap-4 h-full">
-                <div className="hidden sm:flex flex-col items-end">
-                    <span className="text-[10px] font-mono text-primary uppercase tracking-[0.2em] mb-0.5">En Escena</span>
-                    <span className="text-sm font-display font-bold text-white tracking-wide leading-none">
-                        {firstName.toUpperCase()}
-                    </span>
-                </div>
-
-                <div className="relative">
-                    <button
-                        onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        className="relative group focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-full active:scale-95 transition-all w-10 h-10 md:w-12 md:h-12"
-                    >
-                        <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-purple-600 rounded-full opacity-75 group-hover:opacity-100 blur transition duration-200" />
-                        <img
-                            src={user?.photoURL || "/logo.png"}
-                            alt=""
-                            className="relative w-full h-full rounded-full border-2 border-black object-cover shadow-xl"
-                        />
-                    </button>
-
-                    <AnimatePresence>
-                        {isMenuOpen && (
-                            createPortal(
-                                <div className="fixed inset-0 z-[160] flex items-start justify-end p-4">
-                                    {/* Glassmorphism Backdrop */}
-                                    <motion.div
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        onClick={() => setIsMenuOpen(false)}
-                                        className="absolute inset-0 bg-black/95 backdrop-blur-xl cursor-default"
-                                    />
-
-                                    <motion.div
-                                        initial={{ opacity: 0, scale: 0.9, y: -20, x: 20 }}
-                                        animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
-                                        exit={{ opacity: 0, scale: 0.9, y: -20, x: 20 }}
-                                        transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                                        className="relative z-[170] w-[280px] mt-20 sm:mt-16 bg-[#0F0F0F] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.8)] rounded-[2.5rem] overflow-hidden flex flex-col pointer-events-auto"
-                                    >
-                                        {/* Profile Card Header */}
-                                        <div className="px-6 py-8 border-b border-white/5 bg-gradient-to-b from-white/[0.04] to-transparent">
-                                            <div className="flex flex-col items-center text-center">
-                                                <div className="w-20 h-20 rounded-full border-2 border-primary p-1 shadow-glow mb-4">
-                                                    <img src={user?.photoURL || "/logo.png"} className="w-full h-full rounded-full object-cover" alt="" />
-                                                </div>
-                                                <h3 className="text-lg font-bold text-white tracking-tight">{user?.displayName || 'Cinéfilo'}</h3>
-                                                <p className="text-[10px] text-gray-500 font-mono uppercase tracking-[0.2em] mt-1">{user?.email}</p>
-                                            </div>
-                                        </div>
-
-                                        {/* Action Buttons */}
-                                        <div className="p-3 space-y-2">
-                                            <button
-                                                onClick={() => { setIsMenuOpen(false); setIsFeedbackOpen(true); }}
-                                                className="w-full flex items-center gap-4 px-5 py-5 text-gray-400 hover:text-white hover:bg-white/5 rounded-[1.8rem] transition-all group active:scale-[0.98]"
-                                            >
-                                                <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 group-hover:scale-110 transition-all">
-                                                    <ChatBubbleLeftRightIcon className="w-5 h-5 text-primary" />
-                                                </div>
-                                                <div className="flex flex-col items-start overflow-hidden">
-                                                    <span className="font-bold text-sm text-white">Enviar opinión</span>
-                                                    <span className="text-[10px] text-gray-500 font-mono truncate">Tu feedback nos hace mejores</span>
-                                                </div>
-                                            </button>
-
-                                            <button
-                                                onClick={() => { setIsMenuOpen(false); logout(); }}
-                                                className="w-full flex items-center gap-4 px-5 py-5 text-gray-400 hover:text-red-400 hover:bg-red-500/5 rounded-[1.8rem] transition-all group active:scale-[0.98]"
-                                            >
-                                                <div className="w-10 h-10 rounded-2xl bg-red-500/10 flex items-center justify-center group-hover:bg-red-500/20 group-hover:scale-110 transition-all">
-                                                    <ArrowLeftOnRectangleIcon className="w-5 h-5 text-red-500" />
-                                                </div>
-                                                <div className="flex flex-col items-start overflow-hidden">
-                                                    <span className="font-bold text-sm">Cerrar Sesión</span>
-                                                    <span className="text-[10px] text-red-900/40 font-mono uppercase tracking-widest">Hasta pronto</span>
-                                                </div>
-                                            </button>
-                                        </div>
-
-                                        {/* Footer Decorative Block */}
-                                        <div className="px-6 py-4 bg-white/[0.02] border-t border-white/5 text-center">
-                                            <span className="text-[8px] font-mono text-gray-600 uppercase tracking-[0.4em]">FRAME v2.0 // MISSION CONTROL</span>
-                                        </div>
-                                    </motion.div>
-                                </div>,
-                                document.body
-                            )
-                        )}
-                    </AnimatePresence>
-                </div>
-            </div>
-        );
-    };
-
     return (
         <div className="min-h-screen bg-background text-white font-sans selection:bg-primary selection:text-white pb-safe">
             <header className="sticky top-0 z-[100] w-full backdrop-blur-xl bg-background/90 border-b border-white/5 transition-all duration-300">
@@ -224,9 +214,9 @@ const AppContent = () => {
                                 to={item.path}
                                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                                 className={({ isActive }) => `
-                                    relative px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 group outline-none focus:ring-1 focus:ring-primary/50
-                                    ${isActive ? 'text-white' : 'text-gray-400 hover:text-white hover:bg-white/5'}
-                                `}
+                                        relative px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 group outline-none focus:ring-1 focus:ring-primary/50
+                                        ${isActive ? 'text-white' : 'text-gray-400 hover:text-white hover:bg-white/5'}
+                                    `}
                             >
                                 {({ isActive }) => (
                                     <>
@@ -244,7 +234,14 @@ const AppContent = () => {
                     </nav>
 
                     <div className="z-10">
-                        <UserMenu />
+                        <UserMenu
+                            user={user}
+                            loading={loading}
+                            logout={logout}
+                            isMenuOpen={isMenuOpen}
+                            setIsMenuOpen={setIsMenuOpen}
+                            setIsFeedbackOpen={setIsFeedbackOpen}
+                        />
                     </div>
                 </div>
             </header>
