@@ -66,7 +66,7 @@ const ShareWithFriendModal = ({ isOpen, onClose, type, payload }) => {
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-[160] flex items-end sm:items-center justify-center p-4">
+                <div className="fixed inset-0 z-[160] flex items-end sm:items-center justify-center p-[30px]">
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/80 backdrop-blur-md" />
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
