@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { createPortal } from 'react-dom';
 import { XMarkIcon, CalendarIcon, ClockIcon, ListBulletIcon, ChevronDownIcon, EllipsisHorizontalIcon, UserGroupIcon, TrashIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid, PlusIcon, CheckIcon, StarIcon, PlayIcon, FolderIcon } from '@heroicons/react/24/solid';
 import { getBackdropUrl, getPosterUrl, getMovieDetails, getMovieVideos, getWatchProviders } from '../api/tmdb';
@@ -89,6 +90,16 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, []);
+
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') setIsFullVideoOpen(false);
+        };
+        if (isFullVideoOpen) {
+            document.addEventListener('keydown', handleKeyDown);
+        }
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [isFullVideoOpen]);
 
     const watchedState = isWatched(movie.id);
     const inAnyList = allLists.find(l => l.movies?.some(m => m.id === movie.id));
@@ -545,25 +556,29 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] bg-black flex flex-col justify-center items-center"
+                        className="fixed inset-0 z-[200] bg-black flex flex-col justify-center items-center"
                     >
-                        <div className="w-full h-full max-w-7xl max-h-screen aspect-video relative">
+                        {/* Close button rendered above everything — outside iframe capture zone */}
+                        {createPortal(
+                            <button
+                                onClick={() => setIsFullVideoOpen(false)}
+                                className="fixed top-5 right-5 z-[9999] p-3 bg-black/70 hover:bg-black/90 border border-white/20 rounded-full text-white backdrop-blur-md transition-all active:scale-95 shadow-2xl"
+                                style={{ touchAction: 'manipulation' }}
+                            >
+                                <XMarkIcon className="w-7 h-7" />
+                            </button>,
+                            document.body
+                        )}
+
+                        <div className="w-full h-full relative">
                             <iframe
                                 title="Trailer Fullscreen"
                                 src={`https://www.youtube.com/embed/${videoKey}?autoplay=1&mute=0&controls=1&modestbranding=1&rel=0&showinfo=0`}
                                 className="w-full h-full"
                                 frameBorder="0"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                                allowFullScreen
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             />
                         </div>
-
-                        <button
-                            onClick={() => setIsFullVideoOpen(false)}
-                            className="absolute top-6 right-6 z-[120] p-3 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-md transition-all transform hover:scale-110 pointer-events-auto"
-                        >
-                            <XMarkIcon className="w-8 h-8" />
-                        </button>
                     </motion.div>
                 )}
             </AnimatePresence>
