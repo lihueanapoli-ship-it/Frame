@@ -1,6 +1,7 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { HomeIcon, MagnifyingGlassIcon, RectangleStackIcon, ChartBarIcon, ChatBubbleLeftRightIcon, ArrowLeftOnRectangleIcon, UsersIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { HomeIcon as HomeIconSolid, MagnifyingGlassIcon as SearchIconSolid, RectangleStackIcon as LibraryIconSolid, ChartBarIcon as ChartBarIconSolid, UsersIcon as UsersIconSolid } from '@heroicons/react/24/solid';
+import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, Navigate, NavLink } from 'react-router-dom';
 import { MovieProvider } from './contexts/MovieContext';
@@ -116,76 +117,77 @@ const AppContent = () => {
                     </button>
 
                     {/* Unified User Menu Dropdown */}
-                    {isMenuOpen && !loading && (
-                        createPortal(
-                            <>
-                                <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    className="fixed inset-0 z-[110] bg-black/90 backdrop-blur-md cursor-default transition-colors p-4 flex items-start justify-end"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setIsMenuOpen(false);
-                                    }}
-                                >
+                    <AnimatePresence>
+                        {isMenuOpen && !loading && (
+                            createPortal(
+                                <>
                                     <motion.div
-                                        initial={{ opacity: 0, scale: 0.95, y: -20 }}
-                                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 0.95, y: -20 }}
-                                        className="w-[280px] md:w-64 rounded-[2.5rem] bg-[#0F0F0F] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.8)] z-[120] overflow-hidden pointer-events-auto mt-20"
-                                        onClick={(e) => e.stopPropagation()}
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        className="fixed inset-0 z-[110] bg-black/90 backdrop-blur-md cursor-default transition-colors p-4 flex items-start justify-end"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setIsMenuOpen(false);
+                                        }}
                                     >
-                                        {/* User Info Header */}
-                                        <div className="px-5 py-5 border-b border-white/5 bg-gradient-to-b from-white/[0.03] to-transparent">
-                                            <div className="flex items-center gap-3 mb-1">
-                                                <div className="w-10 h-10 rounded-full border border-primary/30 p-0.5">
-                                                    <img src={user?.photoURL || "/logo.png"} className="w-full h-full rounded-full object-cover" alt="" />
-                                                </div>
-                                                <div className="flex-1 overflow-hidden">
-                                                    <p className="text-sm font-bold text-white truncate">{user?.displayName || 'Cinéfilo'}</p>
-                                                    <p className="text-[10px] text-gray-400 truncate font-mono">{user?.email}</p>
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.95, y: -20 }}
+                                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.95, y: -20 }}
+                                            className="w-[280px] md:w-64 rounded-[2.5rem] bg-[#0F0F0F] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.8)] z-[120] overflow-hidden pointer-events-auto mt-20"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            {/* User Info Header */}
+                                            <div className="px-5 py-5 border-b border-white/5 bg-gradient-to-b from-white/[0.03] to-transparent">
+                                                <div className="flex items-center gap-3 mb-1">
+                                                    <div className="w-10 h-10 rounded-full border border-primary/30 p-0.5">
+                                                        <img src={user?.photoURL || "/logo.png"} className="w-full h-full rounded-full object-cover" alt="" />
+                                                    </div>
+                                                    <div className="flex-1 overflow-hidden">
+                                                        <p className="text-sm font-bold text-white truncate">{user?.displayName || 'Cinéfilo'}</p>
+                                                        <p className="text-[10px] text-gray-400 truncate font-mono">{user?.email}</p>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        {/* Menu Actions */}
-                                        <div className="p-2 space-y-1">
-                                            <button
-                                                onClick={() => { setIsMenuOpen(false); setIsFeedbackOpen(true); }}
-                                                className="w-full text-left flex items-center gap-3 px-3 py-3 text-sm text-gray-200 hover:text-white hover:bg-white/10 rounded-xl transition-all group active:scale-95"
-                                            >
-                                                <div className="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
-                                                    <ChatBubbleLeftRightIcon className="w-4 h-4 text-primary" />
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className="font-semibold text-xs text-white">Danos tu opinión</span>
-                                                    <span className="text-[9px] text-gray-500 font-mono">Feedback de usuario</span>
-                                                </div>
-                                            </button>
+                                            {/* Menu Actions */}
+                                            <div className="p-2 space-y-1">
+                                                <button
+                                                    onClick={() => { setIsMenuOpen(false); setIsFeedbackOpen(true); }}
+                                                    className="w-full text-left flex items-center gap-3 px-3 py-3 text-sm text-gray-200 hover:text-white hover:bg-white/10 rounded-xl transition-all group active:scale-95"
+                                                >
+                                                    <div className="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
+                                                        <ChatBubbleLeftRightIcon className="w-4 h-4 text-primary" />
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="font-semibold text-xs text-white">Danos tu opinión</span>
+                                                        <span className="text-[9px] text-gray-500 font-mono">Feedback de usuario</span>
+                                                    </div>
+                                                </button>
 
-                                            <div className="h-px bg-white/5 my-1 mx-2" />
+                                                <div className="h-px bg-white/5 my-1 mx-2" />
 
-                                            <button
-                                                onClick={() => { logout(); setIsMenuOpen(false); }}
-                                                className="w-full text-left flex items-center gap-3 px-3 py-3 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-all group active:scale-95"
-                                            >
-                                                <div className="p-2 bg-red-500/10 rounded-lg group-hover:bg-red-500/20 transition-colors">
-                                                    <ArrowLeftOnRectangleIcon className="w-4 h-4 text-red-400" />
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className="font-semibold text-xs text-red-400">Cerrar Sesión</span>
-                                                    <span className="text-[9px] text-red-900/40 font-mono uppercase">Fin de sesión</span>
-                                                </div>
-                                            </button>
-                                        </div>
+                                                <button
+                                                    onClick={() => { logout(); setIsMenuOpen(false); }}
+                                                    className="w-full text-left flex items-center gap-3 px-3 py-3 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-all group active:scale-95"
+                                                >
+                                                    <div className="p-2 bg-red-500/10 rounded-lg group-hover:bg-red-500/20 transition-colors">
+                                                        <ArrowLeftOnRectangleIcon className="w-4 h-4 text-red-400" />
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="font-semibold text-xs text-red-400">Cerrar Sesión</span>
+                                                        <span className="text-[9px] text-red-900/40 font-mono uppercase">Fin de sesión</span>
+                                                    </div>
+                                                </button>
+                                            </div>
+                                        </motion.div>
                                     </motion.div>
-                                </motion.div>
-                            </>,
-                            document.body
-                        )
-                    )}
+                                </>
+                                , document.body)
+                        )}
+                    </AnimatePresence>
                 </div >
             </div>
         );
