@@ -74,7 +74,7 @@ const UserMenu = ({ user, loading, logout, isMenuOpen, setIsMenuOpen, setIsFeedb
                         onClick={() => setIsMenuOpen(false)}
                     />
                     {/* Menu card */}
-                    <div className="absolute top-20 right-4 w-72 bg-[#111] border border-white/10 rounded-[2rem] shadow-2xl overflow-hidden flex flex-col">
+                    <div className="absolute top-20 inset-x-4 sm:left-auto sm:right-4 sm:w-72 bg-[#111] border border-white/10 rounded-[2rem] shadow-2xl overflow-hidden flex flex-col">
                         {/* Header */}
                         <div className="px-6 py-7 border-b border-white/5 flex flex-col items-center text-center gap-3">
                             <img
