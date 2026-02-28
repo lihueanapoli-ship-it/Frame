@@ -114,7 +114,7 @@ const ListSettingsModal = ({ isOpen, onClose, list }) => {
             {isOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
-                    <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-lg bg-[#0A0A0A] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 flex flex-col max-h-[90vh]" >
+                    <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-[calc(100%-2rem)] max-w-lg bg-[#0F0F0F] border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden z-50 flex flex-col max-h-[85vh]" >
                         {/* Header */}
                         <div className="p-5 border-b border-white/10 bg-surface-elevated flex justify-between items-center">
                             <div>

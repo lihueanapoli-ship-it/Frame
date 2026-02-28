@@ -98,12 +98,12 @@ const ShareWithFriendModal = ({ isOpen, onClose, type, payload }) => {
                         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
                     />
                     <motion.div
-                        initial={{ y: 60, opacity: 0, scale: 0.97 }}
-                        animate={{ y: 0, opacity: 1, scale: 1 }}
-                        exit={{ y: 60, opacity: 0 }}
-                        transition={{ type: 'spring', damping: 28, stiffness: 380 }}
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                        transition={{ duration: 0.2 }}
                         onClick={e => e.stopPropagation()}
-                        className="relative z-10 w-full max-w-sm bg-[#111] border border-white/10 rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden"
+                        className="relative z-10 w-[calc(100%-2rem)] max-w-sm bg-[#0F0F0F] border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[85vh]"
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">

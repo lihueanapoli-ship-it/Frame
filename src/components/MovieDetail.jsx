@@ -162,7 +162,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                 initial="hidden"
                 animate="visible"
                 exit="exit"
-                className="relative w-full max-w-7xl mx-auto bg-background rounded-t-2xl sm:rounded-2xl overflow-hidden shadow-2xl h-[98vh] sm:h-[94vh] flex flex-col border border-white/10"
+                className="relative w-[calc(100%-2rem)] sm:w-full max-w-7xl mx-auto bg-[#0F0F0F] rounded-[2.5rem] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)] h-[92vh] sm:h-[94vh] my-auto flex flex-col border border-white/10"
             >
                 {!isFullVideoOpen && (
                     <button

@@ -55,11 +55,11 @@ const UserSearchModal = ({ isOpen, onClose, onSelectUser }) => {
                     />
 
                     <motion.div
-                        initial={{ opacity: 0, y: -20, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         transition={{ duration: 0.2 }}
-                        className="relative w-full max-w-lg bg-[#0A0A0A] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 p-6 flex flex-col max-h-[60vh]"
+                        className="relative w-[calc(100%-2rem)] max-w-lg bg-[#0F0F0F] border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden z-50 p-6 md:p-8 flex flex-col max-h-[85vh]"
                     >
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-display font-bold text-white">Buscar Amigos</h2>

@@ -38,11 +38,11 @@ const AddToListModal = ({ isOpen, onClose, movie }) => {
                     />
 
                     <motion.div
-                        initial={{ scale: 0.95, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.95, opacity: 0 }}
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         transition={{ duration: 0.2 }}
-                        className="relative w-full max-w-sm bg-[#111] border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
+                        className="relative w-[calc(100%-2rem)] max-w-sm bg-[#0F0F0F] border border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] my-4"
                     >
                         {/* Header */}
                         <div className="p-4 border-b border-white/5 flex justify-between items-center bg-surface-elevated">

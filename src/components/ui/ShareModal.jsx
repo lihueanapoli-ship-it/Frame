@@ -77,10 +77,10 @@ const ShareModal = ({ isOpen, onClose, data }) => {
             />
 
             <motion.div
-                initial={{ scale: 0.9, y: 20, opacity: 0 }}
-                animate={{ scale: 1, y: 0, opacity: 1 }}
-                exit={{ scale: 0.9, y: 20, opacity: 0 }}
-                className="relative w-full max-w-md bg-[#0a0a0a] border border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="relative w-[calc(100%-2rem)] max-w-md bg-[#0F0F0F] border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[85vh]"
             >
                 {/* Header */}
                 <div className="p-4 flex justify-between items-center border-b border-white/5">

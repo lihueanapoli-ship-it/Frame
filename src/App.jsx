@@ -130,7 +130,7 @@ const AppContent = () => {
                                 />
 
                                 {/* Dropdown Menu positioned at the top right */}
-                                <div className="fixed top-20 right-4 w-[280px] md:w-64 rounded-2xl bg-[#0F0F0F] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.8)] z-[120] overflow-hidden animate-slide-up-custom pointer-events-auto">
+                                <div className="fixed top-24 right-4 w-[280px] md:w-64 rounded-[2.5rem] bg-[#0F0F0F] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.8)] z-[120] overflow-hidden animate-slide-up-custom pointer-events-auto">
                                     {/* User Info Header */}
                                     <div className="px-5 py-5 border-b border-white/5 bg-gradient-to-b from-white/[0.03] to-transparent">
                                         <div className="flex items-center gap-3 mb-1">

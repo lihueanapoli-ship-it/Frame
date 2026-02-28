@@ -251,7 +251,7 @@ const ChatWindow = () => {
                     animate={{ y: 0, opacity: 1, scale: 1 }}
                     exit={{ y: 80, opacity: 0, scale: 0.95 }}
                     transition={{ type: 'spring', damping: 28, stiffness: 360 }}
-                    className="fixed bottom-[88px] md:bottom-6 right-4 md:right-6 z-[200] w-[340px] max-w-[calc(100vw-2rem)] rounded-2xl overflow-hidden border border-white/10 shadow-[0_24px_64px_rgba(0,0,0,0.7)] flex flex-col bg-[#0F0F0F]"
+                    className="fixed bottom-[88px] md:bottom-6 right-4 md:right-6 z-[200] w-[340px] max-w-[calc(100vw-2rem)] rounded-[2.5rem] overflow-hidden border border-white/10 shadow-[0_24px_64px_rgba(0,0,0,0.7)] flex flex-col bg-[#0F0F0F]"
                     style={{
                         maxHeight: isMinimized ? '58px' : '500px',
                         transition: 'max-height 0.3s cubic-bezier(0.25, 1, 0.5, 1)',

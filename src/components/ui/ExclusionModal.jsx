@@ -153,10 +153,10 @@ const ExclusionModal = ({ isOpen, onClose, preferences, onSave, recommendations 
                 />
 
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                    className="relative w-full max-w-2xl bg-surface border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
+                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                    className="relative w-[calc(100%-2rem)] max-w-2xl bg-[#0F0F0F] border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[85vh]"
                 >
                     {/* Header */}
                     <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">

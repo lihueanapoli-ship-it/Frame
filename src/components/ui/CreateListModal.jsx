@@ -45,9 +45,10 @@ const CreateListModal = ({ isOpen, onClose, onCreated }) => {
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="relative w-full max-w-md bg-[#0A0A0A] border border-white/10 rounded-2xl shadow-2xl p-6 z-10"
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="relative w-[calc(100%-2rem)] max-w-md bg-[#0F0F0F] border border-white/10 rounded-[2.5rem] shadow-2xl p-6 md:p-8 z-10 overflow-hidden max-h-[90vh]"
             >
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-bold text-white flex items-center gap-2">
