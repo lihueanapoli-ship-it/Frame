@@ -65,20 +65,20 @@ const UserSearchModal = ({ isOpen, onClose }) => {
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-[160] flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[160] flex items-end sm:items-center justify-center p-4">
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                        className="absolute inset-0 bg-black/80 backdrop-blur-md"
                     />
 
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="relative w-[calc(100%-2rem)] sm:w-full max-w-7xl bg-[#0F0F0F] border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden h-[92vh] sm:h-[94vh] my-auto flex flex-col"
+                        className="relative w-full max-w-7xl h-[92vh] sm:h-[94vh] bg-[#0F0F0F] border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col"
                     >
                         {/* Header */}
                         <div className="px-6 py-5 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">

@@ -24,13 +24,13 @@ const BottomSheet = ({ isOpen, onClose, title, children }) => {
     return (
         <AnimatePresence>
             {isOpen && (
-                <>
+                <div className="fixed inset-0 z-[160] flex items-end sm:items-center justify-center p-4">
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
+                        className="absolute inset-0 bg-black/80 backdrop-blur-md"
                     />
 
                     <motion.div
@@ -43,9 +43,7 @@ const BottomSheet = ({ isOpen, onClose, title, children }) => {
                             stiffness: 300
                         }}
                         className={cn(
-                            "fixed z-[70] bg-[#0F0F0F] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden",
-                            "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
-                            "w-[calc(100%-2rem)] sm:w-full max-w-7xl h-[92vh] sm:h-[94vh] rounded-[2.5rem]"
+                            "relative w-full max-w-7xl h-[92vh] sm:h-[94vh] bg-[#0F0F0F] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.8)] rounded-[2.5rem] overflow-hidden flex flex-col"
                         )}
                     >
                         <div className="flex justify-between items-center px-6 md:px-8 py-5 border-b border-white/5 bg-gradient-to-b from-white/[0.02] to-transparent shrink-0">
@@ -65,7 +63,7 @@ const BottomSheet = ({ isOpen, onClose, title, children }) => {
                             {children}
                         </div>
                     </motion.div>
-                </>
+                </div>
             )}
         </AnimatePresence>
     );
