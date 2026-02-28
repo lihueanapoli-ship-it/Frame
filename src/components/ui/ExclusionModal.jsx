@@ -77,102 +77,102 @@ const ExclusionModal = ({ isOpen, onClose, preferences, onSave, recommendations 
         }
     };
 
-    if (!isOpen) return null;
-
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-[160] flex items-center justify-center p-[30px]">
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/80 backdrop-blur-md" />
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="relative w-full max-w-7xl h-[calc(100vh-60px)] sm:h-[calc(100vh-60px)] bg-[#0F0F0F] border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col"
-                >
-                    <div className="px-6 py-5 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-primary/10 rounded-lg"><FunnelIcon className="w-5 h-5 text-primary" /></div>
-                            <div>
-                                <h2 className="text-xl font-bold text-white font-display">Filtros de ADN</h2>
-                                <p className="text-[10px] text-gray-500 font-mono uppercase tracking-widest">Personaliza tus recomendaciones</p>
-                            </div>
-                        </div>
-                        <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors">
-                            <XMarkIcon className="w-6 h-6" />
-                        </button>
-                    </div>
-
-                    <div className="flex border-b border-white/5 bg-white/[0.01]">
-                        {['genres', 'countries'].map(tab => (
-                            <button
-                                key={tab}
-                                onClick={() => setActiveTab(tab)}
-                                className={cn(
-                                    "flex-1 py-4 text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all border-b-2",
-                                    activeTab === tab ? "border-primary text-primary bg-primary/5" : "border-transparent text-gray-500 hover:text-gray-200"
-                                )}
-                            >
-                                {tab === 'genres' ? <TagIcon className="w-4 h-4" /> : <GlobeAltIcon className="w-4 h-4" />}
-                                {tab === 'genres' ? 'Géneros' : 'Países'}
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
-                        {activeTab === 'genres' ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                {GENRES.map(genre => (
-                                    <button
-                                        key={genre.id}
-                                        onClick={() => setExcludedGenres(prev => prev.includes(genre.id) ? prev.filter(id => id !== genre.id) : [...prev, genre.id])}
-                                        className={cn(
-                                            "flex items-center justify-between p-4 rounded-2xl border transition-all text-left group",
-                                            excludedGenres.includes(genre.id) ? "bg-red-500/10 border-red-500/50 text-white" : "bg-white/[0.03] border-white/5"
-                                        )}
-                                    >
-                                        <span className="font-bold text-sm">{genre.name}</span>
-                                        {excludedGenres.includes(genre.id) ? <XMarkIcon className="w-5 h-5 text-red-500" /> : <div className="w-5 h-5 rounded-full border border-white/10" />}
-                                    </button>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="space-y-6">
-                                <div className="relative">
-                                    <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                                    <input type="text" placeholder="Buscar país..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-                                        className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-3.5 pl-12 pr-6 text-white text-base focus:outline-none focus:border-primary/40" />
+            {isOpen && (
+                <div className="fixed inset-0 z-[160] flex items-center justify-center p-[30px]">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/80 backdrop-blur-md" />
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                        className="relative w-full max-w-7xl h-[calc(100vh-60px)] bg-[#0F0F0F] border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col"
+                    >
+                        <div className="px-6 py-5 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-primary/10 rounded-lg"><FunnelIcon className="w-5 h-5 text-primary" /></div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-white font-display">Filtros de ADN</h2>
+                                    <p className="text-[10px] text-gray-500 font-mono uppercase tracking-widest">Personaliza tus recomendaciones</p>
                                 </div>
+                            </div>
+                            <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors">
+                                <XMarkIcon className="w-6 h-6" />
+                            </button>
+                        </div>
+
+                        <div className="flex border-b border-white/5 bg-white/[0.01]">
+                            {['genres', 'countries'].map(tab => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab)}
+                                    className={cn(
+                                        "flex-1 py-4 text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all border-b-2",
+                                        activeTab === tab ? "border-primary text-primary bg-primary/5" : "border-transparent text-gray-500 hover:text-gray-200"
+                                    )}
+                                >
+                                    {tab === 'genres' ? <TagIcon className="w-4 h-4" /> : <GlobeAltIcon className="w-4 h-4" />}
+                                    {tab === 'genres' ? 'Géneros' : 'Países'}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
+                            {activeTab === 'genres' ? (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                    {allCountries.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).map(country => (
+                                    {GENRES.map(genre => (
                                         <button
-                                            key={country.code}
-                                            onClick={() => setExcludedCountries(prev => prev.includes(country.code) ? prev.filter(cd => cd !== country.code) : [...prev, country.code])}
+                                            key={genre.id}
+                                            onClick={() => setExcludedGenres(prev => prev.includes(genre.id) ? prev.filter(id => id !== genre.id) : [...prev, genre.id])}
                                             className={cn(
-                                                "flex items-center justify-between p-4 rounded-2xl border transition-all text-left",
-                                                excludedCountries.includes(country.code) ? "bg-red-500/10 border-red-500/50 text-white" : "bg-white/[0.03] border-white/5"
+                                                "flex items-center justify-between p-4 rounded-2xl border transition-all text-left group",
+                                                excludedGenres.includes(genre.id) ? "bg-red-500/10 border-red-500/50 text-white" : "bg-white/[0.03] border-white/5"
                                             )}
                                         >
-                                            <div className="truncate">
-                                                <p className="font-bold text-sm truncate">{country.name}</p>
-                                                {country.count > 0 && <p className="text-[10px] text-primary font-mono font-bold">{country.count} pelis</p>}
-                                            </div>
-                                            {excludedCountries.includes(country.code) ? <GlobeAltIcon className="w-5 h-5 text-red-500" /> : <div className="w-5 h-5 rounded-full border border-white/10" />}
+                                            <span className="font-bold text-sm">{genre.name}</span>
+                                            {excludedGenres.includes(genre.id) ? <XMarkIcon className="w-5 h-5 text-red-500" /> : <div className="w-5 h-5 rounded-full border border-white/10" />}
                                         </button>
                                     ))}
                                 </div>
-                            </div>
-                        )}
-                    </div>
+                            ) : (
+                                <div className="space-y-6">
+                                    <div className="relative">
+                                        <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                                        <input type="text" placeholder="Buscar país..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+                                            className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-3.5 pl-12 pr-6 text-white text-base focus:outline-none focus:border-primary/40" />
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                        {allCountries.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).map(country => (
+                                            <button
+                                                key={country.code}
+                                                onClick={() => setExcludedCountries(prev => prev.includes(country.code) ? prev.filter(cd => cd !== country.code) : [...prev, country.code])}
+                                                className={cn(
+                                                    "flex items-center justify-between p-4 rounded-2xl border transition-all text-left",
+                                                    excludedCountries.includes(country.code) ? "bg-red-500/10 border-red-500/50 text-white" : "bg-white/[0.03] border-white/5"
+                                                )}
+                                            >
+                                                <div className="truncate">
+                                                    <p className="font-bold text-sm truncate">{country.name}</p>
+                                                    {country.count > 0 && <p className="text-[10px] text-primary font-mono font-bold">{country.count} pelis</p>}
+                                                </div>
+                                                {excludedCountries.includes(country.code) ? <GlobeAltIcon className="w-5 h-5 text-red-500" /> : <div className="w-5 h-5 rounded-full border border-white/10" />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
 
-                    <div className="p-6 border-t border-white/5 bg-white/[0.02] flex gap-4">
-                        <button onClick={onClose} className="flex-1 py-4 rounded-2xl border border-white/10 text-white font-bold transition-all">Cancelar</button>
-                        <button onClick={() => { onSave({ ...preferences, excludedGenres, excludedCountries }); onClose(); }}
-                            className="flex-1 py-4 rounded-2xl bg-primary text-black font-bold shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2">
-                            <CheckIcon className="w-5 h-5" /> Guardar Filtros
-                        </button>
-                    </div>
-                </motion.div>
-            </div>
+                        <div className="p-6 border-t border-white/5 bg-white/[0.02] flex gap-4">
+                            <button onClick={onClose} className="flex-1 py-4 rounded-2xl border border-white/10 text-white font-bold transition-all">Cancelar</button>
+                            <button onClick={() => { onSave({ ...preferences, excludedGenres, excludedCountries }); onClose(); }}
+                                className="flex-1 py-4 rounded-2xl bg-primary text-black font-bold shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2">
+                                <CheckIcon className="w-5 h-5" /> Guardar Filtros
+                            </button>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
         </AnimatePresence>
     );
 };
