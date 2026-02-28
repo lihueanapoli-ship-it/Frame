@@ -1,6 +1,7 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { HomeIcon, MagnifyingGlassIcon, RectangleStackIcon, ChartBarIcon, ChatBubbleLeftRightIcon, ArrowLeftOnRectangleIcon, UsersIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { HomeIcon as HomeIconSolid, MagnifyingGlassIcon as SearchIconSolid, RectangleStackIcon as LibraryIconSolid, ChartBarIcon as ChartBarIconSolid, UsersIcon as UsersIconSolid } from '@heroicons/react/24/solid';
+import { createPortal } from 'react-dom';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, Navigate, NavLink } from 'react-router-dom';
 import { MovieProvider } from './contexts/MovieContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -115,89 +116,95 @@ const AppContent = () => {
                     </button>
 
                     {/* Desktop Menu */}
-                    <div className="hidden md:block">
-                        {isMenuOpen && (
-                            <>
-                                <div className="fixed inset-0 z-40" onClick={() => setIsMenuOpen(false)} />
-                                <div className="absolute right-0 mt-2 w-64 rounded-xl bg-surface border border-white/10 shadow-2xl z-50 overflow-hidden animate-fade-in-fast">
-                                    <div className="px-4 py-4 border-b border-white/5 bg-white/5">
-                                        <p className="text-sm text-white font-semibold truncate">{user.displayName}</p>
-                                        <p className="text-xs text-gray-400 truncate font-mono mt-1">{user.email}</p>
+                    {isMenuOpen && !loading && (
+                        <div className="hidden md:block">
+                            {createPortal(
+                                <>
+                                    <div className="fixed inset-0 z-[110]" onClick={() => setIsMenuOpen(false)} />
+                                    <div className="fixed top-20 right-4 w-64 rounded-xl bg-surface border border-white/10 shadow-2xl z-[120] overflow-hidden animate-fade-in-fast">
+                                        <div className="px-4 py-4 border-b border-white/5 bg-white/5">
+                                            <p className="text-sm text-white font-semibold truncate">{user?.displayName || 'Cinéfilo'}</p>
+                                            <p className="text-xs text-gray-400 truncate font-mono mt-1">{user?.email}</p>
+                                        </div>
+                                        <div className="p-2 space-y-1">
+                                            <button
+                                                onClick={() => { setIsMenuOpen(false); setIsFeedbackOpen(true); }}
+                                                className="w-full text-left flex items-center gap-3 px-3 py-2.5 text-sm text-gray-200 hover:text-white hover:bg-white/10 rounded-lg transition-all group"
+                                            >
+                                                <div className="p-1.5 bg-primary/10 rounded-md group-hover:bg-primary/20 transition-colors">
+                                                    <ChatBubbleLeftRightIcon className="w-4 h-4 text-primary" />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="font-medium">Danos tu opinión</span>
+                                                    <span className="text-[10px] text-gray-500">Ayúdanos a mejorar</span>
+                                                </div>
+                                            </button>
+                                            <div className="h-px bg-white/5 my-1" />
+                                            <button
+                                                onClick={() => { logout(); setIsMenuOpen(false); }}
+                                                className="w-full text-left flex items-center gap-3 px-3 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors group"
+                                            >
+                                                <div className="p-1.5 bg-red-500/10 rounded-md group-hover:bg-red-500/20 transition-colors">
+                                                    <ArrowLeftOnRectangleIcon className="w-4 h-4 text-red-400" />
+                                                </div>
+                                                <span className="font-medium">Cerrar Sesión</span>
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div className="p-2 space-y-1">
-                                        <button
-                                            onClick={() => { setIsMenuOpen(false); setIsFeedbackOpen(true); }}
-                                            className="w-full text-left flex items-center gap-3 px-3 py-2.5 text-sm text-gray-200 hover:text-white hover:bg-white/10 rounded-lg transition-all group"
-                                        >
-                                            <div className="p-1.5 bg-primary/10 rounded-md group-hover:bg-primary/20 transition-colors">
-                                                <ChatBubbleLeftRightIcon className="w-4 h-4 text-primary" />
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="font-medium">Danos tu opinión</span>
-                                                <span className="text-[10px] text-gray-500">Ayúdanos a mejorar</span>
-                                            </div>
-                                        </button>
-                                        <div className="h-px bg-white/5 my-1" />
-                                        <button
-                                            onClick={() => { logout(); setIsMenuOpen(false); }}
-                                            className="w-full text-left flex items-center gap-3 px-3 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors group"
-                                        >
-                                            <div className="p-1.5 bg-red-500/10 rounded-md group-hover:bg-red-500/20 transition-colors">
-                                                <ArrowLeftOnRectangleIcon className="w-4 h-4 text-red-400" />
-                                            </div>
-                                            <span className="font-medium">Cerrar Sesión</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            </>
-                        )}
-                    </div>
+                                </>,
+                                document.body
+                            )}
+                        </div>
+                    )}
 
                     {/* Mobile Menu as BottomSheet */}
                     <div className="md:hidden">
-                        <BottomSheet
-                            isOpen={isMenuOpen}
-                            onClose={() => setIsMenuOpen(false)}
-                            title="Mi Cuenta"
-                        >
-                            <div className="space-y-6">
-                                <div className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10">
-                                    <img src={user.photoURL || "/logo.png"} className="w-16 h-16 rounded-full border-2 border-primary/50" alt="" />
-                                    <div className="flex-1 overflow-hidden">
-                                        <p className="text-lg font-bold text-white truncate">{user.displayName}</p>
-                                        <p className="text-xs text-gray-500 font-mono truncate">{user.email}</p>
+                        {createPortal(
+                            <BottomSheet
+                                isOpen={isMenuOpen}
+                                onClose={() => setIsMenuOpen(false)}
+                                title="Mi Cuenta"
+                            >
+                                <div className="space-y-6">
+                                    <div className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10">
+                                        <img src={user?.photoURL || "/logo.png"} className="w-16 h-16 rounded-full border-2 border-primary/50" alt="" />
+                                        <div className="flex-1 overflow-hidden">
+                                            <p className="text-lg font-bold text-white truncate">{user?.displayName || 'Cinéfilo'}</p>
+                                            <p className="text-xs text-gray-500 font-mono truncate">{user?.email}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 gap-3 px-0.5">
+                                        <button
+                                            onClick={() => { setIsMenuOpen(false); setIsFeedbackOpen(true); }}
+                                            className="w-full flex items-center gap-4 p-4 bg-surface rounded-2xl border border-white/5 active:scale-95 transition-all text-left"
+                                        >
+                                            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                                                <ChatBubbleLeftRightIcon className="w-5 h-5 text-primary" />
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-white">Danos tu opinión</p>
+                                                <p className="text-xs text-gray-400">Ayúdanos a mejorar la plataforma</p>
+                                            </div>
+                                        </button>
+
+                                        <button
+                                            onClick={() => { logout(); setIsMenuOpen(false); }}
+                                            className="w-full flex items-center gap-4 p-4 bg-red-500/5 rounded-2xl border border-red-500/10 active:scale-95 transition-all text-left"
+                                        >
+                                            <div className="w-10 h-10 bg-red-500/10 rounded-xl flex items-center justify-center">
+                                                <ArrowLeftOnRectangleIcon className="w-5 h-5 text-red-400" />
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-red-400">Cerrar Sesión</p>
+                                                <p className="text-xs text-red-900/40 font-mono">FIN DE SESIÓN</p>
+                                            </div>
+                                        </button>
                                     </div>
                                 </div>
-
-                                <div className="grid grid-cols-1 gap-3">
-                                    <button
-                                        onClick={() => { setIsMenuOpen(false); setIsFeedbackOpen(true); }}
-                                        className="w-full flex items-center gap-4 p-4 bg-surface rounded-2xl border border-white/5 active:scale-95 transition-all text-left"
-                                    >
-                                        <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-                                            <ChatBubbleLeftRightIcon className="w-5 h-5 text-primary" />
-                                        </div>
-                                        <div>
-                                            <p className="font-semibold text-white">Danos tu opinión</p>
-                                            <p className="text-xs text-gray-400">Ayúdanos a mejorar la plataforma</p>
-                                        </div>
-                                    </button>
-
-                                    <button
-                                        onClick={() => { logout(); setIsMenuOpen(false); }}
-                                        className="w-full flex items-center gap-4 p-4 bg-red-500/5 rounded-2xl border border-red-500/10 active:scale-95 transition-all text-left"
-                                    >
-                                        <div className="w-10 h-10 bg-red-500/10 rounded-xl flex items-center justify-center">
-                                            <ArrowLeftOnRectangleIcon className="w-5 h-5 text-red-400" />
-                                        </div>
-                                        <div>
-                                            <p className="font-semibold text-red-400">Cerrar Sesión</p>
-                                            <p className="text-xs text-red-900/40">Desconectar cuenta</p>
-                                        </div>
-                                    </button>
-                                </div>
-                            </div>
-                        </BottomSheet>
+                            </BottomSheet>,
+                            document.body
+                        )}
                     </div>
                 </div>
             </div>
