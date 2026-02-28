@@ -16,6 +16,18 @@ const tmdbClient = axios.create({
     },
 });
 
+const getTodayString = () => {
+    return new Date().toISOString().split('T')[0];
+};
+
+const filterReleasedOnly = (movies) => {
+    const today = getTodayString();
+    return movies.filter(movie => {
+        if (!movie.release_date) return false;
+        return movie.release_date <= today;
+    });
+};
+
 export const setApiLanguage = (lang) => {
     tmdbClient.defaults.params.language = lang;
 };
@@ -53,7 +65,7 @@ export const searchMovies = async (query) => {
         const response = await tmdbClient.get('/search/movie', {
             params: { query },
         });
-        return response.data.results;
+        return filterReleasedOnly(response.data.results);
     } catch (error) {
         console.error("Error searching movies:", error);
         return [];
@@ -94,7 +106,7 @@ export const getMovieDetails = async (id) => {
 export const getTopRatedMovies = async () => {
     try {
         const response = await tmdbClient.get('/movie/top_rated');
-        return response.data.results;
+        return filterReleasedOnly(response.data.results);
     } catch (error) {
         console.error("Error getting top rated movies:", error);
         return [];
@@ -106,7 +118,7 @@ export const getTopRatedMovies = async () => {
 export const getList = async (listId) => {
     try {
         const response = await tmdbClient.get(`/list/${listId}`);
-        return response.data.items;
+        return filterReleasedOnly(response.data.items);
     } catch (error) {
         console.error(`Error getting list ${listId}:`, error);
         return [];
@@ -115,56 +127,47 @@ export const getList = async (listId) => {
 
 export const getCustomCollection = async (type, page = 1) => {
     try {
-        let params = { sort_by: 'popularity.desc', 'vote_count.gte': 100, page };
+        let params = {
+            sort_by: 'popularity.desc',
+            'vote_count.gte': 100,
+            page,
+            'release_date.lte': getTodayString()
+        };
 
         switch (type) {
             case 'must_watch':
-
                 params = { ...params, 'vote_average.gte': 8.2, 'vote_count.gte': 10000, sort_by: 'vote_average.desc' };
                 break;
             case 'short':
-
                 params = { ...params, 'with_runtime.lte': 90, 'vote_count.gte': 500, sort_by: 'popularity.desc' };
                 break;
             case 'conversation':
-
                 params = { ...params, with_genres: '18', without_genres: '28,878,27', 'vote_average.gte': 7.5, sort_by: 'popularity.desc' };
                 break;
             case 'tech':
-
                 params = { ...params, with_genres: '878', sort_by: 'popularity.desc' };
                 break;
             case 'argentina':
-
                 params = { ...params, region: 'AR', sort_by: 'popularity.desc' };
                 break;
             case 'thriller':
-
                 params = { ...params, with_genres: '53,9648', sort_by: 'popularity.desc' };
                 break;
             case 'romance':
-
                 params = { ...params, with_genres: '10749,35', 'vote_average.gte': 7, sort_by: 'popularity.desc' };
                 break;
             case 'real_life':
-
                 params = { ...params, with_keywords: '9672', sort_by: 'popularity.desc' }; // 9672 = based on true story
                 break;
             case 'sagas':
-
-
                 params = { ...params, with_genres: '12,14', sort_by: 'revenue.desc' };
                 break;
             case 'classic_author':
-
-
-
                 params = { ...params, with_keywords: '2398|390|14750', sort_by: 'vote_average.desc', 'vote_count.gte': 200 };
                 break;
             default:
                 break;
         }
-
 
         if (type === 'argentina') {
             const response = await tmdbClient.get('/discover/movie', {
@@ -188,6 +191,7 @@ export const getMoviesByGenre = async (genreId, extraParams = {}, page = 1) => {
             params: {
                 with_genres: genreId,
                 sort_by: 'popularity.desc',
+                'release_date.lte': getTodayString(),
                 page,
                 ...extraParams
             }
@@ -202,7 +206,7 @@ export const getMoviesByGenre = async (genreId, extraParams = {}, page = 1) => {
 export const getSimilarMovies = async (movieId) => {
     try {
         const response = await tmdbClient.get(`/movie/${movieId}/similar`);
-        return response.data.results;
+        return filterReleasedOnly(response.data.results);
     } catch (error) {
         console.error(`Error getting similar movies for ${movieId}:`, error);
         return [];
@@ -211,7 +215,12 @@ export const getSimilarMovies = async (movieId) => {
 
 export const discoverMovies = async (params = {}) => {
     try {
-        const response = await tmdbClient.get('/discover/movie', { params });
+        const response = await tmdbClient.get('/discover/movie', {
+            params: {
+                ...params,
+                'release_date.lte': getTodayString()
+            }
+        });
         return response.data.results;
     } catch (error) {
         console.error('Error discovering movies:', error);
@@ -224,7 +233,8 @@ export const getDirectorMovies = async (directorId) => {
         const response = await tmdbClient.get('/discover/movie', {
             params: {
                 with_crew: directorId,
-                sort_by: 'popularity.desc'
+                sort_by: 'popularity.desc',
+                'release_date.lte': getTodayString()
             }
         });
         return response.data.results;
@@ -239,7 +249,7 @@ export const getTrendingMovies = async (page = 1) => {
         const response = await tmdbClient.get('/trending/movie/week', {
             params: { page }
         });
-        return response.data.results;
+        return filterReleasedOnly(response.data.results);
     } catch (error) {
         console.error("Error getting trending movies:", error);
         return [];
