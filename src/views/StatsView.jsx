@@ -121,13 +121,50 @@ const StatsView = () => {
     }, [watched]);
 
     const cinePulseData = useMemo(() => {
-        const data = []; const today = new Date(); const watchedMap = {};
-        watched.forEach(m => { if (m.watchedAt) { const d = m.watchedAt.split('T')[0]; watchedMap[d] = (watchedMap[d] || 0) + 1; } });
-        let score = 0; const lookback = 90; const startCalculation = new Date(today); startCalculation.setDate(today.getDate() - lookback);
+        const data = [];
+        const today = new Date();
+        const ratingsMap = {};
+
+        watched.forEach(m => {
+            if (m.watchedAt) {
+                const d = m.watchedAt.split('T')[0];
+                // Sum ratings for the day. Use 5 as default if not rated.
+                ratingsMap[d] = (ratingsMap[d] || 0) + (m.rating || 5);
+            }
+        });
+
+        let score = 0;
+        const lookback = 90;
+        const startCalculation = new Date(today);
+        startCalculation.setDate(today.getDate() - lookback);
+
+        let lastWatchedDate = null;
+
         for (let i = 0; i <= lookback; i++) {
-            const currentDate = new Date(startCalculation); currentDate.setDate(startCalculation.getDate() + i); const dateStr = currentDate.toISOString().split('T')[0];
-            const moviesWatched = watchedMap[dateStr] || 0; score = Math.max(0, score - 0.5); score += (moviesWatched * 2);
-            if (i >= (lookback - 60)) { data.push({ date: dateStr, score: parseFloat(score.toFixed(1)), movies: moviesWatched }); }
+            const currentDate = new Date(startCalculation);
+            currentDate.setDate(startCalculation.getDate() + i);
+            const dateStr = currentDate.toISOString().split('T')[0];
+
+            const dayRating = ratingsMap[dateStr] || 0;
+
+            if (dayRating > 0) {
+                score += dayRating;
+                lastWatchedDate = new Date(currentDate);
+            } else if (lastWatchedDate) {
+                const diffTime = currentDate.getTime() - lastWatchedDate.getTime();
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                if (diffDays >= 1) {
+                    score = Math.max(0, score - 5);
+                }
+            }
+
+            if (i >= (lookback - 60)) {
+                data.push({
+                    date: dateStr,
+                    score: parseFloat(score.toFixed(1)),
+                    movies: dayRating > 0 ? 1 : 0
+                });
+            }
         }
         return data;
     }, [watched]);
@@ -245,7 +282,13 @@ const StatsView = () => {
                 </div>
 
                 <div className="col-span-1 md:col-span-2 lg:col-span-4 bg-surface border border-white/5 p-6 rounded-xl">
-                    <h3 className="font-mono text-xs text-primary uppercase tracking-widest flex items-center gap-2 mb-4"><FireIcon className="w-4 h-4" /> PULSO CINÉFILO</h3>
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="font-mono text-xs text-primary uppercase tracking-widest flex items-center gap-2"><FireIcon className="w-4 h-4" /> PULSO CINÉFILO</h3>
+                        <div className="text-right">
+                            <span className="font-mono text-[10px] text-gray-500 uppercase block">INTENSIDAD ACTUAL</span>
+                            <span className="font-display text-2xl text-white">{(cinePulseData[cinePulseData.length - 1]?.score || 0).toFixed(1)}</span>
+                        </div>
+                    </div>
                     <div className="w-full h-[200px]">
                         <ResponsiveContainer width="100%" height={200}>
                             <AreaChart data={cinePulseData}>
