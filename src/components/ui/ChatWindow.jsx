@@ -251,9 +251,10 @@ const ChatWindow = () => {
                                                         text={msg.text}
                                                         isMe={isMe}
                                                         onOpenMovie={(movie) => {
-                                                            // Open movie detail first, then close chat
+                                                            // Open movie detail ON TOP of chat — don't close chat
+                                                            // so when the user closes the movie detail,
+                                                            // they return directly to this conversation.
                                                             openMovieDetail(movie);
-                                                            setTimeout(() => closeChat(), 50);
                                                         }}
                                                     />
                                                 ) : msg.type === 'list_share' ? (

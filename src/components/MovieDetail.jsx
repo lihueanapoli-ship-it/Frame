@@ -158,7 +158,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-[30px]">
+        <div className="fixed inset-0 z-[180] flex items-center justify-center p-[30px]">
             <motion.div
                 variants={overlayVariants}
                 initial="hidden"
