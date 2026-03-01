@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import {
-    XMarkIcon, PaperAirplaneIcon, ChevronLeftIcon,
+    XMarkIcon, PaperAirplaneIcon,
     ChatBubbleLeftRightIcon, TrashIcon, StarIcon
 } from '@heroicons/react/24/outline';
 import { useChat, getChatId } from '../../contexts/ChatContext';
@@ -54,7 +54,7 @@ const MovieBubble = ({ movie, text, isMe, onOpenMovie }) => (
                     </div>
                 )}
                 <p className={cn('text-[9px] mt-1 flex items-center gap-1', isMe ? 'text-black/50' : 'text-gray-500')}>
-                    🎬 <span>Toca para ver detalles</span>
+                    🎬 <span className="underline underline-offset-2">Ver detalles</span>
                 </p>
             </div>
         </button>
@@ -166,9 +166,6 @@ const ChatWindow = () => {
                         {/* ── Header ── */}
                         <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02] flex-shrink-0">
                             <div className="flex items-center gap-3">
-                                <button onClick={closeChat} className="p-1.5 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white">
-                                    <ChevronLeftIcon className="w-5 h-5" />
-                                </button>
                                 <div className="relative">
                                     <img
                                         src={openChat?.photoURL || '/logo.png'}
@@ -222,13 +219,17 @@ const ChatWindow = () => {
                                                 />
                                             )}
 
-                                            {/* Delete button (own messages) */}
-                                            {isMe && (
-                                                <div className={cn('flex items-end mb-1 transition-opacity', isHovered ? 'opacity-100' : 'opacity-0')}>
+                                            {/* Delete button — own messages only */}
+                                            {isMe && msg.senderId === user?.uid && (
+                                                <div className={cn(
+                                                    'flex items-end mb-1 transition-opacity',
+                                                    // Always show on mobile, hover-only on desktop
+                                                    'opacity-100 sm:opacity-0 sm:group-hover:opacity-100'
+                                                )}>
                                                     <button
                                                         onClick={() => handleDelete(msg)}
                                                         disabled={isDeleting}
-                                                        className="p-1.5 rounded-full text-red-500/60 hover:text-red-500 hover:bg-red-500/10 transition-all disabled:opacity-30"
+                                                        className="p-1.5 rounded-full text-red-500/50 hover:text-red-500 hover:bg-red-500/10 transition-all disabled:opacity-30"
                                                         title="Borrar mensaje"
                                                     >
                                                         <TrashIcon className="w-3.5 h-3.5" />
@@ -249,7 +250,11 @@ const ChatWindow = () => {
                                                         movie={msg.movie}
                                                         text={msg.text}
                                                         isMe={isMe}
-                                                        onOpenMovie={(movie) => { openMovieDetail(movie); closeChat(); }}
+                                                        onOpenMovie={(movie) => {
+                                                            // Open movie detail first, then close chat
+                                                            openMovieDetail(movie);
+                                                            setTimeout(() => closeChat(), 50);
+                                                        }}
                                                     />
                                                 ) : msg.type === 'list_share' ? (
                                                     <ListBubble list={msg.list} text={msg.text} isMe={isMe} />
