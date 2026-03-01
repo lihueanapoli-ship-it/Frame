@@ -277,6 +277,57 @@ const DiscoverView = ({ onSelectMovie }) => {
                 <MovieSection title="Misiones de Verdad" movies={data.real_life} onSelectMovie={onSelectMovie} categoryId="real_life" variant="documentary" />
                 <MovieSection title="Viaje de Ida" movies={data.sagas} onSelectMovie={onSelectMovie} categoryId="sagas" variant="saga" />
                 <MovieSection title="Solo para Locos" movies={data.classic_author} onSelectMovie={onSelectMovie} categoryId="classic_author" variant="cult" />
+
+                {/* Closing message */}
+                <div className="mt-16 mb-6 px-2">
+                    <div className="relative rounded-[2.5rem] overflow-hidden border border-white/5 bg-gradient-to-br from-white/[0.03] via-transparent to-primary/[0.04] p-8 md:p-12 text-center">
+                        {/* Decorative top line */}
+                        <div className="flex items-center gap-3 justify-center mb-8">
+                            <div className="h-px w-12 bg-gradient-to-r from-transparent to-primary/40" />
+                            <span className="text-primary/60 text-xs font-mono tracking-[0.4em] uppercase">Frame</span>
+                            <div className="h-px w-12 bg-gradient-to-l from-transparent to-primary/40" />
+                        </div>
+
+                        {/* Main message */}
+                        <h2 className="text-3xl md:text-5xl font-display font-bold text-white leading-tight mb-6 tracking-tight">
+                            Hecho con amor<br />
+                            <span className="text-primary">para vos.</span>
+                        </h2>
+
+                        <p className="text-gray-400 text-base md:text-lg max-w-2xl mx-auto leading-relaxed mb-8">
+                            FRAME nació de una idea simple: que encontrar una buena película no debería ser una tarea.
+                            Acá podés guardar lo que viste, armar listas con lo que querés ver, compartirlas con tus amigos
+                            y descubrir exactamente lo que buscás — sin perder tiempo, sin vueltas.
+                        </p>
+
+                        <p className="text-gray-500 text-sm md:text-base max-w-xl mx-auto leading-relaxed mb-10 italic">
+                            "El cine no es un espejo que refleja la realidad, sino un martillo con el que la moldeas."
+                            <span className="block mt-1 text-xs not-italic text-gray-600 font-mono tracking-widest">— Bertolt Brecht</span>
+                        </p>
+
+                        {/* Feature pills */}
+                        <div className="flex flex-wrap justify-center gap-3 mb-10">
+                            {[
+                                { icon: '🎬', label: 'Descubrí cine nuevo' },
+                                { icon: '📋', label: 'Armá tus listas' },
+                                { icon: '🤝', label: 'Compartí con amigos' },
+                                { icon: '⚡', label: 'Buscá al instante' },
+                                { icon: '⭐', label: 'Calificá lo que viste' },
+                            ].map(f => (
+                                <span key={f.label} className="flex items-center gap-2 px-4 py-2 bg-white/[0.04] border border-white/8 rounded-full text-sm text-gray-400 font-mono">
+                                    <span>{f.icon}</span>{f.label}
+                                </span>
+                            ))}
+                        </div>
+
+                        {/* Closing signature */}
+                        <div className="flex items-center gap-3 justify-center">
+                            <div className="h-px w-8 bg-white/10" />
+                            <p className="text-xs text-gray-600 font-mono uppercase tracking-[0.3em]">Gracias por estar acá ✦</p>
+                            <div className="h-px w-8 bg-white/10" />
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );
