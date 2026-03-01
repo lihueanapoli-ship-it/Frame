@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { XMarkIcon, PaperAirplaneIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, PaperAirplaneIcon, MagnifyingGlassIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { db } from '../../api/firebase';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { useAuth } from '../../contexts/AuthContext';
@@ -61,8 +61,6 @@ const ShareWithFriendModal = ({ isOpen, onClose, type, payload }) => {
 
     const filtered = friends.filter(f => (f.displayName || '').toLowerCase().includes(search.toLowerCase()));
 
-    if (!isOpen) return null;
-
     return (
         <AnimatePresence>
             {isOpen && (
@@ -72,7 +70,7 @@ const ShareWithFriendModal = ({ isOpen, onClose, type, payload }) => {
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="relative w-full max-w-7xl h-[calc(100vh-60px)] sm:h-[calc(100vh-60px)] bg-[#0F0F0F] border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col"
+                        className="relative w-full max-w-7xl h-[calc(100vh-60px)] bg-[#0F0F0F] border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col"
                     >
                         <div className="px-6 py-5 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
                             <div>
