@@ -9,6 +9,8 @@ import { cn } from '../lib/utils';
 import { Link } from 'react-router-dom';
 import MovieCard from '../components/MovieCard';
 import ExclusionModal from '../components/ui/ExclusionModal';
+import FeedbackModal from '../components/ui/FeedbackModal';
+import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 
 const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, variant = 'default', isEmpty = false, emptyMessage, showAll = false, headerAction, isLoading: isSectionLoading }) => {
     const [isHovered, setIsHovered] = useState(false);
@@ -125,6 +127,7 @@ const DiscoverView = ({ onSelectMovie }) => {
     const { profile, updateProfile, expertiseLevel, trackBehavior } = useUserProfile();
     const { watched, watchlist } = useMovies();
     const [showExclusionModal, setShowExclusionModal] = useState(false);
+    const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
     useEffect(() => {
         fetchInitialData();
@@ -202,134 +205,147 @@ const DiscoverView = ({ onSelectMovie }) => {
     if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>;
 
     return (
-        <div className="pb-16">
-            <header className="mb-2 md:mb-4 flex items-end justify-between border-b border-white/5 pb-2 md:pb-4 overflow-hidden">
-                <div className="relative w-full">
-                    <div className="animate-slide-in-left">
-                        <h1 className="text-3xl md:text-6xl font-display font-bold text-white mb-1 md:mb-2 tracking-tight">
-                            DESCUBRIR <span className="text-primary">CINE</span>
-                        </h1>
-                        <p className="font-mono text-[10px] md:text-sm text-gray-400">
-                            ESTRENOS Y CLÁSICOS SELECCIONADOS
-                        </p>
+        <>
+            <div className="pb-16">
+                <header className="mb-2 md:mb-4 flex items-end justify-between border-b border-white/5 pb-2 md:pb-4 overflow-hidden">
+                    <div className="relative w-full">
+                        <div className="animate-slide-in-left">
+                            <h1 className="text-3xl md:text-6xl font-display font-bold text-white mb-1 md:mb-2 tracking-tight">
+                                DESCUBRIR <span className="text-primary">CINE</span>
+                            </h1>
+                            <p className="font-mono text-[10px] md:text-sm text-gray-400">
+                                ESTRENOS Y CLÁSICOS SELECCIONADOS
+                            </p>
+                        </div>
                     </div>
+                </header>
+
+                <div>
+                    <HeroCarousel movies={data.trending.slice(0, 5)} onSelectMovie={onSelectMovie} />
                 </div>
-            </header>
 
-            <div>
-                <HeroCarousel movies={data.trending.slice(0, 5)} onSelectMovie={onSelectMovie} />
-            </div>
-
-            <div className="space-y-6 mt-6">
-                {watched.length > 0 ? (
-                    <MovieSection
-                        title="Tu ADN"
-                        movies={data.forYou}
-                        onSelectMovie={onSelectMovie}
-                        variant="personalized"
-                        categoryId="for_you"
-                        isLoading={adnLoading}
-                        headerAction={
-                            <div className="flex items-center gap-2">
-                                {adnLoading && <Loader2 className="w-4 h-4 text-primary animate-spin" />}
+                <div className="space-y-6 mt-6">
+                    {watched.length > 0 ? (
+                        <MovieSection
+                            title="Tu ADN"
+                            movies={data.forYou}
+                            onSelectMovie={onSelectMovie}
+                            variant="personalized"
+                            categoryId="for_you"
+                            isLoading={adnLoading}
+                            headerAction={
+                                <div className="flex items-center gap-2">
+                                    {adnLoading && <Loader2 className="w-4 h-4 text-primary animate-spin" />}
+                                    <button
+                                        onClick={() => setShowExclusionModal(true)}
+                                        className="p-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 hover:border-white/20 transition-all text-gray-400 hover:text-white group flex items-center gap-2"
+                                        title="Configurar exclusiones"
+                                    >
+                                        <Filter className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                        <span className="text-xs font-bold hidden sm:inline">FILTRAR</span>
+                                    </button>
+                                </div>
+                            }
+                        />
+                    ) : (
+                        <MovieSection
+                            title="Tu ADN"
+                            isEmpty={true}
+                            emptyMessage="Marcá películas como vistas para descubrir tu perfil cinematográfico único y recibir recomendaciones personalizadas basadas en tus gustos."
+                            headerAction={
                                 <button
                                     onClick={() => setShowExclusionModal(true)}
                                     className="p-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 hover:border-white/20 transition-all text-gray-400 hover:text-white group flex items-center gap-2"
-                                    title="Configurar exclusiones"
                                 >
                                     <Filter className="w-4 h-4 group-hover:scale-110 transition-transform" />
                                     <span className="text-xs font-bold hidden sm:inline">FILTRAR</span>
                                 </button>
+                            }
+                        />
+                    )}
+
+                    <ExclusionModal
+                        isOpen={showExclusionModal}
+                        onClose={() => setShowExclusionModal(false)}
+                        preferences={profile?.preferences}
+                        onSave={handleSaveExclusions}
+                        recommendations={data.forYou}
+                    />
+                    <MovieSection title="Los Infaltables" movies={data.must_watch} onSelectMovie={onSelectMovie} categoryId="must_watch" />
+                    <MovieSection title="Cortitas y al Pie" movies={data.short} onSelectMovie={onSelectMovie} categoryId="short" />
+                    <MovieSection title="Mate y Sobremesa" movies={data.conversation} onSelectMovie={onSelectMovie} categoryId="conversation" />
+                    <MovieSection title="El Laboratorio" movies={data.tech} onSelectMovie={onSelectMovie} categoryId="tech" />
+                    <MovieSection title="El Aguante" movies={data.argentina} onSelectMovie={onSelectMovie} categoryId="argentina" variant="argentina" />
+                    <MovieSection title="Pulso a Mil" movies={data.thriller} onSelectMovie={onSelectMovie} categoryId="thriller" variant="thriller" />
+                    <MovieSection title="Primera Cita" movies={data.romance} onSelectMovie={onSelectMovie} categoryId="romance" variant="romance" />
+                    <MovieSection title="Misiones de Verdad" movies={data.real_life} onSelectMovie={onSelectMovie} categoryId="real_life" variant="documentary" />
+                    <MovieSection title="Viaje de Ida" movies={data.sagas} onSelectMovie={onSelectMovie} categoryId="sagas" variant="saga" />
+                    <MovieSection title="Solo para Locos" movies={data.classic_author} onSelectMovie={onSelectMovie} categoryId="classic_author" variant="cult" />
+
+                    {/* Closing message */}
+                    <div className="mt-16 mb-6 px-2">
+                        <div className="relative rounded-[2.5rem] overflow-hidden border border-white/5 bg-gradient-to-br from-white/[0.03] via-transparent to-primary/[0.04] p-8 md:p-12 text-center">
+                            {/* Decorative top line */}
+                            <div className="flex items-center gap-3 justify-center mb-8">
+                                <div className="h-px w-12 bg-gradient-to-r from-transparent to-primary/40" />
+                                <span className="text-primary/60 text-xs font-mono tracking-[0.4em] uppercase">Frame</span>
+                                <div className="h-px w-12 bg-gradient-to-l from-transparent to-primary/40" />
                             </div>
-                        }
-                    />
-                ) : (
-                    <MovieSection
-                        title="Tu ADN"
-                        isEmpty={true}
-                        emptyMessage="Marcá películas como vistas para descubrir tu perfil cinematográfico único y recibir recomendaciones personalizadas basadas en tus gustos."
-                        headerAction={
+
+                            {/* Main message */}
+                            <h2 className="text-3xl md:text-5xl font-display font-bold text-white leading-tight mb-6 tracking-tight">
+                                Hecho con amor<br />
+                                <span className="text-primary">para vos.</span>
+                            </h2>
+
+                            <p className="text-gray-400 text-base md:text-lg max-w-2xl mx-auto leading-relaxed mb-8">
+                                FRAME nació de una idea simple: que encontrar una buena película no debería ser una tarea.
+                                Acá podés guardar lo que viste, armar listas con lo que querés ver, compartirlas con tus amigos
+                                y descubrir exactamente lo que buscás — sin perder tiempo, sin vueltas.
+                            </p>
+
+                            <p className="text-gray-500 text-sm md:text-base max-w-xl mx-auto leading-relaxed mb-10 italic">
+                                "El cine no es un espejo que refleja la realidad, sino un martillo con el que la moldeas."
+                                <span className="block mt-1 text-xs not-italic text-gray-600 font-mono tracking-widest">— Bertolt Brecht</span>
+                            </p>
+
+                            {/* Feature pills */}
+                            <div className="flex flex-wrap justify-center gap-3 mb-10">
+                                {[
+                                    { icon: '🎬', label: 'Descubrí cine nuevo' },
+                                    { icon: '📋', label: 'Armá tus listas' },
+                                    { icon: '🤝', label: 'Compartí con amigos' },
+                                    { icon: '⚡', label: 'Buscá al instante' },
+                                    { icon: '⭐', label: 'Calificá lo que viste' },
+                                ].map(f => (
+                                    <span key={f.label} className="flex items-center gap-2 px-4 py-2 bg-white/[0.04] border border-white/8 rounded-full text-sm text-gray-400 font-mono">
+                                        <span>{f.icon}</span>{f.label}
+                                    </span>
+                                ))}
+                            </div>
+
+                            {/* Closing signature */}
+                            <div className="flex items-center gap-3 justify-center mb-8">
+                                <div className="h-px w-8 bg-white/10" />
+                                <p className="text-xs text-gray-600 font-mono uppercase tracking-[0.3em]">Gracias por estar acá ✦</p>
+                                <div className="h-px w-8 bg-white/10" />
+                            </div>
+
+                            {/* Feedback button */}
                             <button
-                                onClick={() => setShowExclusionModal(true)}
-                                className="p-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 hover:border-white/20 transition-all text-gray-400 hover:text-white group flex items-center gap-2"
+                                onClick={() => setIsFeedbackOpen(true)}
+                                className="inline-flex items-center gap-3 px-7 py-4 bg-primary/10 hover:bg-primary/20 border border-primary/30 hover:border-primary/60 rounded-2xl text-primary font-semibold transition-all group active:scale-95 shadow-lg shadow-primary/5"
                             >
-                                <Filter className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                                <span className="text-xs font-bold hidden sm:inline">FILTRAR</span>
+                                <ChatBubbleLeftRightIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                                Contanos qué te parece FRAME
                             </button>
-                        }
-                    />
-                )}
-
-                <ExclusionModal
-                    isOpen={showExclusionModal}
-                    onClose={() => setShowExclusionModal(false)}
-                    preferences={profile?.preferences}
-                    onSave={handleSaveExclusions}
-                    recommendations={data.forYou}
-                />
-                <MovieSection title="Los Infaltables" movies={data.must_watch} onSelectMovie={onSelectMovie} categoryId="must_watch" />
-                <MovieSection title="Cortitas y al Pie" movies={data.short} onSelectMovie={onSelectMovie} categoryId="short" />
-                <MovieSection title="Mate y Sobremesa" movies={data.conversation} onSelectMovie={onSelectMovie} categoryId="conversation" />
-                <MovieSection title="El Laboratorio" movies={data.tech} onSelectMovie={onSelectMovie} categoryId="tech" />
-                <MovieSection title="El Aguante" movies={data.argentina} onSelectMovie={onSelectMovie} categoryId="argentina" variant="argentina" />
-                <MovieSection title="Pulso a Mil" movies={data.thriller} onSelectMovie={onSelectMovie} categoryId="thriller" variant="thriller" />
-                <MovieSection title="Primera Cita" movies={data.romance} onSelectMovie={onSelectMovie} categoryId="romance" variant="romance" />
-                <MovieSection title="Misiones de Verdad" movies={data.real_life} onSelectMovie={onSelectMovie} categoryId="real_life" variant="documentary" />
-                <MovieSection title="Viaje de Ida" movies={data.sagas} onSelectMovie={onSelectMovie} categoryId="sagas" variant="saga" />
-                <MovieSection title="Solo para Locos" movies={data.classic_author} onSelectMovie={onSelectMovie} categoryId="classic_author" variant="cult" />
-
-                {/* Closing message */}
-                <div className="mt-16 mb-6 px-2">
-                    <div className="relative rounded-[2.5rem] overflow-hidden border border-white/5 bg-gradient-to-br from-white/[0.03] via-transparent to-primary/[0.04] p-8 md:p-12 text-center">
-                        {/* Decorative top line */}
-                        <div className="flex items-center gap-3 justify-center mb-8">
-                            <div className="h-px w-12 bg-gradient-to-r from-transparent to-primary/40" />
-                            <span className="text-primary/60 text-xs font-mono tracking-[0.4em] uppercase">Frame</span>
-                            <div className="h-px w-12 bg-gradient-to-l from-transparent to-primary/40" />
-                        </div>
-
-                        {/* Main message */}
-                        <h2 className="text-3xl md:text-5xl font-display font-bold text-white leading-tight mb-6 tracking-tight">
-                            Hecho con amor<br />
-                            <span className="text-primary">para vos.</span>
-                        </h2>
-
-                        <p className="text-gray-400 text-base md:text-lg max-w-2xl mx-auto leading-relaxed mb-8">
-                            FRAME nació de una idea simple: que encontrar una buena película no debería ser una tarea.
-                            Acá podés guardar lo que viste, armar listas con lo que querés ver, compartirlas con tus amigos
-                            y descubrir exactamente lo que buscás — sin perder tiempo, sin vueltas.
-                        </p>
-
-                        <p className="text-gray-500 text-sm md:text-base max-w-xl mx-auto leading-relaxed mb-10 italic">
-                            "El cine no es un espejo que refleja la realidad, sino un martillo con el que la moldeas."
-                            <span className="block mt-1 text-xs not-italic text-gray-600 font-mono tracking-widest">— Bertolt Brecht</span>
-                        </p>
-
-                        {/* Feature pills */}
-                        <div className="flex flex-wrap justify-center gap-3 mb-10">
-                            {[
-                                { icon: '🎬', label: 'Descubrí cine nuevo' },
-                                { icon: '📋', label: 'Armá tus listas' },
-                                { icon: '🤝', label: 'Compartí con amigos' },
-                                { icon: '⚡', label: 'Buscá al instante' },
-                                { icon: '⭐', label: 'Calificá lo que viste' },
-                            ].map(f => (
-                                <span key={f.label} className="flex items-center gap-2 px-4 py-2 bg-white/[0.04] border border-white/8 rounded-full text-sm text-gray-400 font-mono">
-                                    <span>{f.icon}</span>{f.label}
-                                </span>
-                            ))}
-                        </div>
-
-                        {/* Closing signature */}
-                        <div className="flex items-center gap-3 justify-center">
-                            <div className="h-px w-8 bg-white/10" />
-                            <p className="text-xs text-gray-600 font-mono uppercase tracking-[0.3em]">Gracias por estar acá ✦</p>
-                            <div className="h-px w-8 bg-white/10" />
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+
+            <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
+        </>
     );
 };
 
