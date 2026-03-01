@@ -13,6 +13,7 @@ import {
     deleteDoc, doc
 } from 'firebase/firestore';
 import { cn } from '../../lib/utils';
+import useScrollLock from '../../hooks/useScrollLock';
 
 /* ── helpers ─────────────────────────────────────────── */
 const formatTime = (seconds) => {
@@ -93,6 +94,7 @@ const ChatWindow = () => {
     const inputRef = useRef(null);
 
     const isOpen = !!openChat;
+    useScrollLock(isOpen);
 
     /* Subscribe to messages */
     useEffect(() => {

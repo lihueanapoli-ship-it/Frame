@@ -1,15 +1,20 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { XMarkIcon, PlusIcon, LockClosedIcon, GlobeAltIcon, UserGroupIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { useLists } from '../../contexts/ListContext';
 import { cn } from '../../lib/utils';
+import useScrollLock from '../../hooks/useScrollLock';
 
 const CreateListModal = ({ isOpen, onClose }) => {
     const { createList } = useLists();
     const [name, setName] = useState('');
+    useScrollLock(isOpen);
     const [description, setDescription] = useState('');
+    useScrollLock(isOpen);
     const [privacy, setPrivacy] = useState('private');
+    useScrollLock(isOpen);
     const [loading, setLoading] = useState(false);
+    useScrollLock(isOpen);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -69,11 +74,11 @@ const CreateListModal = ({ isOpen, onClose }) => {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Descripción (opcional)</label>
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">DescripciÃ³n (opcional)</label>
                                 <textarea
                                     value={description}
                                     onChange={e => setDescription(e.target.value)}
-                                    placeholder="¿De qué trata esta colección?"
+                                    placeholder="Â¿De quÃ© trata esta colecciÃ³n?"
                                     className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-gray-700 focus:outline-none focus:border-primary/50 transition-all resize-none h-32"
                                 />
                             </div>
@@ -94,7 +99,7 @@ const CreateListModal = ({ isOpen, onClose }) => {
                                         </div>
                                         <div>
                                             <p className="font-bold text-sm">Privada</p>
-                                            <p className="text-[10px] opacity-60">Solo vos podés verla</p>
+                                            <p className="text-[10px] opacity-60">Solo vos podÃ©s verla</p>
                                         </div>
                                     </button>
 
@@ -110,7 +115,7 @@ const CreateListModal = ({ isOpen, onClose }) => {
                                             <GlobeAltIcon className="w-5 h-5" />
                                         </div>
                                         <div>
-                                            <p className="font-bold text-sm">Pública</p>
+                                            <p className="font-bold text-sm">PÃºblica</p>
                                             <p className="text-[10px] opacity-60">Todos pueden verla</p>
                                         </div>
                                     </button>
@@ -142,3 +147,4 @@ const CreateListModal = ({ isOpen, onClose }) => {
 };
 
 export default CreateListModal;
+

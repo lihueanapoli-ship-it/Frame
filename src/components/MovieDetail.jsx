@@ -12,8 +12,11 @@ import { cn } from '../lib/utils';
 import { triggerConfetti, triggerSmallConfetti } from '../lib/confetti';
 import AddToListModal from './ui/AddToListModal';
 import ShareWithFriendModal from './ui/ShareWithFriendModal';
+import useScrollLock from '../hooks/useScrollLock';
 
 const MovieDetail = ({ movie: initialMovie, onClose }) => {
+    // MovieDetail only renders when a movie is selected, so lock is always active
+    useScrollLock(true);
     const [movie, setMovie] = useState(initialMovie);
     const [showListModal, setShowListModal] = useState(false);
     const [showDropdown, setShowDropdown] = useState(false);

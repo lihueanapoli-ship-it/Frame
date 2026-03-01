@@ -1,23 +1,32 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { XMarkIcon, TrashIcon, UserPlusIcon, ShieldCheckIcon, GlobeAltIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 import { db } from '../../api/firebase';
 import { doc, updateDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../contexts/AuthContext';
+import useScrollLock from '../../hooks/useScrollLock';
 
 const ListSettingsModal = ({ isOpen, onClose, list, onUpdate }) => {
     const { user } = useAuth();
     const [name, setName] = useState(list?.name || '');
+    useScrollLock(isOpen);
     const [description, setDescription] = useState(list?.description || '');
+    useScrollLock(isOpen);
     const [privacy, setPrivacy] = useState(list?.privacy || 'private');
+    useScrollLock(isOpen);
     const [loading, setLoading] = useState(false);
+    useScrollLock(isOpen);
 
     // Member management
     const [searchQuery, setSearchQuery] = useState('');
+    useScrollLock(isOpen);
     const [searchResults, setSearchResults] = useState([]);
+    useScrollLock(isOpen);
     const [isSearching, setIsSearching] = useState(false);
+    useScrollLock(isOpen);
     const [members, setMembers] = useState(list?.collaborators_data || []);
+    useScrollLock(isOpen);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -107,7 +116,7 @@ const ListSettingsModal = ({ isOpen, onClose, list, onUpdate }) => {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Descripción</label>
+                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">DescripciÃ³n</label>
                                         <textarea
                                             value={description}
                                             onChange={e => setDescription(e.target.value)}
@@ -120,7 +129,7 @@ const ListSettingsModal = ({ isOpen, onClose, list, onUpdate }) => {
                                             {[
                                                 { id: 'private', name: 'Privada', icon: LockClosedIcon, desc: 'Solo vos' },
                                                 { id: 'friends', name: 'Amigos', icon: UserPlusIcon, desc: 'Tus contactos' },
-                                                { id: 'public', name: 'Pública', icon: GlobeAltIcon, desc: 'Toda la comunidad' }
+                                                { id: 'public', name: 'PÃºblica', icon: GlobeAltIcon, desc: 'Toda la comunidad' }
                                             ].map(opt => (
                                                 <button
                                                     key={opt.id}
@@ -146,10 +155,10 @@ const ListSettingsModal = ({ isOpen, onClose, list, onUpdate }) => {
                                     <div className="p-6 rounded-3xl bg-white/[0.02] border border-white/5">
                                         <div className="flex items-center gap-3 mb-4">
                                             <ShieldCheckIcon className="w-5 h-5 text-primary" />
-                                            <h4 className="font-bold text-white">Seguridad y Colaboración</h4>
+                                            <h4 className="font-bold text-white">Seguridad y ColaboraciÃ³n</h4>
                                         </div>
                                         <p className="text-sm text-gray-400 mb-6">
-                                            Próximamente podrás gestionar permisos detallados para tus colaboradores.
+                                            PrÃ³ximamente podrÃ¡s gestionar permisos detallados para tus colaboradores.
                                         </p>
                                         <div className="space-y-3">
                                             <div className="flex items-center justify-between p-3 rounded-xl bg-white/5">
@@ -157,7 +166,7 @@ const ListSettingsModal = ({ isOpen, onClose, list, onUpdate }) => {
                                                     <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs">P</div>
                                                     <span className="text-sm text-white">Propietario</span>
                                                 </div>
-                                                <span className="text-[10px] font-mono text-primary font-bold uppercase">Dueño</span>
+                                                <span className="text-[10px] font-mono text-primary font-bold uppercase">DueÃ±o</span>
                                             </div>
                                         </div>
                                     </div>
@@ -188,3 +197,4 @@ const ListSettingsModal = ({ isOpen, onClose, list, onUpdate }) => {
 };
 
 export default ListSettingsModal;
+

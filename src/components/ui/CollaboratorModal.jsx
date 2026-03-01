@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { XMarkIcon, UserPlusIcon, CheckIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { db } from '../../api/firebase';
@@ -6,13 +6,18 @@ import { collection, query, where, getDocs, limit, doc, updateDoc, arrayUnion } 
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
+import useScrollLock from '../../hooks/useScrollLock';
 
 const CollaboratorModal = ({ isOpen, onClose, listId, currentCollaborators = [] }) => {
     const { user: currentUser } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
+    useScrollLock(isOpen);
     const [results, setResults] = useState([]);
+    useScrollLock(isOpen);
     const [loading, setLoading] = useState(false);
+    useScrollLock(isOpen);
     const [actionLoading, setActionLoading] = useState({});
+    useScrollLock(isOpen);
 
     const handleSearch = async (val) => {
         setSearchTerm(val);
@@ -48,11 +53,11 @@ const CollaboratorModal = ({ isOpen, onClose, listId, currentCollaborators = [] 
             await updateDoc(listRef, {
                 collaborators: arrayUnion(targetUser.uid)
             });
-            toast.success(`${targetUser.displayName} añadido como colaborador`);
+            toast.success(`${targetUser.displayName} aÃ±adido como colaborador`);
             setResults(prev => prev.filter(u => u.uid !== targetUser.uid));
         } catch (error) {
             console.error(error);
-            toast.error("Error al añadir colaborador");
+            toast.error("Error al aÃ±adir colaborador");
         }
         setActionLoading(prev => ({ ...prev, [targetUser.uid]: false }));
     };
@@ -70,7 +75,7 @@ const CollaboratorModal = ({ isOpen, onClose, listId, currentCollaborators = [] 
                     >
                         <div className="px-6 py-5 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
                             <div>
-                                <h3 className="text-xl font-bold text-white tracking-tight">Añadir Colaboradores</h3>
+                                <h3 className="text-xl font-bold text-white tracking-tight">AÃ±adir Colaboradores</h3>
                                 <div className="h-1 w-8 bg-primary rounded-full mt-1 opacity-50" />
                             </div>
                             <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors">
@@ -117,7 +122,7 @@ const CollaboratorModal = ({ isOpen, onClose, listId, currentCollaborators = [] 
                                 ) : (
                                     <div className="text-center py-20 opacity-30 flex flex-col items-center">
                                         <UserPlusIcon className="w-12 h-12 mb-4" />
-                                        <p className="text-sm">Buscá a alguien para colaborar en esta lista</p>
+                                        <p className="text-sm">BuscÃ¡ a alguien para colaborar en esta lista</p>
                                     </div>
                                 )}
                             </div>
@@ -134,3 +139,4 @@ const CollaboratorModal = ({ isOpen, onClose, listId, currentCollaborators = [] 
 };
 
 export default CollaboratorModal;
+

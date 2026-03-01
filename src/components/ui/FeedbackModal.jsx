@@ -1,10 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+﻿import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { XMarkIcon, PaperAirplaneIcon, MicrophoneIcon, StopIcon, TrashIcon, CheckCircleIcon, BugAntIcon, LightBulbIcon, PaintBrushIcon, HeartIcon } from '@heroicons/react/24/outline';
 import { StarIcon, HandThumbUpIcon } from '@heroicons/react/24/solid';
 import { cn } from '../../lib/utils';
 import { useSound } from '../../contexts/SoundContext';
 import { useAuth } from '../../contexts/AuthContext';
+import useScrollLock from '../../hooks/useScrollLock';
 
 const FeedbackModal = ({ isOpen, onClose }) => {
     const { playClick, playSuccess, playError } = useSound();
@@ -17,14 +18,21 @@ const FeedbackModal = ({ isOpen, onClose }) => {
         design: 0,
         nps: null
     });
+    useScrollLock(isOpen);
     const [submitted, setSubmitted] = useState(false);
+    useScrollLock(isOpen);
     const [isSending, setIsSending] = useState(false);
+    useScrollLock(isOpen);
 
     const [isRecording, setIsRecording] = useState(false);
+    useScrollLock(isOpen);
     const [audioBlob, setAudioBlob] = useState(null);
+    useScrollLock(isOpen);
     const [recordingTime, setRecordingTime] = useState(0);
+    useScrollLock(isOpen);
 
     const [techInfo, setTechInfo] = useState({});
+    useScrollLock(isOpen);
 
     const mediaRecorderRef = useRef(null);
     const audioChunksRef = useRef([]);
@@ -62,7 +70,7 @@ const FeedbackModal = ({ isOpen, onClose }) => {
         } catch (error) {
             console.error(error);
             playError?.();
-            alert("Acceso al micrófono denegado.");
+            alert("Acceso al micrÃ³fono denegado.");
         }
     };
 
@@ -95,26 +103,26 @@ const FeedbackModal = ({ isOpen, onClose }) => {
         playClick();
 
         const formData = new FormData();
-        const userName = user?.displayName || "Anónimo";
+        const userName = user?.displayName || "AnÃ³nimo";
         const userEmail = user?.email || "No especificado";
         const emailSubject = `[Feedback] Encuesta de ${userName}`;
 
         formData.append("_captcha", "false");
         formData.append("_template", "box");
         formData.append("_subject", emailSubject);
-        formData.append("_autoresponse", "¡Recibimos tu feedback! Gracias por ayudarnos a mejorar FRAME 🎬.");
+        formData.append("_autoresponse", "Â¡Recibimos tu feedback! Gracias por ayudarnos a mejorar FRAME ðŸŽ¬.");
 
-        formData.append("👤 Usuario", userName);
-        formData.append("📧 Contacto", userEmail);
+        formData.append("ðŸ‘¤ Usuario", userName);
+        formData.append("ðŸ“§ Contacto", userEmail);
 
-        if (answers.overall) formData.append("🌟 Experiencia General", `${answers.overall}/10 Estrellas`);
-        if (answers.usability) formData.append("🧠 Usabilidad", answers.usability === 'easy' ? 'Fácil' : answers.usability === 'medium' ? 'Normal' : 'Difícil');
-        if (answers.speed) formData.append("⚡ Velocidad", answers.speed === 'fast' ? 'Rápida' : answers.speed === 'ok' ? 'Normal' : 'Lenta');
-        if (answers.design) formData.append("🎨 Diseño", `${answers.design}/10 Estrellas`);
-        if (answers.nps !== null) formData.append("❤️ Recomendaría", answers.nps ? 'SÍ' : 'NO');
+        if (answers.overall) formData.append("ðŸŒŸ Experiencia General", `${answers.overall}/10 Estrellas`);
+        if (answers.usability) formData.append("ðŸ§  Usabilidad", answers.usability === 'easy' ? 'FÃ¡cil' : answers.usability === 'medium' ? 'Normal' : 'DifÃ­cil');
+        if (answers.speed) formData.append("âš¡ Velocidad", answers.speed === 'fast' ? 'RÃ¡pida' : answers.speed === 'ok' ? 'Normal' : 'Lenta');
+        if (answers.design) formData.append("ðŸŽ¨ DiseÃ±o", `${answers.design}/10 Estrellas`);
+        if (answers.nps !== null) formData.append("â¤ï¸ RecomendarÃ­a", answers.nps ? 'SÃ' : 'NO');
 
-        formData.append("📱 Dispositivo", techInfo.platform);
-        formData.append("🖥️ Resolución", techInfo.screenProb);
+        formData.append("ðŸ“± Dispositivo", techInfo.platform);
+        formData.append("ðŸ–¥ï¸ ResoluciÃ³n", techInfo.screenProb);
 
         if (audioBlob) {
             const fileName = `voice_${userName.replace(/\s+/g, '')}_${Date.now()}.mp3`;
@@ -128,7 +136,7 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                 playSuccess();
                 setSubmitted(true);
                 setTimeout(handleClose, 2500);
-            } else throw new Error("Error envío");
+            } else throw new Error("Error envÃ­o");
         } catch (error) {
             console.error(error);
             setIsSending(false);
@@ -168,8 +176,8 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                         <div className="inline-block p-2 bg-primary/10 rounded-full mb-3 ring-1 ring-primary/20">
                                             <PaperAirplaneIcon className="w-5 h-5 text-primary" />
                                         </div>
-                                        <h2 className="text-2xl font-bold text-white mb-2">Ayúdanos a mejorar</h2>
-                                        <p className="text-sm text-gray-400">Tu opinión nos ayuda a que FRAME sea mejor cada día.</p>
+                                        <h2 className="text-2xl font-bold text-white mb-2">AyÃºdanos a mejorar</h2>
+                                        <p className="text-sm text-gray-400">Tu opiniÃ³n nos ayuda a que FRAME sea mejor cada dÃ­a.</p>
                                         <div className="space-y-6 mb-8">
                                             <div>
                                                 <div className="flex justify-between items-end mb-3">
@@ -200,12 +208,12 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                             </div>
 
                                             <div>
-                                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">2. ¿Qué tan fácil fue usar FRAME?</label>
+                                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">2. Â¿QuÃ© tan fÃ¡cil fue usar FRAME?</label>
                                                 <div className="flex gap-2 bg-white/5 p-1 rounded-xl">
                                                     {[
-                                                        { id: 'hard', label: 'Difícil', icon: '😫' },
-                                                        { id: 'medium', label: 'Normal', icon: '😐' },
-                                                        { id: 'easy', label: 'Facilísimo', icon: '🤩' }
+                                                        { id: 'hard', label: 'DifÃ­cil', icon: 'ðŸ˜«' },
+                                                        { id: 'medium', label: 'Normal', icon: 'ðŸ˜' },
+                                                        { id: 'easy', label: 'FacilÃ­simo', icon: 'ðŸ¤©' }
                                                     ].map((opt) => (
                                                         <button
                                                             key={opt.id}
@@ -223,12 +231,12 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                             </div>
 
                                             <div>
-                                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">3. ¿La app se sintió rápida?</label>
+                                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">3. Â¿La app se sintiÃ³ rÃ¡pida?</label>
                                                 <div className="grid grid-cols-3 gap-2">
                                                     {[
-                                                        { id: 'slow', label: 'Lenta 🐢' },
-                                                        { id: 'ok', label: 'Normal 😐' },
-                                                        { id: 'fast', label: 'Rápida ⚡' }
+                                                        { id: 'slow', label: 'Lenta ðŸ¢' },
+                                                        { id: 'ok', label: 'Normal ðŸ˜' },
+                                                        { id: 'fast', label: 'RÃ¡pida âš¡' }
                                                     ].map((opt) => (
                                                         <button
                                                             key={opt.id}
@@ -248,7 +256,7 @@ const FeedbackModal = ({ isOpen, onClose }) => {
 
                                             <div>
                                                 <div className="flex justify-between items-end mb-3">
-                                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">4. ¿Te gusta el diseño?</label>
+                                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">4. Â¿Te gusta el diseÃ±o?</label>
                                                     <span className="text-xl font-black text-purple-400 font-mono">{answers.design || 0}<span className="text-sm text-gray-500 font-normal">/10</span></span>
                                                 </div>
                                                 <div className="flex gap-1 h-12 bg-white/5 rounded-xl p-1.5 border border-white/5">
@@ -272,7 +280,7 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                             </div>
 
                                             <div>
-                                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">5. ¿Recomendarías la app?</label>
+                                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">5. Â¿RecomendarÃ­as la app?</label>
                                                 <div className="flex gap-3">
                                                     <button
                                                         onClick={() => { setAnswers(p => ({ ...p, nps: true })); playClick(); }}
@@ -281,7 +289,7 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                                             answers.nps === true ? "bg-green-500 text-black border-green-500 font-bold" : "bg-white/5 hover:bg-white/10"
                                                         )}
                                                     >
-                                                        <HandThumbUpIcon className="w-5 h-5" /> <span>¡Sí, de una!</span>
+                                                        <HandThumbUpIcon className="w-5 h-5" /> <span>Â¡SÃ­, de una!</span>
                                                     </button>
                                                     <button
                                                         onClick={() => { setAnswers(p => ({ ...p, nps: false })); playClick(); }}
@@ -290,7 +298,7 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                                             answers.nps === false ? "bg-red-500/20 text-red-200 border-red-500" : "bg-white/5 hover:bg-white/10 text-gray-500"
                                                         )}
                                                     >
-                                                        <span>No 👎</span>
+                                                        <span>No ðŸ‘Ž</span>
                                                     </button>
                                                 </div>
                                             </div>
@@ -381,7 +389,7 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                     <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mb-4">
                                         <HandThumbUpIcon className="w-8 h-8 text-green-500" />
                                     </div>
-                                    <h3 className="text-xl font-bold text-white mb-1">¡Enviado!</h3>
+                                    <h3 className="text-xl font-bold text-white mb-1">Â¡Enviado!</h3>
                                     <p className="text-xs text-gray-500">Gracias, {user.displayName?.split(' ')[0]}.</p>
                                 </div>
                             )}
@@ -394,3 +402,4 @@ const FeedbackModal = ({ isOpen, onClose }) => {
 };
 
 export default FeedbackModal;
+

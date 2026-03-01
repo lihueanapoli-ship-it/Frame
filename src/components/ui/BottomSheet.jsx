@@ -2,24 +2,18 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { cn } from '../../lib/utils';
+import useScrollLock from '../../hooks/useScrollLock';
 
 const BottomSheet = ({ isOpen, onClose, title, children }) => {
     const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768);
 
+    useScrollLock(isOpen);
+
     useEffect(() => {
         const handleResize = () => setIsDesktop(window.innerWidth >= 768);
         window.addEventListener('resize', handleResize);
-
-        if (isOpen) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = 'unset';
-        }
-        return () => {
-            document.body.style.overflow = 'unset';
-            window.removeEventListener('resize', handleResize);
-        };
-    }, [isOpen]);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     return (
         <AnimatePresence>

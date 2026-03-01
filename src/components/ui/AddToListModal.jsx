@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { XMarkIcon, PlusIcon, LockClosedIcon, GlobeAltIcon, UserGroupIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { useLists } from '../../contexts/ListContext';
 import { cn } from '../../lib/utils';
 import { useSound } from '../../contexts/SoundContext';
 import { useAuth } from '../../contexts/AuthContext';
+import useScrollLock from '../../hooks/useScrollLock';
 
 const AddToListModal = ({ isOpen, onClose, movie }) => {
     const { allLists, addMovieToList, removeMovieFromList } = useLists();
@@ -57,7 +58,7 @@ const AddToListModal = ({ isOpen, onClose, movie }) => {
                         <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
                             {allLists.length === 0 ? (
                                 <div className="text-center py-20 bg-white/5 rounded-3xl border border-white/5 border-dashed">
-                                    <p className="text-gray-400 mb-4">No tienes listas personalizadas aún.</p>
+                                    <p className="text-gray-400 mb-4">No tienes listas personalizadas aÃºn.</p>
                                     <a href="/library" className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors">Crear primera lista</a>
                                 </div>
                             ) : (
@@ -87,7 +88,7 @@ const AddToListModal = ({ isOpen, onClose, movie }) => {
                                                     <div className="truncate">
                                                         <p className={cn("font-bold transition-colors truncate", active ? "text-primary" : "text-white")}>{list.name}</p>
                                                         <p className="text-[10px] text-gray-500 font-mono uppercase tracking-widest flex items-center gap-1.5 mt-0.5">
-                                                            {list.movieCount || 0} películas
+                                                            {list.movieCount || 0} pelÃ­culas
                                                             {!isOwner && <UserGroupIcon className="w-3 h-3 text-blue-400" />}
                                                         </p>
                                                     </div>
@@ -116,3 +117,4 @@ const AddToListModal = ({ isOpen, onClose, movie }) => {
 };
 
 export default AddToListModal;
+

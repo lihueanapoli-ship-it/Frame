@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { XMarkIcon, MagnifyingGlassIcon, UserPlusIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { db } from '../../api/firebase';
@@ -7,14 +7,19 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useUserProfile } from '../../contexts/UserProfileContext';
 import { cn } from '../../lib/utils';
 import { Link } from 'react-router-dom';
+import useScrollLock from '../../hooks/useScrollLock';
 
 const UserSearchModal = ({ isOpen, onClose }) => {
     const { user: currentUser } = useAuth();
     const { sendFriendRequest, getFriendshipStatus } = useUserProfile();
     const [searchTerm, setSearchTerm] = useState('');
+    useScrollLock(isOpen);
     const [results, setResults] = useState([]);
+    useScrollLock(isOpen);
     const [loading, setLoading] = useState(false);
+    useScrollLock(isOpen);
     const [actionLoading, setActionLoading] = useState({});
+    useScrollLock(isOpen);
 
     const handleSearch = async (val) => {
         setSearchTerm(val);
@@ -83,7 +88,7 @@ const UserSearchModal = ({ isOpen, onClose }) => {
                         {/* Header */}
                         <div className="px-6 py-5 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
                             <div>
-                                <h3 className="text-xl font-bold text-white tracking-tight">Buscar Cinéfilos</h3>
+                                <h3 className="text-xl font-bold text-white tracking-tight">Buscar CinÃ©filos</h3>
                                 <div className="h-1 w-8 bg-primary rounded-full mt-1 opacity-50" />
                             </div>
                             <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors">
@@ -139,14 +144,14 @@ const UserSearchModal = ({ isOpen, onClose }) => {
                                     </div>
                                 ) : searchTerm.length > 1 && !loading ? (
                                     <div className="text-center py-20 bg-white/[0.01] rounded-3xl border border-white/5 border-dashed">
-                                        <p className="text-gray-500">No encontramos a ningún cinéfilo con ese nombre.</p>
+                                        <p className="text-gray-500">No encontramos a ningÃºn cinÃ©filo con ese nombre.</p>
                                     </div>
                                 ) : (
                                     <div className="text-center py-20 flex flex-col items-center">
                                         <div className="w-16 h-16 bg-white/[0.02] rounded-full flex items-center justify-center mb-4">
                                             <MagnifyingGlassIcon className="w-8 h-8 text-gray-700" />
                                         </div>
-                                        <p className="text-gray-500 text-sm max-w-xs">Buscá a tus amigos por su @usuario para compartir listas y ver qué están mirando.</p>
+                                        <p className="text-gray-500 text-sm max-w-xs">BuscÃ¡ a tus amigos por su @usuario para compartir listas y ver quÃ© estÃ¡n mirando.</p>
                                     </div>
                                 )}
                             </div>
@@ -169,3 +174,4 @@ const UserSearchModal = ({ isOpen, onClose }) => {
 };
 
 export default UserSearchModal;
+
