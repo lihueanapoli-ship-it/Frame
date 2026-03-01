@@ -101,6 +101,23 @@ const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, vari
     );
 };
 
+// Shuffles movies randomly and pushes already-watched movies to the end
+const shuffleAndSortWatched = (movies, watchedIds) => {
+    const arr = [...movies];
+    // Fisher-Yates shuffle for different order every reload
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    // Stable sort: unwatched first, watched last
+    return arr.sort((a, b) => {
+        const aW = watchedIds.has(a.id);
+        const bW = watchedIds.has(b.id);
+        if (aW === bW) return 0;
+        return aW ? 1 : -1;
+    });
+};
+
 const DiscoverView = ({ onSelectMovie }) => {
     const [loading, setLoading] = useState(true);
     const [adnLoading, setAdnLoading] = useState(false);
@@ -130,9 +147,9 @@ const DiscoverView = ({ onSelectMovie }) => {
     const fetchInitialData = async () => {
         try {
             const trending = await getTrendingMovies();
-            setData(prev => ({ ...prev, trending }));
+            const watchedIds = new Set((watched || []).map(m => m.id));
+            setData(prev => ({ ...prev, trending: shuffleAndSortWatched(trending, watchedIds) }));
             setLoading(false);
-
             fetchBackgroundData();
         } catch (error) {
             console.error("Error fetching initial data:", error);
@@ -140,7 +157,8 @@ const DiscoverView = ({ onSelectMovie }) => {
         }
     };
 
-    const fetchBackgroundData = async () => {
+    const fetchBackgroundData = () => {
+        const watchedIds = new Set((watched || []).map(m => m.id));
         const collections = [
             { key: 'must_watch', id: 'must_watch' },
             { key: 'short', id: 'short' },
@@ -156,7 +174,7 @@ const DiscoverView = ({ onSelectMovie }) => {
 
         for (const col of collections) {
             getCustomCollection(col.key).then(movies => {
-                setData(prev => ({ ...prev, [col.key]: movies }));
+                setData(prev => ({ ...prev, [col.key]: shuffleAndSortWatched(movies, watchedIds) }));
             });
         }
     };
