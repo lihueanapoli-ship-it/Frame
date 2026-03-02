@@ -71,22 +71,26 @@ export const useMovieFilter = (movies, {
 
             return true;
         }).sort((a, b) => {
-            // Sorting Logic
+            // Sorting Logic — each case wrapped in {} to avoid const TDZ errors with Terser
             switch (sort) {
-                case 'rating':
+                case 'rating': {
                     const rateA = ratingSource === 'user' ? (a.rating || 0) : (a.vote_average || 0);
                     const rateB = ratingSource === 'user' ? (b.rating || 0) : (b.vote_average || 0);
                     return rateB - rateA;
-                case 'year':
+                }
+                case 'year': {
                     const dateA = new Date(a.release_date || 0);
                     const dateB = new Date(b.release_date || 0);
-                    return dateB - dateA; // Newest first
-                case 'runtime': return (b.runtime || 0) - (a.runtime || 0);
+                    return dateB - dateA;
+                }
+                case 'runtime':
+                    return (b.runtime || 0) - (a.runtime || 0);
                 case 'date_added':
-                default:
+                default: {
                     const timeA = new Date(a.addedAt || a.watchedAt || 0);
                     const timeB = new Date(b.addedAt || b.watchedAt || 0);
-                    return timeB - timeA; // Newest added first
+                    return timeB - timeA;
+                }
             }
         });
     }, [movies, search, sort, status, genres, minRating, runtime, yearRange, ratingSource]);
