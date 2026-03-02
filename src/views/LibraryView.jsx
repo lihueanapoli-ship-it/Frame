@@ -55,7 +55,19 @@ const LibraryView = ({ onSelectMovie }) => {
     const [selectedPlatforms, setSelectedPlatforms] = useState([]);
     const [platformFilteredMovies, setPlatformFilteredMovies] = useState(null);
     const [isFetchingProviders, setIsFetchingProviders] = useState(false);
+    const [originCountry, setOriginCountry] = useState('any');
     const providersCacheRef = useRef({});
+
+    const COUNTRIES = [
+        { id: 'AR', name: 'Argentina', flag: '🇦🇷' },
+        { id: 'US', name: 'Estados Unidos', flag: '🇺🇸' },
+        { id: 'KR', name: 'Corea', flag: '🇰🇷' },
+        { id: 'JP', name: 'Japón', flag: '🇯🇵' },
+        { id: 'GB', name: 'Reino Unido', flag: '🇬🇧' },
+        { id: 'ES', name: 'España', flag: '🇪🇸' },
+        { id: 'FR', name: 'Francia', flag: '🇫🇷' },
+        { id: 'IT', name: 'Italia', flag: '🇮🇹' }
+    ];
 
     const { watchlist, watched } = useMovies();
     const { myLists, collabLists, addCollaborator, deleteList, leaveList, generalList } = useLists();
@@ -118,7 +130,8 @@ const LibraryView = ({ onSelectMovie }) => {
         minRating,
         runtime: runtimeFilter,
         yearRange,
-        ratingSource
+        ratingSource,
+        originCountry
     });
 
     useEffect(() => {
@@ -166,9 +179,10 @@ const LibraryView = ({ onSelectMovie }) => {
         setYearRange({ min: 1900, max: new Date().getFullYear() + 5 });
         setSelectedPlatforms([]);
         setPlatformFilteredMovies(null);
+        setOriginCountry('any');
     };
 
-    const activeFilterCount = (selectedGenres.length > 0 ? 1 : 0) + (minRating > 0 ? 1 : 0) + (runtimeFilter !== 'any' ? 1 : 0) + (sortOption !== 'date_added' ? 1 : 0) + (yearRange.min > 1900 ? 1 : 0) + (selectedPlatforms.length > 0 ? 1 : 0);
+    const activeFilterCount = (selectedGenres.length > 0 ? 1 : 0) + (minRating > 0 ? 1 : 0) + (runtimeFilter !== 'any' ? 1 : 0) + (sortOption !== 'date_added' ? 1 : 0) + (yearRange.min > 1900 ? 1 : 0) + (selectedPlatforms.length > 0 ? 1 : 0) + (originCountry !== 'any' ? 1 : 0);
 
     return (
         <div className="min-h-screen pb-24 px-4 pt-8">
@@ -366,7 +380,6 @@ const LibraryView = ({ onSelectMovie }) => {
                             <div>
                                 <div className="flex justify-between items-center mb-3">
                                     <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Calificación Mínima</h4>
-                                    <span className="text-xs font-mono text-primary">{minRating > 0 ? `${minRating}+ Puntos` : 'Cualquiera'}</span>
                                 </div>
                                 <div className="grid grid-cols-8 gap-2 bg-surface-elevated p-3 rounded-xl border border-white/5">
                                     {[2, 3, 4, 5, 6, 7, 8, 9].map(score => (
@@ -387,7 +400,6 @@ const LibraryView = ({ onSelectMovie }) => {
                             <div>
                                 <h4 className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-widest">Década</h4>
                                 <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
-                                    <button onClick={() => setYearRange({ min: 1900, max: new Date().getFullYear() + 5 })} className={cn("px-4 py-2 rounded-full text-xs font-bold border whitespace-nowrap", yearRange.min === 1900 ? "bg-white text-black border-white" : "bg-surface border-white/10 text-gray-400")}>Todas</button>
                                     {[2020, 2010, 2000, 1990, 1980, 1970].map(decade => { const isSelected = yearRange.min === decade && yearRange.max === decade + 9; return (<button key={decade} onClick={() => setYearRange(isSelected ? { min: 1900, max: new Date().getFullYear() + 5 } : { min: decade, max: decade + 9 })} className={cn("px-4 py-2 rounded-full text-xs font-bold border whitespace-nowrap", isSelected ? "bg-primary text-black border-primary" : "bg-surface border-white/10 text-gray-400 hover:text-white")}>{decade}s</button>); })}
                                 </div>
                             </div>
@@ -396,6 +408,22 @@ const LibraryView = ({ onSelectMovie }) => {
                                 selected={selectedPlatforms}
                                 onChange={setSelectedPlatforms}
                             />
+
+                            <div>
+                                <h4 className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-widest">País de Origen</h4>
+                                <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
+                                    {COUNTRIES.map(country => (
+                                        <button
+                                            key={country.id}
+                                            onClick={() => setOriginCountry(originCountry === country.id ? 'any' : country.id)}
+                                            className={cn("px-4 py-2 rounded-full text-xs font-bold border whitespace-nowrap flex items-center gap-1.5", originCountry === country.id ? "bg-primary text-black border-primary" : "bg-surface border-white/10 text-gray-400 hover:text-white")}
+                                        >
+                                            <span>{country.flag}</span>
+                                            {country.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
 
                             <div>
                                 <div className="flex justify-between items-center mb-3">

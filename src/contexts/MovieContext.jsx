@@ -164,6 +164,7 @@ export const MovieProvider = ({ children }) => {
             vote_average: movie.vote_average || 0,
             runtime: movie.runtime || 0,
             genre_ids: genre_ids,
+            ...(movie.origin_country && { origin_country: movie.origin_country }),
             // Keep these if they exist
             ...(movie.rating !== undefined && { rating: movie.rating }),
             ...(movie.addedAt && { addedAt: movie.addedAt }),

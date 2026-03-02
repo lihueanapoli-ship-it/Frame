@@ -20,7 +20,8 @@ export const useMovieFilter = (movies, {
     minRating = 0,
     runtime = 'any', // 'any', 'short', 'medium', 'long'
     yearRange = { min: 1900, max: new Date().getFullYear() + 5 },
-    ratingSource = 'tmdb' // 'tmdb' | 'user'
+    ratingSource = 'tmdb', // 'tmdb' | 'user'
+    originCountry = 'any'
 }) => {
 
     const filteredMovies = useMemo(() => {
@@ -69,6 +70,12 @@ export const useMovieFilter = (movies, {
                 if (y < yearRange.min || y > yearRange.max) return false;
             }
 
+            // 7. Country Filter
+            if (originCountry !== 'any') {
+                const movieCountries = movie.origin_country || [];
+                if (!movieCountries.includes(originCountry)) return false;
+            }
+
             return true;
         }).sort((a, b) => {
             // Sorting Logic — each case wrapped in {} to avoid const TDZ errors with Terser
@@ -93,7 +100,7 @@ export const useMovieFilter = (movies, {
                 }
             }
         });
-    }, [movies, search, sort, status, genres, minRating, runtime, yearRange, ratingSource]);
+    }, [movies, search, sort, status, genres, minRating, runtime, yearRange, ratingSource, originCountry]);
 
     return { filteredMovies, totalCount: filteredMovies.length };
 };
