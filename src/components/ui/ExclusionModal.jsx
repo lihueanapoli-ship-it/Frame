@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { XMarkIcon, FunnelIcon, GlobeAltIcon, TagIcon, CheckIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
@@ -7,36 +7,31 @@ import { getCountries } from '../../api/tmdb';
 import useScrollLock from '../../hooks/useScrollLock';
 
 const GENRES = [
-    { id: 28, name: 'AcciÃ³n' }, { id: 12, name: 'Aventura' }, { id: 16, name: 'AnimaciÃ³n' },
+    { id: 28, name: 'Acción' }, { id: 12, name: 'Aventura' }, { id: 16, name: 'Animación' },
     { id: 35, name: 'Comedia' }, { id: 80, name: 'Crimen' }, { id: 99, name: 'Documental' },
-    { id: 18, name: 'Drama' }, { id: 10751, name: 'Familia' }, { id: 14, name: 'FantasÃ­a' },
-    { id: 36, name: 'Historia' }, { id: 27, name: 'Terror' }, { id: 10402, name: 'MÃºsica' },
-    { id: 9648, name: 'Misterio' }, { id: 10749, name: 'Romance' }, { id: 878, name: 'Ciencia ficciÃ³n' },
-    { id: 53, name: 'Suspense' }, { id: 10752, name: 'BÃ©lica' }, { id: 37, name: 'Western' }
+    { id: 18, name: 'Drama' }, { id: 10751, name: 'Familia' }, { id: 14, name: 'Fantasía' },
+    { id: 36, name: 'Historia' }, { id: 27, name: 'Terror' }, { id: 10402, name: 'Música' },
+    { id: 9648, name: 'Misterio' }, { id: 10749, name: 'Romance' }, { id: 878, name: 'Ciencia ficción' },
+    { id: 53, name: 'Suspense' }, { id: 10752, name: 'Bélica' }, { id: 37, name: 'Western' }
 ];
 
 const COMMON_COUNTRIES = [
     { code: 'US', name: 'Estados Unidos' }, { code: 'GB', name: 'Reino Unido' },
-    { code: 'ES', name: 'EspaÃ±a' }, { code: 'AR', name: 'Argentina' },
-    { code: 'MX', name: 'MÃ©xico' }, { code: 'FR', name: 'Francia' },
-    { code: 'KR', name: 'Corea del Sur' }, { code: 'JP', name: 'JapÃ³n' },
+    { code: 'ES', name: 'España' }, { code: 'AR', name: 'Argentina' },
+    { code: 'MX', name: 'México' }, { code: 'FR', name: 'Francia' },
+    { code: 'KR', name: 'Corea del Sur' }, { code: 'JP', name: 'Japón' },
     { code: 'BR', name: 'Brasil' }, { code: 'IT', name: 'Italia' },
     { code: 'DE', name: 'Alemania' }, { code: 'IN', name: 'India' }
 ];
 
 const ExclusionModal = ({ isOpen, onClose, preferences, onSave, recommendations = [] }) => {
+    useScrollLock(isOpen);
     const [excludedGenres, setExcludedGenres] = useState(preferences?.excludedGenres || []);
-    useScrollLock(isOpen);
     const [excludedCountries, setExcludedCountries] = useState(preferences?.excludedCountries || []);
-    useScrollLock(isOpen);
     const [allCountries, setAllCountries] = useState(COMMON_COUNTRIES);
-    useScrollLock(isOpen);
     const [activeTab, setActiveTab] = useState('genres');
-    useScrollLock(isOpen);
     const [searchTerm, setSearchTerm] = useState('');
-    useScrollLock(isOpen);
     const [countryCounts, setCountryCounts] = useState({});
-    useScrollLock(isOpen);
 
     useEffect(() => {
         if (isOpen) {
@@ -120,7 +115,7 @@ const ExclusionModal = ({ isOpen, onClose, preferences, onSave, recommendations 
                                     )}
                                 >
                                     {tab === 'genres' ? <TagIcon className="w-4 h-4" /> : <GlobeAltIcon className="w-4 h-4" />}
-                                    {tab === 'genres' ? 'GÃ©neros' : 'PaÃ­ses'}
+                                    {tab === 'genres' ? 'Géneros' : 'Países'}
                                 </button>
                             ))}
                         </div>
@@ -146,7 +141,7 @@ const ExclusionModal = ({ isOpen, onClose, preferences, onSave, recommendations 
                                 <div className="space-y-6">
                                     <div className="relative">
                                         <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                                        <input type="text" placeholder="Buscar paÃ­s..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+                                        <input type="text" placeholder="Buscar país..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
                                             className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-3.5 pl-12 pr-6 text-white text-base focus:outline-none focus:border-primary/40" />
                                     </div>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -187,4 +182,3 @@ const ExclusionModal = ({ isOpen, onClose, preferences, onSave, recommendations 
 };
 
 export default ExclusionModal;
-

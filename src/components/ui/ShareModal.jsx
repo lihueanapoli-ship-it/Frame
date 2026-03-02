@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { XMarkIcon, ShareIcon, LinkIcon, EnvelopeIcon, ChatBubbleLeftRightIcon, CheckIcon, DevicePhoneMobileIcon } from '@heroicons/react/24/outline';
 import { cn } from '../../lib/utils';
@@ -7,10 +7,9 @@ import { toast } from 'sonner';
 import useScrollLock from '../../hooks/useScrollLock';
 
 const ShareModal = ({ isOpen, onClose, data }) => {
+    useScrollLock(isOpen);
     const [copied, setCopied] = useState(false);
-    useScrollLock(isOpen);
     const [generating, setGenerating] = useState(false);
-    useScrollLock(isOpen);
 
     const shareUrl = `${window.location.origin}${data.type === 'movie' ? `/movie/${data.id}` : `/lists/${data.id}`}`;
 
@@ -26,7 +25,7 @@ const ShareModal = ({ isOpen, onClose, data }) => {
             try {
                 await navigator.share({
                     title: data.title,
-                    text: data.subtitle || 'MirÃ¡ esto en FRAME',
+                    text: data.subtitle || 'Mirá esto en FRAME',
                     url: shareUrl,
                 });
             } catch (err) {
@@ -83,7 +82,7 @@ const ShareModal = ({ isOpen, onClose, data }) => {
                                         <h4 className="text-3xl font-display font-bold text-white mb-2 leading-none uppercase tracking-tighter">{data.title}</h4>
                                         <p className="text-primary font-mono text-xs font-bold tracking-widest uppercase">{data.subtitle}</p>
                                         <div className="h-px w-12 bg-white/20 my-4"></div>
-                                        <p className="text-[10px] text-gray-500 font-mono leading-relaxed">Descubierto en tu cine personal. FRAME: EnfocÃ¡ tu pasiÃ³n.</p>
+                                        <p className="text-[10px] text-gray-500 font-mono leading-relaxed">Descubierto en tu cine personal. FRAME: Enfocá tu pasión.</p>
                                     </div>
                                 </div>
                             </div>
@@ -146,4 +145,3 @@ const ShareModal = ({ isOpen, onClose, data }) => {
 };
 
 export default ShareModal;
-

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { XMarkIcon, PaperAirplaneIcon, MagnifyingGlassIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { db } from '../../api/firebase';
@@ -11,16 +11,12 @@ import useScrollLock from '../../hooks/useScrollLock';
 const ShareWithFriendModal = ({ isOpen, onClose, type, payload }) => {
     const { user } = useAuth();
     const { sendMessage, openChatWith } = useChat();
+    useScrollLock(isOpen);
     const [friends, setFriends] = useState([]);
-    useScrollLock(isOpen);
     const [search, setSearch] = useState('');
-    useScrollLock(isOpen);
     const [message, setMessage] = useState('');
-    useScrollLock(isOpen);
     const [sent, setSent] = useState(null);
-    useScrollLock(isOpen);
     const [loading, setLoading] = useState(false);
-    useScrollLock(isOpen);
 
     useEffect(() => {
         if (!isOpen || !user) return;
@@ -81,7 +77,7 @@ const ShareWithFriendModal = ({ isOpen, onClose, type, payload }) => {
                         <div className="px-6 py-5 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
                             <div>
                                 <h3 className="text-xl font-bold text-white tracking-tight">
-                                    {type === 'movie' ? 'Recomendar PelÃ­cula' : 'Compartir Lista'}
+                                    {type === 'movie' ? 'Recomendar Película' : 'Compartir Lista'}
                                 </h3>
                                 <p className="text-[10px] text-gray-500 font-mono uppercase tracking-widest truncate max-w-[200px]">
                                     {type === 'movie' ? payload?.title : payload?.name}
@@ -99,7 +95,7 @@ const ShareWithFriendModal = ({ isOpen, onClose, type, payload }) => {
                                     type="text"
                                     value={message}
                                     onChange={e => setMessage(e.target.value)}
-                                    placeholder="Â¿Por quÃ© lo compartÃ­s? (opcional)"
+                                    placeholder="¿Por qué lo compartís? (opcional)"
                                     className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-primary/50"
                                 />
                             </div>
@@ -117,7 +113,7 @@ const ShareWithFriendModal = ({ isOpen, onClose, type, payload }) => {
                                     {loading ? (
                                         <div className="col-span-full py-20 flex justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
                                     ) : filtered.length === 0 ? (
-                                        <div className="col-span-full py-20 text-center text-gray-500 italic">No tienes amigos conectados aÃºn.</div>
+                                        <div className="col-span-full py-20 text-center text-gray-500 italic">No tienes amigos conectados aún.</div>
                                     ) : (
                                         filtered.map(friend => (
                                             <button
@@ -152,4 +148,3 @@ const ShareWithFriendModal = ({ isOpen, onClose, type, payload }) => {
 };
 
 export default ShareWithFriendModal;
-
