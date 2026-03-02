@@ -12,7 +12,6 @@ const ListSettingsModal = ({ isOpen, onClose, list, onUpdate }) => {
     const { user } = useAuth();
     const [name, setName] = useState(list?.name || '');
     const [description, setDescription] = useState(list?.description || '');
-    const [privacy, setPrivacy] = useState(list?.privacy || 'private');
     const [loading, setLoading] = useState(false);
 
     // Member management
@@ -23,16 +22,22 @@ const ListSettingsModal = ({ isOpen, onClose, list, onUpdate }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (name.trim().toLowerCase() === 'general') {
+            alert('No puedes nombrar a una lista como "General". Ya existe una colección con ese nombre por defecto.');
+            return;
+        }
+
         setLoading(true);
         try {
             const listRef = doc(db, 'lists', list.id);
             await updateDoc(listRef, {
                 name,
                 description,
-                privacy,
+                privacy: 'public',
                 updatedAt: new Date()
             });
-            onUpdate({ ...list, name, description, privacy });
+            onUpdate({ ...list, name, description, privacy: 'public' });
             onClose();
         } catch (error) {
             console.error('Error updating list', error);
@@ -116,31 +121,6 @@ const ListSettingsModal = ({ isOpen, onClose, list, onUpdate }) => {
                                             className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-3 text-white focus:outline-none focus:border-primary/50 transition-all resize-none h-24"
                                         />
                                     </div>
-                                    <div className="space-y-3">
-                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Privacidad</label>
-                                        <div className="flex flex-col gap-2">
-                                            {[
-                                                { id: 'private', name: 'Privada', icon: LockClosedIcon, desc: 'Solo vos' },
-                                                { id: 'friends', name: 'Amigos', icon: UserPlusIcon, desc: 'Tus contactos' },
-                                                { id: 'public', name: 'Pública', icon: GlobeAltIcon, desc: 'Toda la comunidad' }
-                                            ].map(opt => (
-                                                <button
-                                                    key={opt.id}
-                                                    onClick={() => setPrivacy(opt.id)}
-                                                    className={cn(
-                                                        "flex items-center gap-4 p-4 rounded-xl border transition-all text-left",
-                                                        privacy === opt.id ? "bg-primary/10 border-primary/50 text-white" : "bg-white/[0.03] border-white/5 text-gray-500"
-                                                    )}
-                                                >
-                                                    <opt.icon className={cn("w-5 h-5", privacy === opt.id ? "text-primary" : "text-gray-600")} />
-                                                    <div>
-                                                        <p className="font-bold text-sm">{opt.name}</p>
-                                                        <p className="text-[10px] opacity-60">{opt.desc}</p>
-                                                    </div>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
                                 </div>
 
                                 {/* Members (Placeholder/Future) */}
@@ -183,9 +163,9 @@ const ListSettingsModal = ({ isOpen, onClose, list, onUpdate }) => {
                             </button>
                         </div>
                     </motion.div>
-                </div>
+                </div >
             )}
-        </AnimatePresence>
+        </AnimatePresence >
     );
 };
 

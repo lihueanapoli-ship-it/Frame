@@ -10,15 +10,20 @@ const CreateListModal = ({ isOpen, onClose }) => {
     const { createList } = useLists();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
-    const [privacy, setPrivacy] = useState('private');
     const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!name.trim()) return;
+
+        if (name.trim().toLowerCase() === 'general') {
+            alert('No puedes nombrar a una lista como "General". Ya existe una colección con ese nombre por defecto.');
+            return;
+        }
+
         setLoading(true);
         try {
-            await createList({ name, description, privacy });
+            await createList({ name, description, privacy: 'public' });
             onClose();
         } catch (error) {
             console.error('Error creating list', error);
@@ -78,45 +83,6 @@ const CreateListModal = ({ isOpen, onClose }) => {
                                     placeholder="¿De qué trata esta colección?"
                                     className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-gray-700 focus:outline-none focus:border-primary/50 transition-all resize-none h-32"
                                 />
-                            </div>
-
-                            <div className="space-y-4">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Privacidad</label>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => setPrivacy('private')}
-                                        className={cn(
-                                            "flex items-center gap-4 p-4 rounded-2xl border transition-all text-left",
-                                            privacy === 'private' ? "bg-primary/10 border-primary/50 text-white" : "bg-white/[0.03] border-white/5 text-gray-500 hover:bg-white/5"
-                                        )}
-                                    >
-                                        <div className={cn("p-2 rounded-lg", privacy === 'private' ? "bg-primary text-black" : "bg-white/5")}>
-                                            <LockClosedIcon className="w-5 h-5" />
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-sm">Privada</p>
-                                            <p className="text-[10px] opacity-60">Solo vos podés verla</p>
-                                        </div>
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => setPrivacy('public')}
-                                        className={cn(
-                                            "flex items-center gap-4 p-4 rounded-2xl border transition-all text-left",
-                                            privacy === 'public' ? "bg-primary/10 border-primary/50 text-white" : "bg-white/[0.03] border-white/5 text-gray-500 hover:bg-white/5"
-                                        )}
-                                    >
-                                        <div className={cn("p-2 rounded-lg", privacy === 'public' ? "bg-primary text-black" : "bg-white/5")}>
-                                            <GlobeAltIcon className="w-5 h-5" />
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-sm">Pública</p>
-                                            <p className="text-[10px] opacity-60">Todos pueden verla</p>
-                                        </div>
-                                    </button>
-                                </div>
                             </div>
                         </form>
 
