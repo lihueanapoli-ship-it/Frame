@@ -10,7 +10,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../api/firebase';
 import {
     collection, query, orderBy, onSnapshot, limit,
-    deleteDoc, doc
+    deleteDoc, doc, getDoc
 } from 'firebase/firestore';
 import { cn } from '../../lib/utils';
 import useScrollLock from '../../hooks/useScrollLock';
@@ -90,6 +90,7 @@ const ChatWindow = () => {
     const [messages, setMessages] = useState([]);
     const [hoveredId, setHoveredId] = useState(null);
     const [deletingId, setDeletingId] = useState(null);
+    const [friendOnline, setFriendOnline] = useState(false);
     const scrollRef = useRef(null);
     const inputRef = useRef(null);
 
@@ -114,6 +115,15 @@ const ChatWindow = () => {
         markAsRead(openChat.uid);
         return () => unsub();
     }, [openChat?.uid, user?.uid]);
+
+    /* Subscribe to friend's online presence */
+    useEffect(() => {
+        if (!openChat?.uid) { setFriendOnline(false); return; }
+        const unsub = onSnapshot(doc(db, 'users', openChat.uid), (snap) => {
+            setFriendOnline(snap.exists() ? !!snap.data().isOnline : false);
+        });
+        return () => unsub();
+    }, [openChat?.uid]);
 
     /* Auto-scroll & mark read on new messages */
     useEffect(() => {
@@ -174,11 +184,16 @@ const ChatWindow = () => {
                                         className="w-9 h-9 rounded-full border border-white/10 object-cover"
                                         alt=""
                                     />
-                                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-[#0F0F0F]" />
+                                    <span className={cn(
+                                        'absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#0F0F0F]',
+                                        friendOnline ? 'bg-green-500' : 'bg-gray-500'
+                                    )} />
                                 </div>
                                 <div>
                                     <p className="font-bold text-white text-sm">{openChat?.displayName}</p>
-                                    <p className="text-[10px] text-green-500 font-mono">En línea</p>
+                                    <p className={cn('text-[10px] font-mono', friendOnline ? 'text-green-500' : 'text-gray-500')}>
+                                        {friendOnline ? 'En línea' : 'Desconectado'}
+                                    </p>
                                 </div>
                             </div>
                             <button
