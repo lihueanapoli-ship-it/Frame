@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { XMarkIcon, PaperAirplaneIcon, MicrophoneIcon, StopIcon, TrashIcon, CheckCircleIcon, BugAntIcon, LightBulbIcon, PaintBrushIcon, HeartIcon } from '@heroicons/react/24/outline';
 import { StarIcon, HandThumbUpIcon } from '@heroicons/react/24/solid';
@@ -64,7 +64,7 @@ const FeedbackModal = ({ isOpen, onClose }) => {
         } catch (error) {
             console.error(error);
             playError?.();
-            alert("Acceso al micr├│fono denegado.");
+            alert("Acceso al micrófono denegado.");
         }
     };
 
@@ -97,26 +97,26 @@ const FeedbackModal = ({ isOpen, onClose }) => {
         playClick();
 
         const formData = new FormData();
-        const userName = user?.displayName || "An├│nimo";
+        const userName = user?.displayName || "Anónimo";
         const userEmail = user?.email || "No especificado";
         const emailSubject = `[Feedback] Encuesta de ${userName}`;
 
         formData.append("_captcha", "false");
         formData.append("_template", "box");
         formData.append("_subject", emailSubject);
-        formData.append("_autoresponse", "┬íRecibimos tu feedback! Gracias por ayudarnos a mejorar FRAME ­ƒÄ¼.");
+        formData.append("_autoresponse", "¡Recibimos tu feedback! Gracias por ayudarnos a mejorar FRAME 🎬.");
 
-        formData.append("­ƒæñ Usuario", userName);
-        formData.append("­ƒôº Contacto", userEmail);
+        formData.append("👤 Usuario", userName);
+        formData.append("📧 Contacto", userEmail);
 
-        if (answers.overall) formData.append("­ƒîƒ Experiencia General", `${answers.overall}/10 Estrellas`);
-        if (answers.usability) formData.append("­ƒºá Usabilidad", answers.usability === 'easy' ? 'F├ícil' : answers.usability === 'medium' ? 'Normal' : 'Dif├¡cil');
-        if (answers.speed) formData.append("ÔÜí Velocidad", answers.speed === 'fast' ? 'R├ípida' : answers.speed === 'ok' ? 'Normal' : 'Lenta');
-        if (answers.design) formData.append("­ƒÄ¿ Dise├▒o", `${answers.design}/10 Estrellas`);
-        if (answers.nps !== null) formData.append("ÔØñ´©Å Recomendar├¡a", answers.nps ? 'S├ì' : 'NO');
+        if (answers.overall) formData.append("🌟 Experiencia General", `${answers.overall}/10 Estrellas`);
+        if (answers.usability) formData.append("🧠 Usabilidad", answers.usability === 'easy' ? 'Fácil' : answers.usability === 'medium' ? 'Normal' : 'Difícil');
+        if (answers.speed) formData.append("⚡ Velocidad", answers.speed === 'fast' ? 'Rápida' : answers.speed === 'ok' ? 'Normal' : 'Lenta');
+        if (answers.design) formData.append("🎨 Diseño", `${answers.design}/10 Estrellas`);
+        if (answers.nps !== null) formData.append("❤️ Recomendaría", answers.nps ? 'SÍ' : 'NO');
 
-        formData.append("­ƒô▒ Dispositivo", techInfo.platform);
-        formData.append("­ƒûÑ´©Å Resoluci├│n", techInfo.screenProb);
+        formData.append("📱 Dispositivo", techInfo.platform);
+        formData.append("🖥️ Resolución", techInfo.screenProb);
 
         if (audioBlob) {
             const fileName = `voice_${userName.replace(/\s+/g, '')}_${Date.now()}.mp3`;
@@ -130,7 +130,7 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                 playSuccess();
                 setSubmitted(true);
                 setTimeout(handleClose, 2500);
-            } else throw new Error("Error env├¡o");
+            } else throw new Error("Error envío");
         } catch (error) {
             console.error(error);
             setIsSending(false);
@@ -170,8 +170,8 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                         <div className="inline-block p-2 bg-primary/10 rounded-full mb-3 ring-1 ring-primary/20">
                                             <PaperAirplaneIcon className="w-5 h-5 text-primary" />
                                         </div>
-                                        <h2 className="text-2xl font-bold text-white mb-2">Ay├║danos a mejorar</h2>
-                                        <p className="text-sm text-gray-400">Tu opini├│n nos ayuda a que FRAME sea mejor cada d├¡a.</p>
+                                        <h2 className="text-2xl font-bold text-white mb-2">Ayúdanos a mejorar</h2>
+                                        <p className="text-sm text-gray-400">Tu opinión nos ayuda a que FRAME sea mejor cada día.</p>
                                         <div className="space-y-6 mb-8">
                                             <div>
                                                 <div className="flex justify-between items-end mb-3">
@@ -202,12 +202,12 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                             </div>
 
                                             <div>
-                                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">2. ┬┐Qu├® tan f├ícil fue usar FRAME?</label>
+                                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">2. ¿Qué tan fácil fue usar FRAME?</label>
                                                 <div className="flex gap-2 bg-white/5 p-1 rounded-xl">
                                                     {[
-                                                        { id: 'hard', label: 'Dif├¡cil', icon: '­ƒÿ½' },
-                                                        { id: 'medium', label: 'Normal', icon: '­ƒÿÉ' },
-                                                        { id: 'easy', label: 'Facil├¡simo', icon: '­ƒñ®' }
+                                                        { id: 'hard', label: 'Difícil', icon: '😫' },
+                                                        { id: 'medium', label: 'Normal', icon: '😐' },
+                                                        { id: 'easy', label: 'Facilísimo', icon: '🤩' }
                                                     ].map((opt) => (
                                                         <button
                                                             key={opt.id}
@@ -225,12 +225,12 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                             </div>
 
                                             <div>
-                                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">3. ┬┐La app se sinti├│ r├ípida?</label>
+                                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">3. ¿La app se sintió rápida?</label>
                                                 <div className="grid grid-cols-3 gap-2">
                                                     {[
-                                                        { id: 'slow', label: 'Lenta ­ƒÉó' },
-                                                        { id: 'ok', label: 'Normal ­ƒÿÉ' },
-                                                        { id: 'fast', label: 'R├ípida ÔÜí' }
+                                                        { id: 'slow', label: 'Lenta 🐢' },
+                                                        { id: 'ok', label: 'Normal 😐' },
+                                                        { id: 'fast', label: 'Rápida ⚡' }
                                                     ].map((opt) => (
                                                         <button
                                                             key={opt.id}
@@ -250,7 +250,7 @@ const FeedbackModal = ({ isOpen, onClose }) => {
 
                                             <div>
                                                 <div className="flex justify-between items-end mb-3">
-                                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">4. ┬┐Te gusta el dise├▒o?</label>
+                                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">4. ¿Te gusta el diseño?</label>
                                                     <span className="text-xl font-black text-purple-400 font-mono">{answers.design || 0}<span className="text-sm text-gray-500 font-normal">/10</span></span>
                                                 </div>
                                                 <div className="flex gap-1 h-12 bg-white/5 rounded-xl p-1.5 border border-white/5">
@@ -274,7 +274,7 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                             </div>
 
                                             <div>
-                                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">5. ┬┐Recomendar├¡as la app?</label>
+                                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">5. ¿Recomendarías la app?</label>
                                                 <div className="flex gap-3">
                                                     <button
                                                         onClick={() => { setAnswers(p => ({ ...p, nps: true })); playClick(); }}
@@ -283,7 +283,7 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                                             answers.nps === true ? "bg-green-500 text-black border-green-500 font-bold" : "bg-white/5 hover:bg-white/10"
                                                         )}
                                                     >
-                                                        <HandThumbUpIcon className="w-5 h-5" /> <span>┬íS├¡, de una!</span>
+                                                        <HandThumbUpIcon className="w-5 h-5" /> <span>¡Sí, de una!</span>
                                                     </button>
                                                     <button
                                                         onClick={() => { setAnswers(p => ({ ...p, nps: false })); playClick(); }}
@@ -292,7 +292,7 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                                             answers.nps === false ? "bg-red-500/20 text-red-200 border-red-500" : "bg-white/5 hover:bg-white/10 text-gray-500"
                                                         )}
                                                     >
-                                                        <span>No ­ƒæÄ</span>
+                                                        <span>No 👎</span>
                                                     </button>
                                                 </div>
                                             </div>
@@ -383,7 +383,7 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                     <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mb-4">
                                         <HandThumbUpIcon className="w-8 h-8 text-green-500" />
                                     </div>
-                                    <h3 className="text-xl font-bold text-white mb-1">┬íEnviado!</h3>
+                                    <h3 className="text-xl font-bold text-white mb-1">¡Enviado!</h3>
                                     <p className="text-xs text-gray-500">Gracias, {user.displayName?.split(' ')[0]}.</p>
                                 </div>
                             )}
