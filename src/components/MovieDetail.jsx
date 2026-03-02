@@ -507,8 +507,8 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                             triggerConfetti();
                                             playSuccess();
                                             addToWatched(movie, star);
-                                        }} className="group p-1.5 sm:p-2 transition-transform hover:scale-125 focus:outline-none flex-1 flex justify-center touch-manipulation">
-                                            {isActive ? <StarIconSolid className={cn("w-6 h-6 xs:w-7 xs:h-7 sm:w-8 sm:h-8 transition-colors duration-200", star <= 4 ? "text-red-500" : star <= 7 ? "text-yellow-500" : "text-primary")} /> : <StarIcon className="w-6 h-6 xs:w-7 xs:h-7 sm:w-8 sm:h-8 text-gray-700 group-hover:text-gray-500 transition-colors" />}
+                                        }} className="group p-0.5 xs:p-1 sm:p-1.5 md:p-2 transition-transform hover:scale-125 focus:outline-none flex-1 flex justify-center touch-manipulation">
+                                            {isActive ? <StarIconSolid className={cn("w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 transition-colors duration-200", star <= 4 ? "text-red-500" : star <= 7 ? "text-yellow-500" : "text-primary")} /> : <StarIcon className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-gray-700 group-hover:text-gray-500 transition-colors" />}
                                         </button>
                                     );
                                 })}
