@@ -388,7 +388,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                                     onClick={() => handleAddToList(list.id)}
                                                     className="w-full text-left px-4 py-3 rounded-lg hover:bg-white/5 text-sm font-medium text-gray-200 hover:text-white flex items-center gap-3 transition-colors"
                                                 >
-                                                    <span className="text-lg">{list.name === 'General' ? '🎬' : '📑'}</span>
+                                                    <span className="text-lg">{list.icon || (list.name === 'General' ? '🎬' : '📑')}</span>
                                                     {list.name}
                                                 </button>
                                             ))}
@@ -448,7 +448,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                                             }}
                                                             className="w-full text-left px-3 py-2 rounded-lg hover:bg-white/5 text-sm text-gray-300 hover:text-white flex items-center gap-2"
                                                         >
-                                                            <span>{list.name === 'General' ? '🎬' : '📑'}</span> {list.name}
+                                                            <span className="text-lg">{list.icon || (list.name === 'General' ? '🎬' : '📑')}</span> {list.name}
                                                         </button>
                                                     ))}
                                                 </div>

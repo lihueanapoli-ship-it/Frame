@@ -48,10 +48,10 @@ const MoveMovieModal = ({ isOpen, onClose, movie, currentListId }) => {
                                     className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 text-left transition-colors group"
                                 >
                                     <div className={cn(
-                                        "w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold border border-white/10 transition-colors",
+                                        "w-10 h-10 rounded-lg flex items-center justify-center text-xl font-bold border border-white/10 transition-colors shrink-0",
                                         "bg-gradient-to-br from-white/5 to-white/0 group-hover:from-primary/20 group-hover:to-primary/5 group-hover:border-primary/30"
                                     )}>
-                                        {list.name[0]}
+                                        {list.icon || (list.name === 'General' ? '🎬' : '📑')}
                                     </div>
                                     <div className="flex-1">
                                         <span className="text-sm font-bold text-gray-200 group-hover:text-white block">{list.name}</span>

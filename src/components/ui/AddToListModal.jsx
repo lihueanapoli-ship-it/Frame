@@ -87,7 +87,10 @@ const AddToListModal = ({ isOpen, onClose, movie }) => {
                                                         {active ? <CheckIcon className="w-6 h-6" /> : <PlusIcon className="w-6 h-6" />}
                                                     </div>
                                                     <div className="truncate">
-                                                        <p className={cn("font-bold transition-colors truncate", active ? "text-primary" : "text-white")}>{list.name}</p>
+                                                        <p className={cn("font-bold transition-colors truncate flex items-center gap-2", active ? "text-primary" : "text-white")}>
+                                                            <span className="text-lg shrink-0">{list.icon || (list.name === 'General' ? '🎬' : '📑')}</span>
+                                                            {list.name}
+                                                        </p>
                                                         <p className="text-[10px] text-gray-500 font-mono uppercase tracking-widest flex items-center gap-1.5 mt-0.5">
                                                             {list.movieCount || 0} películas
                                                             {!isOwner && <UserGroupIcon className="w-3 h-3 text-blue-400" />}
