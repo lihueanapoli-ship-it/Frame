@@ -234,23 +234,23 @@ const StatsView = () => {
 
     return (
         <div className="min-h-screen pb-24 pt-12 px-4 md:px-8 max-w-7xl mx-auto space-y-12">
-            <header className="mb-2 md:mb-8 flex flex-col md:flex-row md:items-end justify-between border-b border-white/5 pb-4 md:pb-6 gap-4">
+            <header className="mb-8 md:mb-16 flex flex-col md:flex-row md:items-end justify-between border-b border-white/5 pb-8 gap-8">
                 <div className="animate-slide-in-left">
-                    <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-2 tracking-tight">
-                        ADN <span className="text-primary">CINEMATOGRÁFICO</span>
+                    <h1 className="text-4xl md:text-7xl font-display font-bold text-white mb-2 tracking-tighter">
+                        ADN <span className="text-primary italic">FILM</span>
                     </h1>
-                    <p className="font-mono text-[10px] md:text-sm text-gray-400 uppercase tracking-widest">
-                        ANÁLISIS DE TELEMETRÍA Y ESTADÍSTICAS
+                    <p className="font-mono text-[10px] md:text-xs text-primary/60 uppercase tracking-[0.3em] font-black">
+                        ANÁLISIS DE TELEMETRÍA :: ID_{user.displayName?.toUpperCase().split(' ')[0]}
                     </p>
                 </div>
-                <div className="flex flex-wrap gap-4 md:gap-8">
-                    <div className="text-center md:text-right">
-                        <span className="block font-mono text-[10px] text-gray-600 uppercase tracking-widest mb-1">Cine consumido</span>
-                        <span className="text-3xl font-display font-bold text-white leading-none">{watched.length}</span>
+                <div className="flex gap-12 md:gap-16">
+                    <div className="text-left">
+                        <span className="block font-mono text-[10px] text-gray-600 uppercase tracking-widest mb-2 font-black">Cine consumido</span>
+                        <span className="text-4xl md:text-6xl font-display font-bold text-white leading-none tracking-tighter">{watched.length}</span>
                     </div>
-                    <div className="text-center md:text-right border-l border-white/10 pl-4 md:pl-8">
-                        <span className="block font-mono text-[10px] text-gray-600 uppercase tracking-widest mb-1">En lista de espera</span>
-                        <span className="text-3xl font-display font-bold text-white opacity-40 leading-none">{watchlist.length}</span>
+                    <div className="text-left border-l border-white/10 pl-8 md:pl-12">
+                        <span className="block font-mono text-[10px] text-gray-600 uppercase tracking-widest mb-2 font-black">En espera</span>
+                        <span className="text-4xl md:text-6xl font-display font-bold text-white opacity-30 leading-none tracking-tighter">{watchlist.length}</span>
                     </div>
                 </div>
             </header>
@@ -264,18 +264,17 @@ const StatsView = () => {
                     className="col-span-1 md:col-span-2 p-8 rounded-[3rem] bg-gradient-to-br from-white/[0.04] to-transparent border border-white/5 relative overflow-hidden group shadow-2xl"
                 >
                     <div className="relative z-10 flex flex-col h-full">
-                        <div className="flex justify-between items-start mb-8">
-                            <div className="flex items-center gap-5">
-                                <div className="w-16 h-16 bg-primary/20 rounded-[1.5rem] flex items-center justify-center border border-primary/30 shadow-lg shadow-primary/10">
-                                    <TrophyIcon className="w-8 h-8 text-primary" />
-                                </div>
-                                <div>
-                                    <h3 className="font-display text-4xl text-white tracking-widest italic group-hover:text-primary transition-colors">{currentRank.title.toUpperCase()}</h3>
-                                    <p className="font-mono text-xs text-gray-400 mt-1 max-w-sm font-bold opacity-70 tracking-tight">{currentRank.desc}</p>
-                                </div>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-6 md:gap-8 mb-12">
+                            <div className="w-20 h-20 md:w-24 md:h-24 bg-primary/20 rounded-[2rem] flex items-center justify-center border border-primary/30 shadow-2xl shadow-primary/20 shrink-0">
+                                <TrophyIcon className="w-10 h-10 md:w-12 md:h-12 text-primary" />
                             </div>
-                            <div className="text-right">
-                                <div className="text-4xl font-display font-bold text-white tracking-tight leading-none">{watched.length} <span className="text-xs font-mono text-gray-500 uppercase tracking-widest mt-1 block">Títulos</span></div>
+                            <div className="flex-1">
+                                <h3 className="text-5xl md:text-8xl font-display font-bold text-white tracking-[0.1em] italic leading-none mb-3 group-hover:text-primary transition-colors">
+                                    {currentRank.title.toUpperCase()}
+                                </h3>
+                                <p className="font-mono text-xs md:text-sm text-gray-400 font-bold opacity-70 tracking-tight max-w-xl">
+                                    {currentRank.desc}
+                                </p>
                             </div>
                         </div>
 
