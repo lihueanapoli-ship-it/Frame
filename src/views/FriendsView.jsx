@@ -239,179 +239,219 @@ const FriendsView = () => {
                 </button>
             </header>
 
-            <div className="flex p-1 bg-white/5 rounded-2xl mb-8 items-center max-w-sm">
+            <div className="flex p-1.5 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl mb-12 items-center max-w-md mx-auto sm:mx-0">
                 <button
                     onClick={() => setActiveTab('friends')}
                     className={cn(
-                        "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all duration-300",
+                        "flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold tracking-tight transition-all duration-500",
                         activeTab === 'friends'
-                            ? "bg-white text-black shadow-lg"
-                            : "text-gray-500 hover:text-white"
+                            ? "bg-white text-black shadow-xl scale-[1.02]"
+                            : "text-gray-500 hover:text-white hover:bg-white/5"
                     )}
                 >
-                    <UsersIcon className="w-4 h-4" />
+                    <UsersIcon className={cn("w-4 h-4 transition-transform", activeTab === 'friends' && "animate-pulse")} />
                     Amigos
                 </button>
                 <button
                     onClick={() => setActiveTab('requests')}
                     className={cn(
-                        "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all duration-300 relative",
+                        "flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold tracking-tight transition-all duration-500 relative",
                         activeTab === 'requests'
-                            ? "bg-white text-black shadow-lg"
+                            ? "bg-white text-black shadow-xl scale-[1.02]"
                             : ((requests.length > 0 || listRequests.length > 0)
                                 ? "animate-alarm text-primary"
-                                : "text-gray-500 hover:text-white"
+                                : "text-gray-500 hover:text-white hover:bg-white/5"
                             )
                     )}
                 >
-                    <ChatBubbleLeftEllipsisIcon className="w-4 h-4" />
+                    <ChatBubbleLeftEllipsisIcon className={cn("w-4 h-4 transition-transform", activeTab === 'requests' && "animate-pulse")} />
                     Solicitudes
                     {(requests.length > 0 || listRequests.length > 0) && activeTab !== 'requests' && (
-                        <span className="absolute top-2 right-4 w-2 h-2 bg-primary rounded-full animate-pulse" />
+                        <span className="absolute top-2 right-4 w-2 h-2 bg-primary rounded-full ring-4 ring-primary/20 animate-pulse" />
                     )}
                 </button>
             </div>
 
-            <div className="animate-fade-in">
-                {activeTab === 'friends' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {friends.length === 0 ? (
-                            <div className="col-span-full py-12 text-center text-gray-500 border border-dashed border-white/10 rounded-2xl">
-                                <UsersIcon className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                                <p>Aún no tienes amigos en Frame.</p>
-                                <button onClick={() => setIsSearchOpen(true)} className="mt-4 text-primary hover:underline">
-                                    Buscar gente conocida
-                                </button>
-                            </div>
-                        ) : (
-                            friends.map(friend => (
-                                <div
-                                    key={friend.uid}
-                                    onClick={() => navigate(`/u/${friend.uid}`)}
-                                    className="flex items-center gap-4 p-4 bg-surface-elevated border border-white/5 rounded-xl hover:border-white/20 transition-all group cursor-pointer hover:bg-white/5"
-                                >
-                                    <div className="relative overflow-visible flex-shrink-0">
-                                        <img src={friend.photoURL || "/logo.png"} alt="" className="w-12 h-12 rounded-full object-cover" />
-                                        <div className={cn(
-                                            "absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#111] transition-colors duration-700",
-                                            onlineStatus[friend.uid] ? "bg-green-500" : "bg-red-500"
-                                        )} />
-                                        {unreadPerFriend[friend.uid] > 0 && (
-                                            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-primary border-2 border-[#111] text-black text-[8px] font-black rounded-full flex items-center justify-center px-0.5 shadow-lg shadow-primary/50 animate-bounce">
-                                                {unreadPerFriend[friend.uid] > 9 ? '9+' : unreadPerFriend[friend.uid]}
-                                            </span>
-                                        )}
+            <div className="max-w-7xl">
+                <AnimatePresence mode="wait">
+                    {activeTab === 'friends' ? (
+                        <motion.div
+                            key="friends-content"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            transition={{ duration: 0.3 }}
+                            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                        >
+                            {friends.length === 0 ? (
+                                <div className="col-span-full py-24 text-center border-2 border-dashed border-white/5 rounded-[2rem] bg-white/[0.01]">
+                                    <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
+                                        <UsersIcon className="w-8 h-8 text-gray-600" />
                                     </div>
-                                    <div className="flex-1">
-                                        <h3 className="font-bold text-white group-hover:text-primary transition-colors">{friend.displayName}</h3>
-                                        <p className="text-[10px] text-primary font-mono font-bold tracking-wider">
-                                            {getRankTitle(friend.watchedCount)}
-                                        </p>
-                                    </div>
-                                    <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                openChatWith(friend);
-                                            }}
-                                            className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg group/btn"
-                                            title="Enviar mensaje"
-                                        >
-                                            <ChatBubbleOvalLeftEllipsisIcon className="w-5 h-5 group-hover/btn:scale-110 transition-transform" />
-                                        </button>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (window.confirm(`¿Seguro que quieres eliminar a ${friend.displayName}?`)) {
-                                                    removeFriend(friend);
-                                                }
-                                            }}
-                                            className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg group/btn"
-                                            title="Eliminar amigo"
-                                        >
-                                            <TrashIcon className="w-5 h-5 group-hover/btn:scale-110 transition-transform" />
-                                        </button>
-                                    </div>
+                                    <h3 className="text-xl font-bold text-white mb-2">Tu círculo está vacío</h3>
+                                    <p className="text-gray-500 max-w-xs mx-auto mb-8">Todavía no has añadido amigos en Frame. El cine es mejor compartido.</p>
+                                    <button
+                                        onClick={() => setIsSearchOpen(true)}
+                                        className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-black font-bold rounded-xl hover:brightness-110 active:scale-95 transition-all"
+                                    >
+                                        <UserPlusIcon className="w-4 h-4" />
+                                        Buscar conocidos
+                                    </button>
                                 </div>
-                            ))
-                        )}
-                    </div>
-                )}
-
-                {activeTab === 'requests' && (
-                    <div className="max-w-2xl mx-auto space-y-4">
-                        {requests.length === 0 && listRequests.length === 0 && sentRequests.length === 0 && (
-                            <div className="text-center py-12 text-gray-500">No hay solicitudes pendientes.</div>
-                        )}
-
-                        {requests.length > 0 && (
-                            <div className="space-y-2">
-                                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Te han invitado</h3>
-                                {requests.map(req => (
-                                    <div key={req.requestId} className="flex items-center justify-between p-4 bg-surface-elevated border border-white/10 rounded-xl">
-                                        <div className="flex items-center gap-3">
-                                            <img src={req.fromPhoto || "/logo.png"} alt="" className="w-10 h-10 rounded-full" />
-                                            <div>
-                                                <p className="font-bold text-sm text-white">{req.fromName}</p>
-                                                <p className="text-xs text-gray-500">quiere ser tu amigo</p>
-                                            </div>
+                            ) : (
+                                friends.map(friend => (
+                                    <motion.div
+                                        key={friend.uid}
+                                        whileHover={{ y: -5 }}
+                                        onClick={() => navigate(`/u/${friend.uid}`)}
+                                        className="flex items-center gap-4 p-5 bg-white/[0.02] backdrop-blur-sm border border-white/5 rounded-3xl hover:bg-white/[0.04] hover:border-white/10 transition-all group cursor-pointer"
+                                    >
+                                        <div className="relative flex-shrink-0">
+                                            <img src={friend.photoURL || "/logo.png"} alt="" className="w-14 h-14 rounded-2xl object-cover ring-2 ring-white/5 group-hover:ring-primary/40 transition-all shadow-2xl" />
+                                            <div className={cn(
+                                                "absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-4 border-black transition-colors duration-700 shadow-sm",
+                                                onlineStatus[friend.uid] ? "bg-green-500" : "bg-red-500"
+                                            )} />
+                                            {unreadPerFriend[friend.uid] > 0 && (
+                                                <span className="absolute -top-2 -right-2 min-w-[22px] h-[22px] bg-primary border-4 border-black text-black text-[10px] font-black rounded-full flex items-center justify-center px-1 shadow-lg shadow-primary/30 animate-bounce">
+                                                    {unreadPerFriend[friend.uid] > 9 ? '9+' : unreadPerFriend[friend.uid]}
+                                                </span>
+                                            )}
                                         </div>
-                                        <div className="flex gap-2">
-                                            <button onClick={() => acceptRequest(req)} className="p-2 bg-primary text-black rounded-lg hover:opacity-90"><CheckIcon className="w-5 h-5" /></button>
-                                            <button onClick={() => rejectRequest(req.requestId)} className="p-2 bg-white/5 text-gray-400 rounded-lg hover:text-red-400 hover:bg-red-500/10"><XMarkIcon className="w-5 h-5" /></button>
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="font-bold text-white group-hover:text-primary transition-colors truncate text-base">{friend.displayName}</h3>
+                                            <p className="text-[10px] text-primary/70 font-mono font-black tracking-widest uppercase">
+                                                {getRankTitle(friend.watchedCount)}
+                                            </p>
                                         </div>
+                                        <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    openChatWith(friend);
+                                                }}
+                                                className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-xl transition-all"
+                                                title="Enviar mensaje"
+                                            >
+                                                <ChatBubbleOvalLeftEllipsisIcon className="w-5 h-5" />
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (window.confirm(`¿Seguro que quieres eliminar a ${friend.displayName}?`)) {
+                                                        removeFriend(friend);
+                                                    }
+                                                }}
+                                                className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
+                                                title="Eliminar amigo"
+                                            >
+                                                <TrashIcon className="w-5 h-5" />
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                ))
+                            )}
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="requests-content"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            transition={{ duration: 0.3 }}
+                            className="max-w-4xl space-y-8"
+                        >
+                            {requests.length === 0 && listRequests.length === 0 && sentRequests.length === 0 && (
+                                <div className="text-center py-24 text-gray-600 border-2 border-dotted border-white/5 rounded-[2rem] bg-white/[0.01]">
+                                    <ChatBubbleLeftEllipsisIcon className="w-12 h-12 mx-auto mb-4 opacity-10" />
+                                    <p className="font-mono text-sm tracking-widest">NO HAY ACTIVIDAD PENDIENTE</p>
+                                </div>
+                            )}
+
+                            {requests.length > 0 && (
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-3 ml-2">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                                        <h3 className="text-xs font-black text-gray-500 uppercase tracking-[0.3em]">Invitaciones recibidas</h3>
                                     </div>
-                                ))}
-                            </div>
-                        )}
-
-                        {listRequests.length > 0 && (
-                            <div className="space-y-2 mt-8">
-                                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Solicitudes de Listas</h3>
-                                {listRequests.map(req => (
-                                    <div key={req.requestId} className="flex items-center justify-between p-4 bg-surface-elevated border border-white/10 rounded-xl">
-                                        <div className="flex items-center gap-3">
-                                            <div className="relative">
-                                                <img src={req.fromPhoto || "/logo.png"} alt="" className="w-10 h-10 rounded-full" />
-                                                <div className="absolute -bottom-1 -right-1 bg-primary text-black p-0.5 rounded-full border border-black">
-                                                    <RectangleStackIcon className="w-3 h-3" />
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        {requests.map(req => (
+                                            <div key={req.requestId} className="flex items-center justify-between p-5 bg-white/[0.03] border border-white/10 rounded-3xl hover:bg-white/[0.05] transition-all group">
+                                                <div className="flex items-center gap-4">
+                                                    <img src={req.fromPhoto || "/logo.png"} alt="" className="w-12 h-12 rounded-2xl object-cover ring-1 ring-white/10" />
+                                                    <div>
+                                                        <p className="font-bold text-white group-hover:text-primary transition-colors">{req.fromName}</p>
+                                                        <p className="text-[10px] text-gray-500 font-mono uppercase tracking-wider">Quiere ser tu amigo</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <button onClick={() => acceptRequest(req)} className="p-3 bg-primary text-black rounded-2xl hover:brightness-110 active:scale-90 transition-all shadow-lg shadow-primary/20"><CheckIcon className="w-5 h-5" /></button>
+                                                    <button onClick={() => rejectRequest(req.requestId)} className="p-3 bg-white/5 text-gray-400 rounded-2xl hover:text-red-400 hover:bg-red-500/10 transition-all"><XMarkIcon className="w-5 h-5" /></button>
                                                 </div>
                                             </div>
-                                            <div>
-                                                <p className="font-bold text-sm text-white">{req.fromName}</p>
-                                                <p className="text-xs text-gray-500">quiere unirse a <span className="text-white font-bold">{req.listName}</span></p>
-                                            </div>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <button onClick={() => acceptListRequest(req)} className="p-2 bg-primary text-black rounded-lg hover:opacity-90"><CheckIcon className="w-5 h-5" /></button>
-                                            <button onClick={() => rejectListRequest(req.requestId)} className="p-2 bg-white/5 text-gray-400 rounded-lg hover:text-red-400 hover:bg-red-500/10"><XMarkIcon className="w-5 h-5" /></button>
-                                        </div>
+                                        ))}
                                     </div>
-                                ))}
-                            </div>
-                        )}
+                                </div>
+                            )}
 
-                        {sentRequests.length > 0 && (
-                            <div className="space-y-2 mt-8">
-                                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Enviadas</h3>
-                                {sentRequests.map(req => (
-                                    <div key={req.requestId} className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-xl opacity-70">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-                                                <UsersIcon className="w-5 h-5 text-gray-500" />
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-sm text-gray-300">Solicitud enviada</p>
-                                                <p className="text-xs text-gray-500">Esperando respuesta...</p>
-                                            </div>
-                                        </div>
-                                        <button onClick={() => rejectRequest(req.requestId)} className="text-xs text-gray-500 hover:text-red-400 hover:underline">Cancelar</button>
+                            {listRequests.length > 0 && (
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-3 ml-2">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                        <h3 className="text-xs font-black text-gray-500 uppercase tracking-[0.3em]">Colaboración en listas</h3>
                                     </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        {listRequests.map(req => (
+                                            <div key={req.requestId} className="flex items-center justify-between p-5 bg-white/[0.03] border border-white/10 rounded-3xl hover:bg-white/[0.05] transition-all group">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="relative">
+                                                        <img src={req.fromPhoto || "/logo.png"} alt="" className="w-12 h-12 rounded-2xl object-cover ring-1 ring-white/10" />
+                                                        <div className="absolute -bottom-1 -right-1 bg-primary text-black p-1 rounded-full border-2 border-black shadow-lg">
+                                                            <RectangleStackIcon className="w-3 h-3" />
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-white group-hover:text-primary transition-colors">{req.fromName}</p>
+                                                        <p className="text-[10px] text-gray-500 font-mono tracking-tight">Solicita unirse a <span className="text-primary font-bold">{req.listName}</span></p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <button onClick={() => acceptListRequest(req)} className="p-3 bg-primary text-black rounded-2xl hover:brightness-110 transition-all shadow-lg shadow-primary/20"><CheckIcon className="w-5 h-5" /></button>
+                                                    <button onClick={() => rejectListRequest(req.requestId)} className="p-3 bg-white/5 text-gray-400 rounded-2xl hover:text-red-400 transition-all"><XMarkIcon className="w-5 h-5" /></button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {sentRequests.length > 0 && (
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-3 ml-2">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-gray-600" />
+                                        <h3 className="text-xs font-black text-gray-500 uppercase tracking-[0.3em]">Enviadas</h3>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        {sentRequests.map(req => (
+                                            <div key={req.requestId} className="flex items-center justify-between p-5 bg-white/[0.01] border border-white/5 rounded-3xl opacity-60 hover:opacity-100 transition-all">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center border border-white/5 shadow-inner">
+                                                        <UsersIcon className="w-6 h-6 text-gray-600" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-sm text-gray-300">Solicitud enviada</p>
+                                                        <p className="text-[10px] text-gray-600 font-mono uppercase tracking-widest">Esperando respuesta</p>
+                                                    </div>
+                                                </div>
+                                                <button onClick={() => rejectRequest(req.requestId)} className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-red-400 transition-all">Cancelar</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
             <UserSearchModal

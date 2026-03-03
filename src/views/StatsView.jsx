@@ -2,77 +2,136 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { useMovies } from '../contexts/MovieContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserProfile } from '../contexts/UserProfileContext';
-import { motion, animate, AnimatePresence } from 'framer-motion';
-import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, BarChart, Bar, AreaChart, Area, XAxis, Tooltip } from 'recharts';
-import { ClockIcon, TrophyIcon, FireIcon, BookmarkIcon, UserPlusIcon } from '@heroicons/react/24/solid';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+    ResponsiveContainer,
+    RadarChart,
+    PolarGrid,
+    PolarAngleAxis,
+    PolarRadiusAxis,
+    Radar,
+    BarChart,
+    Bar,
+    AreaChart,
+    Area,
+    XAxis,
+    Tooltip,
+    PieChart,
+    Pie,
+    Cell
+} from 'recharts';
+import {
+    ClockIcon,
+    TrophyIcon,
+    FireIcon,
+    BookmarkIcon,
+    GlobeAltIcon,
+    FilmIcon,
+    ChartBarIcon,
+    SparklesIcon,
+    ChevronDownIcon,
+    ChevronUpIcon
+} from '@heroicons/react/24/outline';
+import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import { cn } from '../lib/utils';
 import { getGenresForMovies } from '../utils/genreCache';
 import { OSCAR_BEST_PICTURE_WINNERS } from '../constants/oscarWinners';
-
 import { CINEMA_RANKS } from '../constants/cinemaRanks';
 
 const formatRuntime = (mins) => {
     const days = Math.floor(mins / 1440);
     const hours = Math.floor((mins % 1440) / 60);
     const minutes = mins % 60;
-    return `${days}d ${hours}h ${minutes}m`;
+    if (days > 0) return `${days}d ${hours}h ${minutes}m`;
+    return `${hours}h ${minutes}m`;
 };
 
-const formatHumanRuntime = (mins) => {
-    const hours = (mins / 60).toFixed(1);
-    return `Equivale a ${hours} horas de vida dedicados al cine`;
-};
+const StatCard = ({ icon: Icon, label, value, colorClass = "text-primary" }) => (
+    <motion.div
+        whileHover={{ y: -5 }}
+        className="p-6 rounded-[2rem] bg-white/[0.02] border border-white/5 backdrop-blur-md flex flex-col items-center text-center group transition-colors hover:bg-white/[0.04] hover:border-white/10"
+    >
+        <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center mb-4 bg-white/5 border border-white/5 group-hover:scale-110 transition-transform", colorClass)}>
+            <Icon className="w-6 h-6" />
+        </div>
+        <span className="text-[10px] font-mono font-black text-gray-500 uppercase tracking-[0.2em] mb-1">{label}</span>
+        <span className="text-2xl font-display font-bold text-white tracking-tight">{value}</span>
+    </motion.div>
+);
 
-const RankCard = ({ rank, currentCount }) => {
+const RankItem = ({ rank, currentCount }) => {
     const isUnlocked = currentCount >= rank.min;
     return (
-        <div className={cn("flex items-center gap-3 p-2 rounded-md transition-colors", isUnlocked ? "text-primary" : "text-gray-600")}>
-            <div className={cn("w-2 h-2 rounded-full", isUnlocked ? "bg-primary shadow-[0_0_8px_rgba(0,240,255,0.8)]" : "bg-gray-800")} />
-            <div className="flex-1">
-                <div className="flex justify-between items-baseline">
-                    <span className="font-display font-bold text-xs">{rank.title.toUpperCase()}</span>
-                    <span className="font-mono text-[10px] opacity-60">{rank.min} pelis</span>
+        <div className={cn(
+            "flex items-center gap-4 p-4 rounded-2xl transition-all border",
+            isUnlocked ? "bg-primary/10 border-primary/20 text-white" : "bg-white/[0.01] border-white/5 text-gray-600 opacity-60"
+        )}>
+            <div className={cn(
+                "w-3 h-3 rounded-full shadow-lg",
+                isUnlocked ? "bg-primary animate-pulse shadow-primary/50" : "bg-gray-800"
+            )} />
+            <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-baseline gap-2">
+                    <span className="font-display font-bold text-sm tracking-wide truncate">{rank.title.toUpperCase()}</span>
+                    <span className="font-mono text-[10px] shrink-0 font-black">{rank.min} MIN.</span>
                 </div>
-                {isUnlocked && <p className="text-[10px] font-mono opacity-80 leading-none mt-0.5">{rank.desc}</p>}
+                {isUnlocked && <p className="text-[10px] font-mono text-primary/80 leading-tight mt-1 line-clamp-1">{rank.desc}</p>}
             </div>
         </div>
     );
 };
 
 const AchievementBadge = ({ icon, title, desc, unlocked }) => (
-    <div className={cn(
-        "min-w-[120px] h-32 bg-surface border flex flex-col items-center justify-center p-3 transition-all duration-300 relative group overflow-hidden rounded-xl",
-        unlocked ? "border-primary/30 bg-primary/5 hover:border-primary/60" : "border-white/5 opacity-40 grayscale"
-    )}>
-        {unlocked && <div className="absolute top-0 right-0 w-6 h-6 bg-primary/20 blur-xl rounded-full" />}
+    <motion.div
+        whileHover={unlocked ? { y: -5, scale: 1.05 } : {}}
+        className={cn(
+            "h-48 border flex flex-col items-center justify-center p-5 transition-all duration-500 relative group overflow-hidden rounded-[2.5rem] backdrop-blur-sm",
+            unlocked
+                ? "border-primary/30 bg-primary/5 hover:bg-primary/10 hover:border-primary/50"
+                : "border-white/5 bg-white/[0.01] opacity-30 grayscale saturate-0"
+        )}
+    >
+        {unlocked && (
+            <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute top-0 right-0 w-16 h-16 bg-primary/20 blur-[40px] rounded-full" />
+                <div className="absolute bottom-0 left-0 w-12 h-12 bg-primary/10 blur-[30px] rounded-full" />
+            </div>
+        )}
         <div className={cn(
-            "w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-transform group-hover:scale-110",
-            unlocked ? "bg-primary/20 text-primary" : "bg-white/5 text-gray-500"
+            "w-16 h-16 rounded-[1.5rem] flex items-center justify-center mb-4 transition-all duration-500 shadow-2xl border bg-black/40",
+            unlocked ? "text-primary border-primary/20 group-hover:scale-110" : "text-gray-600 border-white/5"
         )}>
-            <span className="text-xl">{icon}</span>
+            <span className="text-3xl filter drop-shadow-lg">{icon}</span>
         </div>
-        <span className={cn("font-display font-bold text-[10px] text-center mb-0.5", unlocked ? "text-white" : "text-gray-500")}>{title}</span>
-        <span className="font-mono text-[8px] text-center text-gray-500 leading-tight px-1">{desc}</span>
-    </div>
+        <span className={cn("font-display font-bold text-xs tracking-[0.1em] text-center mb-1", unlocked ? "text-white" : "text-gray-600")}>
+            {title}
+        </span>
+        <span className="font-mono text-[9px] text-center text-gray-500 leading-relaxed px-2 font-black uppercase">
+            {desc}
+        </span>
+    </motion.div>
 );
 
 const StatsView = () => {
     const { watched, watchlist } = useMovies();
     const { user } = useAuth();
 
-    const [movieGenres, setMovieGenres] = useState({});
+    const [movieMetadata, setMovieMetadata] = useState({});
     const [radarMode, setRadarMode] = useState('consumption');
     const [showAllRanks, setShowAllRanks] = useState(false);
+    const [statsLoading, setStatsLoading] = useState(true);
 
     useEffect(() => {
-        const fetchAllGenres = async () => {
-            if (watched.length === 0) return;
+        const fetchAllMetadata = async () => {
+            if (watched.length === 0) {
+                setStatsLoading(false);
+                return;
+            }
             const cache = await getGenresForMovies(watched);
-            const genresOnly = {};
-            Object.keys(cache).forEach(id => { genresOnly[id] = cache[id].genres; });
-            setMovieGenres(genresOnly);
+            setMovieMetadata(cache);
+            setStatsLoading(false);
         };
-        fetchAllGenres();
+        fetchAllMetadata();
     }, [watched]);
 
     const runtimes = useMemo(() => watched.reduce((acc, m) => acc + (m.runtime || 110), 0), [watched]);
@@ -95,7 +154,8 @@ const StatsView = () => {
     const radarData = useMemo(() => {
         const consumption = {}; const quality = {}; const qualityCounts = {};
         watched.forEach(movie => {
-            const genres = movieGenres[movie.id];
+            const meta = movieMetadata[movie.id];
+            const genres = meta?.genres;
             if (genres && genres.length > 0) {
                 genres.forEach(g => {
                     consumption[g.name] = (consumption[g.name] || 0) + 1;
@@ -111,9 +171,27 @@ const StatsView = () => {
         })).sort((a, b) => parseFloat(b.A) - parseFloat(a.A)).slice(0, 6);
 
         return { consumption: formatForRadar(consumption, false), quality: formatForRadar(quality, true) };
-    }, [watched, movieGenres]);
+    }, [watched, movieMetadata]);
 
-    const currentRadarData = radarMode === 'consumption' ? radarData.consumption : radarData.quality;
+    const countryData = useMemo(() => {
+        const countriesMap = {};
+        watched.forEach(movie => {
+            const meta = movieMetadata[movie.id];
+            const countries = meta?.production_countries;
+            if (countries && countries.length > 0) {
+                countries.forEach(c => {
+                    countriesMap[c.name] = (countriesMap[c.name] || 0) + 1;
+                });
+            }
+        });
+
+        return Object.entries(countriesMap)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count);
+    }, [watched, movieMetadata]);
+
+    const topCountries = useMemo(() => countryData.slice(0, 5), [countryData]);
+
     const ratingDistribution = useMemo(() => {
         const dist = Array.from({ length: 11 }, (_, i) => ({ rating: i, count: 0 }));
         watched.forEach(m => { const r = m.rating || 0; if (dist[r]) dist[r].count++; });
@@ -128,7 +206,6 @@ const StatsView = () => {
         watched.forEach(m => {
             if (m.watchedAt) {
                 const d = m.watchedAt.split('T')[0];
-                // Sum ratings for the day. Use 5 as default if not rated.
                 ratingsMap[d] = (ratingsMap[d] || 0) + (m.rating || 5);
             }
         });
@@ -139,12 +216,10 @@ const StatsView = () => {
         startCalculation.setDate(today.getDate() - lookback);
 
         let lastWatchedDate = null;
-
         for (let i = 0; i <= lookback; i++) {
             const currentDate = new Date(startCalculation);
             currentDate.setDate(startCalculation.getDate() + i);
             const dateStr = currentDate.toISOString().split('T')[0];
-
             const dayRating = ratingsMap[dateStr] || 0;
 
             if (dayRating > 0) {
@@ -162,7 +237,6 @@ const StatsView = () => {
                 data.push({
                     date: dateStr,
                     score: parseFloat(score.toFixed(1)),
-                    movies: dayRating > 0 ? 1 : 0
                 });
             }
         }
@@ -170,141 +244,361 @@ const StatsView = () => {
     }, [watched]);
 
     const achievements = [
-        { id: 'initiate', title: 'INICIADO', desc: 'Viste tu primera película', icon: '🎬', unlocked: watched.length > 0 },
-        { id: 'critic', title: 'CRÍTICO', desc: 'Puntuaste 10 películas', icon: '⭐', unlocked: watched.filter(m => m.rating > 0).length >= 10 },
-        { id: 'explorer', title: 'EXPLORADOR', desc: 'Probaste 5 géneros distintos', icon: '🔭', unlocked: currentRadarData.length >= 5 },
-        { id: 'oscar_hunter', title: 'CAZADOR DE ORO', desc: 'Viste 5 ganadoras del Oscar', icon: '🏆', unlocked: oscarStats.count >= 5 },
-        { id: 'cinephile', title: 'CINÉFILO', desc: 'Alcanzaste 50 películas', icon: '📽️', unlocked: watched.length >= 50 }
+        { id: 'initiate', title: 'INICIADO', desc: 'TU PRIMER PASO', icon: '🎬', unlocked: watched.length > 0 },
+        { id: 'critic', title: 'CRÍTICO', desc: 'EL ARTE DE JUZGAR', icon: '⭐', unlocked: watched.filter(m => m.rating > 0).length >= 10 },
+        { id: 'world_tour', title: 'PASAPORTE', desc: 'CINE SIN FRONTERAS', icon: '🌎', unlocked: countryData.length >= 5 },
+        { id: 'oscar_hunter', title: 'CAZADOR DE ORO', desc: 'EL PODER DE LA ACADEMIA', icon: '🏆', unlocked: oscarStats.count >= 5 },
+        { id: 'explorer', title: 'EXPLORADOR', desc: 'DESCUBRIENDO TERRITORIOS', icon: '🔭', unlocked: radarData.consumption.length >= 5 },
+        { id: 'cinephile', title: 'MAESTRO', desc: '50 VISIONES LOGRADAS', icon: '📽️', unlocked: watched.length >= 50 }
     ];
+
+    const currentRadarData = radarMode === 'consumption' ? radarData.consumption : radarData.quality;
+
+    const COLORS = ['#00F0FF', '#EC4899', '#8B5CF6', '#F59E0B', '#10B981'];
 
     if (!user) return <div className="min-h-screen bg-black" />;
 
     return (
-        <div className="min-h-screen pb-24 pt-8 px-4 md:px-8 max-w-7xl mx-auto">
-            <header className="mb-12 flex items-end justify-between border-b border-white/5 pb-6">
+        <div className="min-h-screen pb-24 pt-12 px-4 md:px-8 max-w-7xl mx-auto space-y-12">
+            <header className="flex flex-col md:flex-row md:items-end justify-between border-b border-white/5 pb-8 gap-6">
                 <div>
-                    <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-2 tracking-tight">
-                        ADN <span className="text-primary">CINEMATOGRÁFICO</span>
-                    </h1>
-                    <p className="font-mono text-[10px] md:text-sm text-gray-400">
-                        ANÁLISIS DE TELEMETRÍA :: USUARIO {user.displayName?.toUpperCase().split(' ')[0]}
-                    </p>
+                    <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+                        <h1 className="text-5xl md:text-7xl font-display font-bold text-white mb-2 tracking-tight">
+                            ADN <span className="text-primary italic">FILM</span>
+                        </h1>
+                        <p className="font-mono text-[10px] md:text-sm text-gray-500 flex items-center gap-3">
+                            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                            TELEMETRÍA CRÍTICA :: TERMINAL_{user.displayName?.toUpperCase().split(' ')[0]}
+                        </p>
+                    </motion.div>
                 </div>
-                <div className="flex items-center gap-4">
-                    <div className="hidden md:block text-right">
-                        <div className="font-mono text-xs text-primary">{new Date().toLocaleDateString()}</div>
-                        <div className="font-mono text-xs text-gray-500">ESTADO: ACTIVO</div>
+                <div className="flex flex-wrap gap-4 md:gap-8">
+                    <div className="text-center md:text-right">
+                        <span className="block font-mono text-[10px] text-gray-600 uppercase tracking-widest mb-1">Cine consumido</span>
+                        <span className="text-3xl font-display font-bold text-white leading-none">{watched.length}</span>
+                    </div>
+                    <div className="text-center md:text-right border-l border-white/10 pl-4 md:pl-8">
+                        <span className="block font-mono text-[10px] text-gray-600 uppercase tracking-widest mb-1">En lista de espera</span>
+                        <span className="text-3xl font-display font-bold text-white opacity-40 leading-none">{watchlist.length}</span>
                     </div>
                 </div>
             </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="col-span-1 md:col-span-2 row-span-1 bg-surface border border-white/5 p-6 relative overflow-hidden group rounded-xl">
-                    <div className="flex justify-between items-start mb-6 relative z-10">
-                        <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center border border-primary/20">
-                                <TrophyIcon className="w-6 h-6 text-primary" />
+            {/* Top Grid: Rank & Main Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
+                {/* Major Rank Card */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="col-span-1 md:col-span-2 p-8 rounded-[3rem] bg-gradient-to-br from-white/[0.04] to-transparent border border-white/5 relative overflow-hidden group shadow-2xl"
+                >
+                    <div className="relative z-10 flex flex-col h-full">
+                        <div className="flex justify-between items-start mb-8">
+                            <div className="flex items-center gap-5">
+                                <div className="w-16 h-16 bg-primary/20 rounded-[1.5rem] flex items-center justify-center border border-primary/30 shadow-lg shadow-primary/10">
+                                    <TrophyIcon className="w-8 h-8 text-primary" />
+                                </div>
+                                <div>
+                                    <h3 className="font-display text-4xl text-white tracking-widest italic group-hover:text-primary transition-colors">{currentRank.title.toUpperCase()}</h3>
+                                    <p className="font-mono text-xs text-gray-400 mt-1 max-w-sm font-bold opacity-70 tracking-tight">{currentRank.desc}</p>
+                                </div>
                             </div>
-                            <div>
-                                <h3 className="font-display text-2xl text-white tracking-wide">{currentRank.title.toUpperCase()}</h3>
-                                <p className="font-mono text-xs text-gray-400 max-w-[200px]">{currentRank.desc}</p>
+                            <div className="text-right">
+                                <div className="text-4xl font-display font-bold text-white tracking-tight leading-none">{watched.length} <span className="text-xs font-mono text-gray-500 uppercase tracking-widest mt-1 block">Títulos</span></div>
                             </div>
                         </div>
-                        <div className="text-right">
-                            <button onClick={() => setShowAllRanks(!showAllRanks)} className="text-[10px] font-mono text-primary hover:text-white underline mb-1">{showAllRanks ? 'OCULTAR' : 'VER TODOS'}</button>
-                            <div className="font-display text-4xl text-white">{watched.length} <span className="text-sm text-gray-500 font-sans font-normal">películas</span></div>
-                        </div>
-                    </div>
-                    <div className="relative z-10 mb-6">
-                        <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
-                            <motion.div className="h-full bg-primary" initial={{ width: 0 }} animate={{ width: `${rankProgress}%` }} transition={{ duration: 1.0 }} />
-                        </div>
-                    </div>
-                    <motion.div initial={false} animate={{ height: showAllRanks ? 'auto' : 0, opacity: showAllRanks ? 1 : 0 }} className="overflow-hidden border-t border-white/5">
-                        <div className="pt-4 grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
-                            {CINEMA_RANKS.map((r) => <RankCard key={r.min} rank={r} currentCount={watched.length} />)}
-                        </div>
-                    </motion.div>
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-                </div>
 
-                <div className="col-span-1 md:col-span-1 bg-surface border border-white/5 p-6 flex flex-col justify-center rounded-xl">
-                    <div className="flex items-center gap-3 mb-2 text-gray-400"><ClockIcon className="w-5 h-5" /><span className="font-mono text-xs uppercase">TIEMPO EN VUELO</span></div>
-                    <div className="font-display text-2xl text-white">{formatRuntime(runtimes)}</div>
-                </div>
-                <div className="col-span-1 md:col-span-1 bg-surface border border-white/5 p-6 flex flex-col justify-center rounded-xl">
-                    <div className="flex items-center gap-3 mb-2 text-gray-400"><BookmarkIcon className="w-5 h-5" /><span className="font-mono text-xs uppercase">EN COLA</span></div>
-                    <div className="font-display text-2xl text-white">{watchlist.length}</div>
-                </div>
-
-                <div className="col-span-1 md:col-span-2 bg-surface border border-white/5 p-6 flex flex-col min-h-[350px] rounded-xl">
-                    <div className="flex justify-between items-start mb-6">
-                        <h3 className="font-mono text-xs text-gray-500 uppercase tracking-widest">RADAR DE GÉNEROS</h3>
-                        <div className="flex bg-black/40 rounded-lg p-1 border border-white/5">
-                            <button onClick={() => setRadarMode('consumption')} className={cn("px-3 py-1 rounded-md text-[10px] font-mono transition-all", radarMode === 'consumption' ? "bg-primary/20 text-primary" : "text-gray-500")}>FRECUENCIA</button>
-                            <button onClick={() => setRadarMode('quality')} className={cn("px-3 py-1 rounded-md text-[10px] font-mono transition-all", radarMode === 'quality' ? "bg-pink-500/20 text-pink-500" : "text-gray-500")}>CALIDAD</button>
-                        </div>
-                    </div>
-                    <div className="w-full h-[250px] relative">
-                        {currentRadarData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={250}>
-                                <RadarChart cx="50%" cy="50%" outerRadius="70%" data={currentRadarData}>
-                                    <PolarGrid stroke="#333" />
-                                    <PolarAngleAxis
-                                        dataKey="subject"
-                                        tick={{ fill: '#9CA3AF', fontSize: 9, fontFamily: 'monospace' }}
-                                        tickFormatter={(val) => val.length > 10 ? val.substring(0, 8) + '...' : val}
-                                    />
-                                    <PolarRadiusAxis angle={30} domain={[0, 'auto']} tick={false} axisLine={false} />
-                                    <Radar name="Stats" dataKey="A" stroke={radarMode === 'consumption' ? "#00F0FF" : "#EC4899"} strokeWidth={2} fill={radarMode === 'consumption' ? "#00F0FF" : "#EC4899"} fillOpacity={0.2} />
-                                    <Tooltip contentStyle={{ backgroundColor: '#121212', borderColor: '#333', color: '#fff' }} itemStyle={{ color: '#00F0FF', fontFamily: 'monospace' }} />
-                                </RadarChart>
-                            </ResponsiveContainer>
-                        ) : <div className="flex items-center justify-center h-full text-xs text-gray-600">FALTAN DATOS</div>}
-                    </div>
-                </div>
-
-                <div className="col-span-1 md:col-span-2 bg-surface border border-white/5 p-6 flex flex-col min-h-[350px] rounded-xl">
-                    <h3 className="font-mono text-xs text-gray-500 uppercase tracking-widest mb-4">CURVA DE EXIGENCIA</h3>
-                    <div className="w-full h-[250px]">
-                        <ResponsiveContainer width="100%" height={250}>
-                            <BarChart data={ratingDistribution}>
-                                <XAxis dataKey="rating" stroke="#333" tick={{ fill: '#6B7280', fontSize: 10, fontFamily: 'monospace' }} />
-                                <Tooltip
-                                    cursor={{ fill: '#18181b' }}
-                                    contentStyle={{ backgroundColor: '#121212', borderColor: '#333', color: '#fff' }}
-                                    itemStyle={{ color: '#00F0FF', fontFamily: 'monospace' }}
+                        <div className="mt-auto space-y-6">
+                            <div className="flex justify-between items-end mb-2">
+                                <span className="font-mono text-[10px] text-gray-500 uppercase tracking-widest">Progreso al nivel {nextRank.title}</span>
+                                <span className="font-mono text-xs text-primary font-bold">{Math.round(rankProgress)}%</span>
+                            </div>
+                            <div className="relative h-3 bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
+                                <motion.div
+                                    className="h-full bg-gradient-to-r from-primary/40 to-primary rounded-full shadow-[0_0_15px_rgba(0,240,255,0.4)]"
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${rankProgress}%` }}
+                                    transition={{ duration: 1.5, ease: "circOut" }}
                                 />
-                                <Bar dataKey="count" fill="#333" radius={[2, 2, 0, 0]} activeBar={{ fill: '#00F0FF' }} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                <div className="col-span-1 md:col-span-2 lg:col-span-4 bg-surface border border-white/5 p-6 rounded-xl">
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="font-mono text-xs text-primary uppercase tracking-widest flex items-center gap-2"><FireIcon className="w-4 h-4" /> PULSO CINÉFILO</h3>
-                        <div className="text-right">
-                            <span className="font-mono text-[10px] text-gray-500 uppercase block">INTENSIDAD ACTUAL</span>
-                            <span className="font-display text-2xl text-white">{(cinePulseData[cinePulseData.length - 1]?.score || 0).toFixed(1)}</span>
+                            </div>
+                            <button
+                                onClick={() => setShowAllRanks(!showAllRanks)}
+                                className="w-full flex items-center justify-center gap-2 py-3 bg-white/[0.03] hover:bg-white/[0.08] transition-all rounded-2xl text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest border border-white/5 mb-[-10px]"
+                            >
+                                {showAllRanks ? <ChevronUpIcon className="w-4 h-4" /> : <ChevronDownIcon className="w-4 h-4" />}
+                                {showAllRanks ? 'Contraer jerarquía' : 'Expandir todos los rangos'}
+                            </button>
                         </div>
                     </div>
-                    <div className="w-full h-[200px]">
-                        <ResponsiveContainer width="100%" height={200}>
-                            <AreaChart data={cinePulseData}>
-                                <defs><linearGradient id="pulseGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#00F0FF" stopOpacity={0.3} /><stop offset="95%" stopColor="#00F0FF" stopOpacity={0} /></linearGradient></defs>
-                                <XAxis dataKey="date" tickFormatter={(val) => val.slice(5)} stroke="#333" tick={{ fill: '#6B7280', fontSize: 10 }} minTickGap={30} />
-                                <Tooltip contentStyle={{ backgroundColor: '#121212', borderColor: '#333' }} />
-                                <Area type="monotone" dataKey="score" stroke="#00F0FF" fillOpacity={1} fill="url(#pulseGradient)" strokeWidth={2} />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    </div>
+
+                    <AnimatePresence>
+                        {showAllRanks && (
+                            <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="overflow-hidden mt-8 border-t border-white/5 pt-8"
+                            >
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {CINEMA_RANKS.map((r) => <RankItem key={r.min} rank={r} currentCount={watched.length} />)}
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Background decorations */}
+                    <div className="absolute top-0 right-0 w-80 h-80 bg-primary/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2 pointer-events-none group-hover:bg-primary/20 transition-all duration-1000" />
+                    <div className="absolute bottom-0 left-0 w-40 h-40 bg-pink-500/5 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+                </motion.div>
+
+                {/* Stat Cards Stack */}
+                <div className="flex flex-col gap-6">
+                    <StatCard icon={ClockIcon} label="Tiempo de Vuelo" value={formatRuntime(runtimes)} />
+                    <StatCard icon={FilmIcon} label="Academia (Oscar)" value={`${oscarStats.count}/${oscarStats.total}`} colorClass="text-yellow-500" />
                 </div>
             </div>
 
-            <div className="mt-8">
-                <h3 className="font-mono text-[10px] text-gray-500 uppercase mb-4 tracking-widest">LOGROS CUMPLIDOS</h3>
-                <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {/* Charts Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Radar Chart (Genres) */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    className="col-span-1 lg:col-span-2 p-8 rounded-[2.5rem] bg-white/[0.02] border border-white/5 backdrop-blur-md"
+                >
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-10">
+                        <div>
+                            <h3 className="text-xl font-display font-bold text-white tracking-widest italic flex items-center gap-3">
+                                <SparklesIcon className="w-5 h-5 text-primary" />
+                                RADAR DE GÉNEROS
+                            </h3>
+                            <p className="text-[10px] font-mono text-gray-400 mt-1 font-black uppercase tracking-[0.2em]">Mapas de afinidad cinematográfica</p>
+                        </div>
+                        <div className="flex p-1 bg-black/40 border border-white/10 rounded-2xl w-full sm:w-auto">
+                            <button
+                                onClick={() => setRadarMode('consumption')}
+                                className={cn(
+                                    "flex-1 px-5 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all",
+                                    radarMode === 'consumption' ? "bg-primary text-black" : "text-gray-500 hover:text-white"
+                                )}
+                            >
+                                FRECUENCIA
+                            </button>
+                            <button
+                                onClick={() => setRadarMode('quality')}
+                                className={cn(
+                                    "flex-1 px-5 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all",
+                                    radarMode === 'quality' ? "bg-pink-500 text-white" : "text-gray-500 hover:text-white"
+                                )}
+                            >
+                                CALIDAD
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="w-full h-[350px]">
+                        {!statsLoading && currentRadarData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <RadarChart cx="50%" cy="50%" outerRadius="80%" data={currentRadarData}>
+                                    <PolarGrid stroke="#ffffff10" strokeDasharray="5 5" />
+                                    <PolarAngleAxis
+                                        dataKey="subject"
+                                        tick={{ fill: '#ffffff60', fontSize: 10, fontFamily: 'monospace', fontWeight: 900 }}
+                                        tickFormatter={(val) => val.toUpperCase()}
+                                    />
+                                    <PolarRadiusAxis
+                                        angle={30}
+                                        domain={[0, 'auto']}
+                                        tick={false}
+                                        axisLine={false}
+                                    />
+                                    <Radar
+                                        name="Métrica"
+                                        dataKey="A"
+                                        stroke={radarMode === 'consumption' ? "#00F0FF" : "#EC4899"}
+                                        strokeWidth={3}
+                                        fill={radarMode === 'consumption' ? "#00F0FF" : "#EC4899"}
+                                        fillOpacity={0.2}
+                                        animationDuration={1500}
+                                    />
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: '#111', borderRadius: '16px', border: '1px solid #ffffff10', color: '#fff' }}
+                                        itemStyle={{ fontFamily: 'monospace', color: '#00F0FF', fontSize: '12px' }}
+                                    />
+                                </RadarChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center h-full text-gray-700 animate-pulse">
+                                <ChartBarIcon className="w-12 h-12 mb-4 opacity-20" />
+                                <p className="font-mono text-xs tracking-widest font-black uppercase">PENDIENTE DE DATOS</p>
+                            </div>
+                        )}
+                    </div>
+                </motion.div>
+
+                {/* Country Insights (NEW) */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    className="p-8 rounded-[2.5rem] bg-white/[0.02] border border-white/5 flex flex-col items-center"
+                >
+                    <div className="text-center mb-8">
+                        <GlobeAltIcon className="w-10 h-10 text-primary/60 mx-auto mb-4" />
+                        <h3 className="text-lg font-display font-bold text-white tracking-widest italic">PASAPORTE CULTURAL</h3>
+                        <p className="text-[10px] font-mono text-gray-500 mt-1 font-black uppercase tracking-[0.2em]">Países de origen explorados</p>
+                    </div>
+
+                    <div className="w-full h-[220px] mb-8 relative">
+                        {topCountries.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={topCountries}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={90}
+                                        paddingAngle={8}
+                                        dataKey="count"
+                                        stroke="none"
+                                    >
+                                        {topCountries.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} fillOpacity={0.8} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: '#111', borderRadius: '12px', border: '1px solid #ffffff15' }}
+                                        itemStyle={{ color: '#fff', fontSize: '11px', fontFamily: 'monospace' }}
+                                    />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="h-full flex items-center justify-center opacity-10">
+                                <GlobeAltIcon className="w-20 h-20" />
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="w-full space-y-4">
+                        {topCountries.map((c, idx) => (
+                            <div key={idx} className="flex items-center justify-between group">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
+                                    <span className="text-xs font-bold text-gray-300 group-hover:text-white transition-colors uppercase tracking-tight">{c.name}</span>
+                                </div>
+                                <span className="text-xs font-mono font-black text-gray-600 italic">x{c.count}</span>
+                            </div>
+                        ))}
+                        {countryData.length > 5 && (
+                            <div className="pt-4 border-t border-white/5 text-center">
+                                <span className="text-[10px] font-mono text-gray-600 font-bold uppercase tracking-widest">+{countryData.length - 5} otros territorios</span>
+                            </div>
+                        )}
+                    </div>
+                </motion.div>
+            </div>
+
+            {/* Bottom Row: Pulse & Curve */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Cine Pulse Chart */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    className="p-8 rounded-[2.5rem] bg-white/[0.02] border border-white/5 overflow-hidden"
+                >
+                    <div className="flex justify-between items-center mb-8">
+                        <div>
+                            <h3 className="font-display font-bold text-white tracking-widest flex items-center gap-3">
+                                <FireIcon className="w-5 h-5 text-primary" />
+                                PULSO CINÉFILO
+                            </h3>
+                            <p className="text-[10px] font-mono text-gray-400 mt-1 uppercase font-black tracking-widest">Frecuencia cardíaca visual</p>
+                        </div>
+                        <div className="text-right">
+                            <span className="font-display text-3xl text-primary font-bold">{(cinePulseData[cinePulseData.length - 1]?.score || 0).toFixed(1)}</span>
+                        </div>
+                    </div>
+                    <div className="w-full h-[180px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={cinePulseData}>
+                                <defs>
+                                    <linearGradient id="pulseGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#00F0FF" stopOpacity={0.4} />
+                                        <stop offset="95%" stopColor="#00F0FF" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <XAxis
+                                    dataKey="date"
+                                    tickFormatter={(val) => val.slice(8)}
+                                    stroke="#ffffff10"
+                                    tick={{ fill: '#6B7280', fontSize: 10, fontWeight: 900 }}
+                                    minTickGap={20}
+                                />
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: '#111', borderRadius: '12px', border: '1px solid #ffffff10' }}
+                                    itemStyle={{ color: '#00F0FF', fontFamily: 'monospace', fontWeight: 900 }}
+                                />
+                                <Area
+                                    type="monotone"
+                                    dataKey="score"
+                                    stroke="#00F0FF"
+                                    fillOpacity={1}
+                                    fill="url(#pulseGradient)"
+                                    strokeWidth={4}
+                                    animationDuration={2000}
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+                </motion.div>
+
+                {/* Demand Curve */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    className="p-8 rounded-[2.5rem] bg-white/[0.02] border border-white/5"
+                >
+                    <h3 className="font-display font-bold text-white tracking-widest mb-8 flex items-center gap-3">
+                        <ChartBarIcon className="w-5 h-5 text-primary" />
+                        CURVA DE EXIGENCIA
+                    </h3>
+                    <div className="w-full h-[180px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={ratingDistribution} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                                <XAxis
+                                    dataKey="rating"
+                                    stroke="#ffffff10"
+                                    tick={{ fill: '#6B7280', fontSize: 10, fontFamily: 'monospace', fontWeight: 900 }}
+                                />
+                                <Tooltip
+                                    cursor={{ fill: 'rgba(255,255,255,0.05)', radius: 8 }}
+                                    contentStyle={{ backgroundColor: '#111', borderRadius: '12px', border: '1px solid #ffffff10' }}
+                                    itemStyle={{ color: '#00F0FF', fontWeight: 900 }}
+                                />
+                                <Bar
+                                    dataKey="count"
+                                    fill="#222"
+                                    radius={[8, 8, 0, 0]}
+                                    activeBar={{ fill: '#00F0FF', stroke: '#00F0FF', strokeWidth: 0 }}
+                                />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                    <div className="flex justify-between mt-4 text-[10px] font-mono text-gray-500 uppercase tracking-widest italic font-bold">
+                        <span>Generoso</span>
+                        <span>Exigente</span>
+                    </div>
+                </motion.div>
+            </div>
+
+            {/* Achievements Section */}
+            <div className="pt-12">
+                <div className="flex items-center gap-4 mb-10">
+                    <span className="w-12 h-[1px] bg-white/10" />
+                    <h3 className="font-mono text-[10px] text-gray-500 font-black uppercase tracking-[0.4em]">Archivos_de_Logro</h3>
+                    <span className="flex-1 h-[1px] bg-white/10" />
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6">
                     {achievements.map(badge => <AchievementBadge key={badge.id} {...badge} />)}
                 </div>
             </div>
