@@ -52,34 +52,63 @@ export const ListProvider = ({ children }) => {
             let ownedData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
             // --- ONE-TIME INITIALIZATION & REPAIR ---
-            if (!hasInitializedRef.current) {
+            if (!hasInitializedRef.current && ownedData.length > 0) {
                 setLoading(true);
-                let general = ownedData.find(l => l.name === 'General');
+                const generalLists = ownedData.filter(l => l.name === 'General');
+                let general = generalLists.find(l => l.isDefault) || generalLists[0];
 
-                // Auto-create general if missing
-                if (!general) {
-                    const newList = {
-                        ownerId: user.uid,
-                        ownerName: user.displayName || 'Anónimo',
-                        name: 'General',
-                        description: 'Lista principal de películas por ver',
-                        privacy: 'public',
-                        collaborators: [],
-                        movies: [],
-                        movieCount: 0,
-                        createdAt: serverTimestamp(),
-                        updatedAt: serverTimestamp(),
-                        likes: 0,
-                        coverImage: null,
-                        isDefault: true
-                    };
-                    const docRef = await addDoc(collection(db, 'lists'), newList);
-                    general = { id: docRef.id, ...newList };
-                    ownedData.push(general);
-                }
-
-                // Repair/Migration Logic
                 try {
+                    // 1. Repair Duplicates Case (User has > 1 General)
+                    if (generalLists.length > 1) {
+                        console.log("Detectadas múltiples listas General. Iniciando fusión...");
+                        const extras = generalLists.filter(l => l.id !== general.id);
+                        for (const extra of extras) {
+                            if (extra.movies && extra.movies.length > 0) {
+                                // Mover películas a la principal
+                                for (const m of extra.movies) {
+                                    if (!general.movies?.some(im => im.id === m.id)) {
+                                        await updateDoc(doc(db, 'lists', general.id), {
+                                            movies: arrayUnion(m)
+                                        });
+                                    }
+                                }
+                            }
+                            await deleteDoc(doc(db, 'lists', extra.id));
+                            ownedData = ownedData.filter(d => d.id !== extra.id);
+                        }
+                        // Marcar la superviviente como default si no lo estaba
+                        if (!general.isDefault) {
+                            await updateDoc(doc(db, 'lists', general.id), { isDefault: true });
+                            general.isDefault = true;
+                        }
+                    }
+
+                    // 2. Auto-create if missing (already exits or was deleted)
+                    if (!general) {
+                        const newList = {
+                            ownerId: user.uid,
+                            ownerName: user.displayName || 'Anónimo',
+                            name: 'General',
+                            description: 'Lista principal de películas por ver',
+                            privacy: 'public',
+                            collaborators: [],
+                            movies: [],
+                            movieCount: 0,
+                            createdAt: serverTimestamp(),
+                            updatedAt: serverTimestamp(),
+                            likes: 0,
+                            coverImage: null,
+                            isDefault: true
+                        };
+                        const docRef = await addDoc(collection(db, 'lists'), newList);
+                        general = { id: docRef.id, ...newList };
+                        ownedData.push(general);
+                    } else if (!general.isDefault) {
+                        // Ensure flag if it was created without it long ago
+                        await updateDoc(doc(db, 'lists', general.id), { isDefault: true });
+                    }
+
+                    // 3. Migrate legacy watchlist
                     const isGeneralEmpty = !general.movies || general.movies.length === 0;
                     if (isGeneralEmpty) {
                         const userRef = doc(db, 'users', user.uid);
@@ -97,12 +126,11 @@ export const ListProvider = ({ children }) => {
                                     movieCount: moviesToMigrate.length,
                                     coverImage: moviesToMigrate[0]?.poster_path || null
                                 });
-                                general.movies = moviesToMigrate;
                             }
                         }
                     }
 
-                    // Deep Repair missing metadata
+                    // 4. Metadata Repair
                     for (let list of ownedData) {
                         if (!list.movies?.length) continue;
                         const broken = list.movies.filter(m => !m.release_date || m.vote_average === undefined);
@@ -115,15 +143,17 @@ export const ListProvider = ({ children }) => {
                             await updateDoc(doc(db, 'lists', list.id), { movies: cleaned, movieCount: cleaned.length });
                         }
                     }
-                } catch (e) { console.error("Repair error", e); }
+                } catch (e) {
+                    console.error("Migration/Repair logic failed:", e);
+                }
 
                 hasInitializedRef.current = true;
                 setLoading(false);
             }
 
             ownedData.sort((a, b) => {
-                if (a.name === 'General') return -1;
-                if (b.name === 'General') return 1;
+                if (a.isDefault || a.name === 'General') return -1;
+                if (b.isDefault || b.name === 'General') return 1;
                 return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
             });
 

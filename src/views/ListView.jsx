@@ -102,6 +102,7 @@ const ListView = ({ onSelectMovie }) => {
     }, [id, user, getListById]);
 
     const handleDeleteList = async () => {
+        if (!list || list.isDefault || list.name === 'General') return;
         if (window.confirm("¿Estás seguro de que quieres eliminar esta lista?")) {
             await deleteList(id);
             navigate('/library');
@@ -109,6 +110,7 @@ const ListView = ({ onSelectMovie }) => {
     };
 
     const handleLeaveList = async () => {
+        if (!list || list.isDefault) return;
         if (window.confirm(`¿Seguro que quieres abandonar "${list.name}"?`)) {
             await leaveList(id);
             navigate('/library');
@@ -229,10 +231,10 @@ const ListView = ({ onSelectMovie }) => {
 
                             <div className="flex flex-col">
                                 <span className="text-sm font-bold text-white leading-tight">
-                                    {list.ownerName}
+                                    {list.isDefault ? "Tu Cine" : list.ownerName}
                                 </span>
                                 <span className="text-[10px] text-gray-400 font-mono uppercase tracking-widest">
-                                    {list.collaborators?.length > 0 ? "Lista Compartida" : "Lista Personal"}
+                                    {list.isDefault ? "Lista del Sistema" : (list.collaborators?.length > 0 ? "Lista Compartida" : "Lista Personal")}
                                 </span>
                             </div>
                         </div>
@@ -240,7 +242,7 @@ const ListView = ({ onSelectMovie }) => {
 
                     <div className="flex items-center gap-3 w-full md:w-auto">
 
-                        {isOwner && (
+                        {isOwner && !list.isDefault && (
                             <>
                                 <button onClick={handleInvite} className="p-3 bg-white/10 text-white rounded-full hover:bg-white/20 backdrop-blur-md transition-colors" title="Invitar Colaborador">
                                     <UserPlusIcon className="w-5 h-5" />

@@ -116,7 +116,7 @@ const LibraryView = ({ onSelectMovie }) => {
 
 
     const handleDeleteList = async () => {
-        if (!currentCustomList) return;
+        if (!currentCustomList || currentCustomList.isDefault || currentCustomList.name === 'General') return;
         if (window.confirm("¿Estás seguro de que quieres eliminar esta lista?")) {
             await deleteList(currentCustomList.id);
             setSelectedListId('watchlist');
@@ -124,7 +124,7 @@ const LibraryView = ({ onSelectMovie }) => {
     };
 
     const handleLeaveList = async () => {
-        if (!currentCustomList) return;
+        if (!currentCustomList || currentCustomList.isDefault) return;
         if (window.confirm(`¿Abandonar la lista "${currentCustomList.name}"?`)) {
             await leaveList(currentCustomList.id);
             setSelectedListId('watchlist');
@@ -279,7 +279,13 @@ const LibraryView = ({ onSelectMovie }) => {
                                         </p>
 
                                         <div className="flex items-center gap-4">
-                                            <button onClick={() => setIsManageMembersOpen(true)} className="flex items-center gap-2 group/members hover:bg-white/5 p-1.5 rounded-lg transition-colors -ml-1.5">
+                                            <button
+                                                onClick={() => currentCustomList.name !== 'General' && setIsManageMembersOpen(true)}
+                                                className={cn(
+                                                    "flex items-center gap-2 group/members p-1.5 rounded-lg transition-colors -ml-1.5",
+                                                    currentCustomList.name !== 'General' ? "hover:bg-white/5 cursor-pointer" : "cursor-default opacity-50"
+                                                )}
+                                            >
                                                 <div className="flex -space-x-2">
                                                     <div className="w-6 h-6 rounded-full border border-[#121212] bg-indigo-500 flex items-center justify-center text-[10px] font-bold text-white" title={`Dueño: ${currentCustomList.ownerName}`}>
                                                         {currentCustomList.ownerName?.[0]?.toUpperCase() || 'O'}
@@ -291,7 +297,7 @@ const LibraryView = ({ onSelectMovie }) => {
                                                     )}
                                                 </div>
                                                 <span className="text-xs text-gray-400 group-hover/members:text-primary transition-colors">
-                                                    {currentCustomList.ownerId === user.uid ? "Configuración" : "Ver miembros"}
+                                                    {currentCustomList.name === 'General' ? "Lista Personal" : (currentCustomList.ownerId === user.uid ? "Configuración" : "Ver miembros")}
                                                 </span>
                                             </button>
                                         </div>
@@ -300,15 +306,24 @@ const LibraryView = ({ onSelectMovie }) => {
                                     <div className="flex items-center gap-2 self-end md:self-center">
                                         {currentCustomList.ownerId === user.uid ? (
                                             <>
-                                                <button
-                                                    onClick={() => setIsManageMembersOpen(true)}
-                                                    className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5"
-                                                >
-                                                    <UserPlusIcon className="w-3.5 h-3.5" /> Invitar
-                                                </button>
-                                                <button onClick={handleDeleteList} className="w-8 h-8 flex items-center justify-center bg-surface-elevated border border-white/10 rounded-lg hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/50 transition-colors text-gray-400" title="Eliminar lista">
-                                                    <TrashIcon className="w-3.5 h-3.5" />
-                                                </button>
+                                                {currentCustomList.name !== 'General' && (
+                                                    <>
+                                                        <button
+                                                            onClick={() => setIsManageMembersOpen(true)}
+                                                            className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5"
+                                                        >
+                                                            <UserPlusIcon className="w-3.5 h-3.5" /> Invitar
+                                                        </button>
+                                                        <button onClick={handleDeleteList} className="w-8 h-8 flex items-center justify-center bg-surface-elevated border border-white/10 rounded-lg hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/50 transition-colors text-gray-400" title="Eliminar lista">
+                                                            <TrashIcon className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </>
+                                                )}
+                                                {currentCustomList.name === 'General' && (
+                                                    <span className="text-[10px] font-mono text-gray-500 uppercase tracking-widest bg-white/5 px-3 py-2 rounded-lg border border-white/5">
+                                                        Lista de Sistema
+                                                    </span>
+                                                )}
                                             </>
                                         ) : (
                                             <button onClick={handleLeaveList} className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5">
