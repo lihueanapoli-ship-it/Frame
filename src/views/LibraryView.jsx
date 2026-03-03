@@ -85,7 +85,6 @@ const LibraryView = ({ onSelectMovie }) => {
         setCountryFilter('any');
     };
 
-    if (!user) return <div className="min-h-screen" />;
 
     const allListsDisplay = useMemo(() => [...myLists, ...collabLists], [myLists, collabLists]);
 
@@ -189,6 +188,8 @@ const LibraryView = ({ onSelectMovie }) => {
         (yearRange.min > 1900 ? 1 : 0) +
         (selectedPlatforms.length > 0 ? 1 : 0) +
         (countryFilter !== 'any' ? 1 : 0);
+
+    if (!user) return <div className="min-h-screen" />;
 
     return (
         <div className="min-h-screen pb-24 px-4 pt-8">
