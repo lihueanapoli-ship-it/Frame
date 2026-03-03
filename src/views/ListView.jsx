@@ -189,8 +189,8 @@ const ListView = ({ onSelectMovie }) => {
                     <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                             <div className="flex items-center gap-1 text-[10px] text-gray-400 font-mono uppercase tracking-widest bg-white/5 px-2 py-0.5 rounded border border-white/5">
-                                {list.privacy === 'private' ? <LockClosedIcon className="w-3 h-3" /> : <GlobeAltIcon className="w-3 h-3" />}
-                                {list.privacy === 'private' ? 'Privada' : list.privacy === 'friends' ? 'Amigos' : 'Pública'}
+                                <GlobeAltIcon className="w-3 h-3" />
+                                Lista Pública
                             </div>
                         </div>
 

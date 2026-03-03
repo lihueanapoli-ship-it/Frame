@@ -39,7 +39,23 @@ const GENRES = [
     { id: 37, name: "Western", emoji: "🌵" },
 ];
 
+const COUNTRIES = [
+    { id: 'AR', name: 'Argentina', flag: '🇦🇷' },
+    { id: 'US', name: 'Estados Unidos', flag: '🇺🇸' },
+    { id: 'KR', name: 'Corea', flag: '🇰🇷' },
+    { id: 'JP', name: 'Japón', flag: '🇯🇵' },
+    { id: 'GB', name: 'Reino Unido', flag: '🇬🇧' },
+    { id: 'ES', name: 'España', flag: '🇪🇸' },
+    { id: 'FR', name: 'Francia', flag: '🇫🇷' },
+    { id: 'IT', name: 'Italia', flag: '🇮🇹' }
+];
+
 const LibraryView = ({ onSelectMovie }) => {
+    const { watchlist, watched } = useMovies();
+    const { myLists, collabLists, addCollaborator, deleteList, leaveList, generalList } = useLists();
+    const { user, loginWithGoogle } = useAuth();
+    const navigate = useNavigate();
+
     const [activeTab, setActiveTab] = useState('watchlist');
     const [selectedListId, setSelectedListId] = useState('watchlist');
     const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -55,24 +71,21 @@ const LibraryView = ({ onSelectMovie }) => {
     const [selectedPlatforms, setSelectedPlatforms] = useState([]);
     const [platformFilteredMovies, setPlatformFilteredMovies] = useState(null);
     const [isFetchingProviders, setIsFetchingProviders] = useState(false);
-    const [originCountry, setOriginCountry] = useState('any');
+    const [countryFilter, setCountryFilter] = useState('any');
     const providersCacheRef = useRef({});
 
-    const COUNTRIES = [
-        { id: 'AR', name: 'Argentina', flag: '🇦🇷' },
-        { id: 'US', name: 'Estados Unidos', flag: '🇺🇸' },
-        { id: 'KR', name: 'Corea', flag: '🇰🇷' },
-        { id: 'JP', name: 'Japón', flag: '🇯🇵' },
-        { id: 'GB', name: 'Reino Unido', flag: '🇬🇧' },
-        { id: 'ES', name: 'España', flag: '🇪🇸' },
-        { id: 'FR', name: 'Francia', flag: '🇫🇷' },
-        { id: 'IT', name: 'Italia', flag: '🇮🇹' }
-    ];
+    const clearFilters = () => {
+        setSelectedGenres([]);
+        setSortOption('date_added');
+        setMinRating(0);
+        setRuntimeFilter('any');
+        setYearRange({ min: 1900, max: new Date().getFullYear() + 5 });
+        setSelectedPlatforms([]);
+        setPlatformFilteredMovies(null);
+        setCountryFilter('any');
+    };
 
-    const { watchlist, watched } = useMovies();
-    const { myLists, collabLists, addCollaborator, deleteList, leaveList, generalList } = useLists();
-    const { user, loginWithGoogle } = useAuth();
-    const navigate = useNavigate();
+    if (!user) return <div className="min-h-screen" />;
 
     const allListsDisplay = useMemo(() => [...myLists, ...collabLists], [myLists, collabLists]);
 
@@ -131,7 +144,7 @@ const LibraryView = ({ onSelectMovie }) => {
         runtime: runtimeFilter,
         yearRange,
         ratingSource,
-        originCountry
+        originCountry: countryFilter
     });
 
     useEffect(() => {
@@ -169,20 +182,13 @@ const LibraryView = ({ onSelectMovie }) => {
 
     const displayMovies = platformFilteredMovies ?? filteredMovies;
 
-    if (!user) return <div className="min-h-screen" />;
-
-    const clearFilters = () => {
-        setSelectedGenres([]);
-        setSortOption('date_added');
-        setMinRating(0);
-        setRuntimeFilter('any');
-        setYearRange({ min: 1900, max: new Date().getFullYear() + 5 });
-        setSelectedPlatforms([]);
-        setPlatformFilteredMovies(null);
-        setOriginCountry('any');
-    };
-
-    const activeFilterCount = (selectedGenres.length > 0 ? 1 : 0) + (minRating > 0 ? 1 : 0) + (runtimeFilter !== 'any' ? 1 : 0) + (sortOption !== 'date_added' ? 1 : 0) + (yearRange.min > 1900 ? 1 : 0) + (selectedPlatforms.length > 0 ? 1 : 0) + (originCountry !== 'any' ? 1 : 0);
+    const activeFilterCount = (selectedGenres.length > 0 ? 1 : 0) +
+        (minRating > 0 ? 1 : 0) +
+        (runtimeFilter !== 'any' ? 1 : 0) +
+        (sortOption !== 'date_added' ? 1 : 0) +
+        (yearRange.min > 1900 ? 1 : 0) +
+        (selectedPlatforms.length > 0 ? 1 : 0) +
+        (countryFilter !== 'any' ? 1 : 0);
 
     return (
         <div className="min-h-screen pb-24 px-4 pt-8">
@@ -415,8 +421,8 @@ const LibraryView = ({ onSelectMovie }) => {
                                     {COUNTRIES.map(country => (
                                         <button
                                             key={country.id}
-                                            onClick={() => setOriginCountry(originCountry === country.id ? 'any' : country.id)}
-                                            className={cn("px-4 py-2 rounded-full text-xs font-bold border whitespace-nowrap flex items-center gap-1.5", originCountry === country.id ? "bg-primary text-black border-primary" : "bg-surface border-white/10 text-gray-400 hover:text-white")}
+                                            onClick={() => setCountryFilter(countryFilter === country.id ? 'any' : country.id)}
+                                            className={cn("px-4 py-2 rounded-full text-xs font-bold border whitespace-nowrap flex items-center gap-1.5", countryFilter === country.id ? "bg-primary text-black border-primary" : "bg-surface border-white/10 text-gray-400 hover:text-white")}
                                         >
                                             <span>{country.flag}</span>
                                             {country.name}
