@@ -72,10 +72,16 @@ const RankItem = ({ rank, currentCount }) => {
             )} />
             <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-baseline gap-2">
-                    <span className="font-display font-bold text-sm tracking-wide truncate">{rank.title.toUpperCase()}</span>
-                    <span className="font-mono text-[10px] shrink-0 font-black">{rank.min} MIN.</span>
+                    <span className="font-display font-bold text-sm tracking-widest truncate">
+                        {isUnlocked ? rank.title.toUpperCase() : "CLASSIFIED_INFO"}
+                    </span>
+                    <span className="font-mono text-[10px] shrink-0 font-black">{rank.min} PELIS</span>
                 </div>
-                {isUnlocked && <p className="text-[10px] font-mono text-primary/80 leading-tight mt-1 line-clamp-1">{rank.desc}</p>}
+                {isUnlocked ? (
+                    <p className="text-[10px] font-mono text-primary/80 leading-tight mt-1 line-clamp-1">{rank.desc}</p>
+                ) : (
+                    <p className="text-[10px] font-mono text-gray-700 leading-tight mt-1 italic">Visto insuficiente para revelar...</p>
+                )}
             </div>
         </div>
     );
