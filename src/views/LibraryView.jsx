@@ -239,7 +239,7 @@ const LibraryView = ({ onSelectMovie }) => {
                                 <optgroup label="Mis Listas">
                                     {myLists.map(list => (
                                         <option key={list.id} value={list.id} className="bg-[#111] text-white">
-                                            {list.name === 'General' ? '🎬 General' : `📑 ${list.name}`}
+                                            {list.icon || (list.name === 'General' ? '🎬' : '📑')} {list.name}
                                         </option>
                                     ))}
                                 </optgroup>
@@ -247,7 +247,7 @@ const LibraryView = ({ onSelectMovie }) => {
                                     <optgroup label="Compartidas Conmigo">
                                         {collabLists.map(list => (
                                             <option key={list.id} value={list.id} className="bg-[#111] text-white">
-                                                👥 {list.name} (de {list.ownerName || 'Usuario'})
+                                                {list.icon || '👥'} {list.name} (de {list.ownerName || 'Usuario'})
                                             </option>
                                         ))}
                                     </optgroup>

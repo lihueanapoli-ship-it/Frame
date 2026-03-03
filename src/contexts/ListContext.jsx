@@ -246,6 +246,7 @@ export const ListProvider = ({ children }) => {
                 ownerId: user.uid,
                 ownerName: user.displayName || 'Anónimo',
                 name,
+                icon: arg1.icon || '📑',
                 description: description || '',
                 privacy,
                 collaborators: [], // UIDs de colaboradores
@@ -269,6 +270,29 @@ export const ListProvider = ({ children }) => {
             return docRef.id;
         } catch (error) {
             console.error("Error creating list:", error);
+            throw error;
+        }
+    };
+
+    // 2. Update List - Name, Desc, Icon, Privacy
+    const updateList = async (listId, updates) => {
+        if (!user) return;
+        try {
+            const listRef = doc(db, 'lists', listId);
+            const cleanUpdates = {
+                ...updates,
+                updatedAt: serverTimestamp()
+            };
+            await updateDoc(listRef, cleanUpdates);
+
+            // Update local state
+            const updateState = (prev) => prev.map(l => l.id === listId ? { ...l, ...updates } : l);
+            setMyLists(updateState);
+            setCollabLists(updateState);
+
+            return true;
+        } catch (error) {
+            console.error("Error updating list:", error);
             throw error;
         }
     };
@@ -517,19 +541,6 @@ export const ListProvider = ({ children }) => {
             await removeMovieFromList(sourceListId, movie.id);
         } catch (error) {
             console.error("Error moving movie:", error);
-            throw error;
-        }
-    };
-
-    const updateList = async (listId, updates) => {
-        try {
-            const listRef = doc(db, 'lists', listId);
-            await updateDoc(listRef, {
-                ...updates,
-                updatedAt: serverTimestamp()
-            });
-        } catch (error) {
-            console.error("Error updating list:", error);
             throw error;
         }
     };

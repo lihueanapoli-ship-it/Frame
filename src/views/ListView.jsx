@@ -8,7 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import MovieCard from '../components/MovieCard';
 import { cn } from '../lib/utils';
 import ShareModal from '../components/ui/ShareModal';
-import CollaboratorModal from '../components/ui/CollaboratorModal';
+import ListSettingsModal from '../components/ui/ListSettingsModal';
 import AddToListModal from '../components/ui/AddToListModal';
 import ShareWithFriendModal from '../components/ui/ShareWithFriendModal';
 import { useChat } from '../contexts/ChatContext';
@@ -81,7 +81,7 @@ const ListView = ({ onSelectMovie }) => {
     const [isOwner, setIsOwner] = useState(false);
     const [isCollaborator, setIsCollaborator] = useState(false);
     const [isShareOpen, setIsShareOpen] = useState(false);
-    const [isCollaboratorModalOpen, setIsCollaboratorModalOpen] = useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
     const [movieToMove, setMovieToMove] = useState(null);
 
@@ -117,8 +117,8 @@ const ListView = ({ onSelectMovie }) => {
         }
     };
 
-    const handleInvite = () => {
-        setIsCollaboratorModalOpen(true);
+    const handleSettings = () => {
+        setIsSettingsOpen(true);
     };
 
     const handleRemoveMovie = async (movieId) => {
@@ -196,7 +196,10 @@ const ListView = ({ onSelectMovie }) => {
                             </div>
                         </div>
 
-                        <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-2 leading-none">{list.name}</h1>
+                        <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-2 leading-none flex items-center gap-4">
+                            <span className="text-3xl md:text-5xl opacity-80">{list.icon || (list.isDefault ? '🎬' : '📑')}</span>
+                            {list.name}
+                        </h1>
 
                         <div className="flex items-center gap-3">
                             <div className="flex -space-x-3 items-center">
@@ -244,10 +247,10 @@ const ListView = ({ onSelectMovie }) => {
 
                         {isOwner && !list.isDefault && (
                             <>
-                                <button onClick={handleInvite} className="p-3 bg-white/10 text-white rounded-full hover:bg-white/20 backdrop-blur-md transition-colors" title="Invitar Colaborador">
-                                    <UserPlusIcon className="w-5 h-5" />
+                                <button onClick={handleSettings} className="p-3 bg-white/10 text-white rounded-full hover:bg-white/20 backdrop-blur-md transition-colors" title="Ajustes de Lista">
+                                    <PencilIcon className="w-5 h-5" />
                                 </button>
-                                <button onClick={handleDeleteList} className="p-3 bg-red-500/10 text-red-500 border border-red-500/20 rounded-full hover:bg-red-500 hover:text-white backdrop-blur-md transition-colors" title="Eliminar lista">
+                                <button onClick={handleDeleteList} className="p-3 bg-red-500/20 text-red-500 rounded-full hover:bg-red-500 hover:text-white backdrop-blur-md transition-all" title="Eliminar Lista">
                                     <TrashIcon className="w-5 h-5" />
                                 </button>
                             </>
@@ -332,12 +335,12 @@ const ListView = ({ onSelectMovie }) => {
                 )}
             </AnimatePresence>
 
-            {isCollaboratorModalOpen && list && (
-                <CollaboratorModal
-                    isOpen={isCollaboratorModalOpen}
-                    onClose={() => setIsCollaboratorModalOpen(false)}
-                    listId={list.id}
-                    currentCollaborators={list.collaborators || []}
+            {isSettingsOpen && list && (
+                <ListSettingsModal
+                    isOpen={isSettingsOpen}
+                    onClose={() => setIsSettingsOpen(false)}
+                    list={list}
+                    onUpdate={(updatedData) => setList(prev => ({ ...prev, ...updatedData }))}
                 />
             )}
 

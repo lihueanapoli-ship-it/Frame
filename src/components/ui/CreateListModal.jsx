@@ -8,6 +8,7 @@ import useScrollLock from '../../hooks/useScrollLock';
 const CreateListModal = ({ isOpen, onClose }) => {
     useScrollLock(isOpen);
     const { createList } = useLists();
+    const [icon, setIcon] = useState('📑');
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [loading, setLoading] = useState(false);
@@ -23,13 +24,15 @@ const CreateListModal = ({ isOpen, onClose }) => {
 
         setLoading(true);
         try {
-            await createList({ name, description, privacy: 'public' });
+            await createList({ name, description, icon, privacy: 'public' });
             onClose();
         } catch (error) {
             console.error('Error creating list', error);
         }
         setLoading(false);
     };
+
+    const POPULAR_EMOJIS = ['🎬', '🍿', '🔥', '❤️', '🌟', '👀', '🎭', '😱', '🤖', '🩸', '🌈', '🍕', '📺', '📼', '💎', '💀'];
 
     return (
         <AnimatePresence>
@@ -61,28 +64,63 @@ const CreateListModal = ({ isOpen, onClose }) => {
                             </button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 md:p-10 space-y-8 custom-scrollbar">
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Nombre de la lista</label>
-                                <input
-                                    autoFocus
-                                    type="text"
-                                    value={name}
-                                    onChange={e => setName(e.target.value)}
-                                    placeholder="Ej: Joyas ocultas del 2023"
-                                    className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-4 text-lg text-white placeholder-gray-700 focus:outline-none focus:border-primary/50 transition-all"
-                                    required
-                                />
-                            </div>
+                        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 md:p-10 space-y-10 custom-scrollbar">
+                            <div className="flex flex-col md:flex-row gap-10">
+                                <div className="space-y-4">
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Icono</label>
+                                    <div className="flex flex-wrap gap-2 max-w-md">
+                                        <div className="w-16 h-16 bg-white/[0.03] border border-white/10 rounded-2xl flex items-center justify-center text-3xl shadow-inner">
+                                            {icon}
+                                        </div>
+                                        <div className="flex-1 grid grid-cols-8 gap-2">
+                                            {POPULAR_EMOJIS.map(e => (
+                                                <button
+                                                    key={e}
+                                                    type="button"
+                                                    onClick={() => setIcon(e)}
+                                                    className={cn(
+                                                        "w-10 h-10 flex items-center justify-center rounded-xl p-0 transition-all border",
+                                                        icon === e ? "bg-primary/20 border-primary scale-110" : "bg-white/5 border-transparent hover:border-white/20 hover:scale-110"
+                                                    )}
+                                                >
+                                                    {e}
+                                                </button>
+                                            ))}
+                                            <input
+                                                type="text"
+                                                maxLength={2}
+                                                placeholder="Otro"
+                                                onChange={e => e.target.value.trim() && setIcon(e.target.value)}
+                                                className="w-10 h-10 bg-white/5 border border-white/10 rounded-xl text-center text-sm focus:outline-none focus:border-primary/50"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
 
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Descripción (opcional)</label>
-                                <textarea
-                                    value={description}
-                                    onChange={e => setDescription(e.target.value)}
-                                    placeholder="¿De qué trata esta colección?"
-                                    className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-gray-700 focus:outline-none focus:border-primary/50 transition-all resize-none h-32"
-                                />
+                                <div className="flex-1 space-y-6">
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Nombre de la lista</label>
+                                        <input
+                                            autoFocus
+                                            type="text"
+                                            value={name}
+                                            onChange={e => setName(e.target.value)}
+                                            placeholder="Ej: Joyas ocultas del 2023"
+                                            className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-4 text-lg text-white placeholder-gray-700 focus:outline-none focus:border-primary/50 transition-all"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Descripción (opcional)</label>
+                                        <textarea
+                                            value={description}
+                                            onChange={e => setDescription(e.target.value)}
+                                            placeholder="¿De qué trata esta colección?"
+                                            className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-gray-700 focus:outline-none focus:border-primary/50 transition-all resize-none h-32"
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </form>
 
