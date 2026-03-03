@@ -28,11 +28,8 @@ import {
     GlobeAltIcon,
     FilmIcon,
     ChartBarIcon,
-    SparklesIcon,
-    ChevronDownIcon,
-    ChevronUpIcon
+    SparklesIcon
 } from '@heroicons/react/24/outline';
-import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import { cn } from '../lib/utils';
 import { getGenresForMovies } from '../utils/genreCache';
 import { OSCAR_BEST_PICTURE_WINNERS } from '../constants/oscarWinners';
@@ -58,34 +55,6 @@ const StatCard = ({ icon: Icon, label, value, colorClass = "text-primary" }) => 
         <span className="text-2xl font-display font-bold text-white tracking-tight">{value}</span>
     </motion.div>
 );
-
-const RankItem = ({ rank, currentCount }) => {
-    const isUnlocked = currentCount >= rank.min;
-    return (
-        <div className={cn(
-            "flex items-center gap-4 p-4 rounded-2xl transition-all border",
-            isUnlocked ? "bg-primary/10 border-primary/20 text-white" : "bg-white/[0.01] border-white/5 text-gray-600 opacity-60"
-        )}>
-            <div className={cn(
-                "w-3 h-3 rounded-full shadow-lg",
-                isUnlocked ? "bg-primary animate-pulse shadow-primary/50" : "bg-gray-800"
-            )} />
-            <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-baseline gap-2">
-                    <span className="font-display font-bold text-sm tracking-widest truncate">
-                        {isUnlocked ? rank.title.toUpperCase() : "CLASSIFIED_INFO"}
-                    </span>
-                    <span className="font-mono text-[10px] shrink-0 font-black">{rank.min} PELIS</span>
-                </div>
-                {isUnlocked ? (
-                    <p className="text-[10px] font-mono text-primary/80 leading-tight mt-1 line-clamp-1">{rank.desc}</p>
-                ) : (
-                    <p className="text-[10px] font-mono text-gray-700 leading-tight mt-1 italic">Visto insuficiente para revelar...</p>
-                )}
-            </div>
-        </div>
-    );
-};
 
 const AchievementBadge = ({ icon, title, desc, unlocked }) => (
     <motion.div
@@ -124,7 +93,6 @@ const StatsView = () => {
 
     const [movieMetadata, setMovieMetadata] = useState({});
     const [radarMode, setRadarMode] = useState('consumption');
-    const [showAllRanks, setShowAllRanks] = useState(false);
     const [statsLoading, setStatsLoading] = useState(true);
 
     useEffect(() => {
@@ -266,17 +234,14 @@ const StatsView = () => {
 
     return (
         <div className="min-h-screen pb-24 pt-12 px-4 md:px-8 max-w-7xl mx-auto space-y-12">
-            <header className="flex flex-col md:flex-row md:items-end justify-between border-b border-white/5 pb-8 gap-6">
-                <div>
-                    <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                        <h1 className="text-5xl md:text-7xl font-display font-bold text-white mb-2 tracking-tight">
-                            ADN <span className="text-primary italic">FILM</span>
-                        </h1>
-                        <p className="font-mono text-[10px] md:text-sm text-gray-500 flex items-center gap-3">
-                            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                            TELEMETRÍA CRÍTICA :: TERMINAL_{user.displayName?.toUpperCase().split(' ')[0]}
-                        </p>
-                    </motion.div>
+            <header className="mb-2 md:mb-8 flex flex-col md:flex-row md:items-end justify-between border-b border-white/5 pb-4 md:pb-6 gap-4">
+                <div className="animate-slide-in-left">
+                    <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-2 tracking-tight">
+                        ADN <span className="text-primary">CINEMATOGRÁFICO</span>
+                    </h1>
+                    <p className="font-mono text-[10px] md:text-sm text-gray-400 uppercase tracking-widest">
+                        ANÁLISIS DE TELEMETRÍA Y ESTADÍSTICAS
+                    </p>
                 </div>
                 <div className="flex flex-wrap gap-4 md:gap-8">
                     <div className="text-center md:text-right">
@@ -316,7 +281,9 @@ const StatsView = () => {
 
                         <div className="mt-auto space-y-6">
                             <div className="flex justify-between items-end mb-2">
-                                <span className="font-mono text-[10px] text-gray-500 uppercase tracking-widest">Progreso al nivel {nextRank.title}</span>
+                                <span className="font-mono text-[10px] text-gray-500 uppercase tracking-widest">
+                                    Progreso al {watched.length >= 500 ? 'Nivel Máximo' : `Nivel ${watched.length >= nextRank.min ? nextRank.title : '???'}`}
+                                </span>
                                 <span className="font-mono text-xs text-primary font-bold">{Math.round(rankProgress)}%</span>
                             </div>
                             <div className="relative h-3 bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
@@ -327,30 +294,8 @@ const StatsView = () => {
                                     transition={{ duration: 1.5, ease: "circOut" }}
                                 />
                             </div>
-                            <button
-                                onClick={() => setShowAllRanks(!showAllRanks)}
-                                className="w-full flex items-center justify-center gap-2 py-3 bg-white/[0.03] hover:bg-white/[0.08] transition-all rounded-2xl text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest border border-white/5 mb-[-10px]"
-                            >
-                                {showAllRanks ? <ChevronUpIcon className="w-4 h-4" /> : <ChevronDownIcon className="w-4 h-4" />}
-                                {showAllRanks ? 'Contraer jerarquía' : 'Expandir todos los rangos'}
-                            </button>
                         </div>
                     </div>
-
-                    <AnimatePresence>
-                        {showAllRanks && (
-                            <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                className="overflow-hidden mt-8 border-t border-white/5 pt-8"
-                            >
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                    {CINEMA_RANKS.map((r) => <RankItem key={r.min} rank={r} currentCount={watched.length} />)}
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
 
                     {/* Background decorations */}
                     <div className="absolute top-0 right-0 w-80 h-80 bg-primary/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2 pointer-events-none group-hover:bg-primary/20 transition-all duration-1000" />
