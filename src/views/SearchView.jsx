@@ -204,7 +204,7 @@ const SearchView = ({ onSelectMovie }) => {
     const activeFilterCount = (minRating > 0 ? 1 : 0) + (runtimeFilter !== 'any' ? 1 : 0) + (yearRange.min > 1900 ? 1 : 0) + (sortOption !== 'popularity.desc' ? 1 : 0) + (selectedFilterGenres.length > 0 ? 1 : 0) + (selectedPlatforms.length > 0 ? 1 : 0);
 
     return (
-        <div className="pt-8 pb-12 relative">
+        <div className="py-6 md:py-10 relative">
             <header className="mb-12 md:mb-16 flex flex-col md:flex-row md:items-end justify-between border-b border-white/5 pb-8 gap-8">
                 <div className="animate-slide-in-left">
                     <h1 className="text-3xl md:text-6xl font-display font-bold text-white mb-2 tracking-normal uppercase">

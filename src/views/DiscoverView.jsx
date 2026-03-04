@@ -205,7 +205,7 @@ const DiscoverView = ({ onSelectMovie }) => {
     if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>;
 
     return (
-        <div className="pt-8 pb-12">
+        <div className="py-6 md:py-10">
             <header className="mb-12 md:mb-16 flex flex-col md:flex-row md:items-end justify-between border-b border-white/5 pb-8 gap-8">
                 <div className="animate-slide-in-left">
                     <h1 className="text-3xl md:text-6xl font-display font-bold text-white mb-2 tracking-normal uppercase">

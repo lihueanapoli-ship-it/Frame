@@ -172,7 +172,7 @@ const AppContent = () => {
     return (
         <div className="min-h-screen bg-background text-white font-sans selection:bg-primary selection:text-white pb-safe">
             <header className="sticky top-0 z-[100] w-full backdrop-blur-xl bg-background/90 border-b border-white/5 transition-all duration-300">
-                <div className="flex h-16 md:h-20 items-center w-full px-4 max-w-7xl mx-auto justify-between relative pt-safe sm:pt-2">
+                <div className="flex h-16 md:h-20 items-center w-full px-4 max-w-7xl mx-auto justify-between relative pt-safe">
                     <div className="flex items-center gap-1.5 z-10">
                         {!isHome && (
                             <button
@@ -238,7 +238,7 @@ const AppContent = () => {
                 </div>
             </header>
 
-            <main className="container max-w-7xl mx-auto px-4 py-1 md:py-2 sm:px-6 lg:px-8 pb-28 md:pb-32">
+            <main className="w-full max-w-7xl mx-auto px-4 pb-32">
                 <Suspense fallback={<RouteFallback />}>
                     <Routes>
                         <Route path="/" element={<DiscoverView onSelectMovie={setSelectedMovie} />} />
