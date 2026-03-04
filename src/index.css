@@ -89,7 +89,7 @@
     @keyframes slideInLeft {
         from {
             opacity: 0;
-            transform: translateX(40vw);
+            transform: translateX(20px);
         }
 
         to {
