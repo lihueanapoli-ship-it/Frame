@@ -106,9 +106,8 @@
 
     /* Font Families */
     --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-    --font-display: 'Syne', sans-serif;
+    --font-display: 'Bebas Neue', sans-serif;
     --font-mono: 'JetBrains Mono', 'Courier New', monospace;
-
     /* Font Sizes - Modular Scale (1.2 ratio) */
     --font-size-xs: 0.75rem;
     /* 12px */
