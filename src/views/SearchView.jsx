@@ -204,9 +204,8 @@ const SearchView = ({ onSelectMovie }) => {
     const activeFilterCount = (minRating > 0 ? 1 : 0) + (runtimeFilter !== 'any' ? 1 : 0) + (yearRange.min > 1900 ? 1 : 0) + (sortOption !== 'popularity.desc' ? 1 : 0) + (selectedFilterGenres.length > 0 ? 1 : 0) + (selectedPlatforms.length > 0 ? 1 : 0);
 
     return (
-        <div className="p-4 pt-8 pb-24 min-h-screen max-w-7xl mx-auto relative">
-
-            <header className="mb-8 md:mb-16 flex flex-col md:flex-row md:items-end justify-between border-b border-white/5 pb-8 gap-8">
+        <div className="min-h-screen pt-12 pb-24 px-4 md:px-8 max-w-7xl mx-auto relative">
+            <header className="mb-12 md:mb-16 flex flex-col md:flex-row md:items-end justify-between border-b border-white/5 pb-8 gap-8">
                 <div className="animate-slide-in-left">
                     <h1 className="text-4xl md:text-7xl font-display font-bold text-white mb-2 tracking-tighter">
                         EXPLORAR <span className="text-primary">PELÍCULAS</span>

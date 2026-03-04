@@ -220,8 +220,8 @@ const FriendsView = () => {
     };
 
     return (
-        <div className="min-h-screen pb-24 px-4 pt-8">
-            <header className="mb-8 md:mb-16 flex flex-col md:flex-row md:items-end justify-between border-b border-white/5 pb-8 gap-8">
+        <div className="min-h-screen pt-12 pb-24 px-4 md:px-8 max-w-7xl mx-auto">
+            <header className="mb-12 md:mb-16 flex flex-col md:flex-row md:items-end justify-between border-b border-white/5 pb-8 gap-8">
                 <div className="animate-slide-in-left">
                     <h1 className="text-4xl md:text-7xl font-display font-bold text-white mb-2 tracking-tighter">
                         CÍRCULO <span className="text-primary">SOCIAL</span>
