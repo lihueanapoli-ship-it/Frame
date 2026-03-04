@@ -244,12 +244,12 @@ const StatsView = () => {
                     </p>
                 </div>
                 <div className="flex gap-12 md:gap-16">
-                    <div className="text-left">
-                        <span className="block font-mono text-[10px] text-gray-600 uppercase tracking-widest mb-2 font-black">Cine consumido</span>
+                    <div className="text-left shrink-0">
+                        <span className="block font-mono text-[10px] text-gray-600 uppercase tracking-widest mb-1 font-black">Cine consumido</span>
                         <span className="text-4xl md:text-6xl font-display font-bold text-white leading-none tracking-tighter">{watched.length}</span>
                     </div>
-                    <div className="text-left border-l border-white/10 pl-8 md:pl-12">
-                        <span className="block font-mono text-[10px] text-gray-600 uppercase tracking-widest mb-2 font-black">En espera</span>
+                    <div className="text-left border-l border-white/10 pl-8 md:pl-12 shrink-0">
+                        <span className="block font-mono text-[10px] text-gray-600 uppercase tracking-widest mb-1 font-black">En espera</span>
                         <span className="text-4xl md:text-6xl font-display font-bold text-white opacity-30 leading-none tracking-tighter">{watchlist.length}</span>
                     </div>
                 </div>
@@ -268,8 +268,8 @@ const StatsView = () => {
                             <div className="w-20 h-20 md:w-24 md:h-24 bg-primary/20 rounded-[2rem] flex items-center justify-center border border-primary/30 shadow-2xl shadow-primary/20 shrink-0">
                                 <TrophyIcon className="w-10 h-10 md:w-12 md:h-12 text-primary" />
                             </div>
-                            <div className="flex-1">
-                                <h3 className="text-5xl md:text-8xl font-display font-bold text-white tracking-[0.1em] italic leading-none mb-3 group-hover:text-primary transition-colors">
+                            <div className="flex-1 min-w-0">
+                                <h3 className="text-5xl md:text-8xl font-display font-bold text-white tracking-widest italic leading-none mb-3 group-hover:text-primary transition-colors truncate">
                                     {currentRank.title.toUpperCase()}
                                 </h3>
                                 <p className="font-mono text-xs md:text-sm text-gray-400 font-bold opacity-70 tracking-tight max-w-xl">

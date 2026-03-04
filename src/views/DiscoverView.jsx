@@ -207,16 +207,14 @@ const DiscoverView = ({ onSelectMovie }) => {
     return (
         <>
             <div className="pb-16">
-                <header className="mb-2 md:mb-4 flex items-end justify-between border-b border-white/5 pb-2 md:pb-4 overflow-hidden">
-                    <div className="relative w-full">
-                        <div className="animate-slide-in-left">
-                            <h1 className="text-3xl md:text-6xl font-display font-bold text-white mb-1 md:mb-2 tracking-tight">
-                                DESCUBRIR <span className="text-primary">CINE</span>
-                            </h1>
-                            <p className="font-mono text-[10px] md:text-sm text-gray-400">
-                                ESTRENOS Y CLÁSICOS SELECCIONADOS
-                            </p>
-                        </div>
+                <header className="mb-8 md:mb-16 flex flex-col md:flex-row md:items-end justify-between border-b border-white/5 pb-8 gap-8">
+                    <div className="animate-slide-in-left">
+                        <h1 className="text-4xl md:text-7xl font-display font-bold text-white mb-2 tracking-tighter">
+                            DESCUBRIR <span className="text-primary italic">CINE</span>
+                        </h1>
+                        <p className="font-mono text-[10px] md:text-xs text-primary/60 uppercase tracking-[0.3em] font-black">
+                            ESTRENOS Y CLÁSICOS SELECCIONADOS
+                        </p>
                     </div>
                 </header>
 

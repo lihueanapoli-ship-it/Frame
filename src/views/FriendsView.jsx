@@ -221,21 +221,21 @@ const FriendsView = () => {
 
     return (
         <div className="min-h-screen pb-24 px-4 pt-8">
-            <header className="mb-8 flex items-end justify-between border-b border-white/5 pb-6">
-                <div>
-                    <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-2 tracking-tight">
-                        CÍRCULO <span className="text-primary">SOCIAL</span>
+            <header className="mb-8 md:mb-16 flex flex-col md:flex-row md:items-end justify-between border-b border-white/5 pb-8 gap-8">
+                <div className="animate-slide-in-left">
+                    <h1 className="text-4xl md:text-7xl font-display font-bold text-white mb-2 tracking-tighter">
+                        CÍRCULO <span className="text-primary italic">SOCIAL</span>
                     </h1>
-                    <p className="font-mono text-[10px] md:text-sm text-gray-400 uppercase tracking-widest">
+                    <p className="font-mono text-[10px] md:text-xs text-primary/60 uppercase tracking-[0.3em] font-black">
                         PANTALLA COMPARTIDA
                     </p>
                 </div>
                 <button
                     onClick={() => setIsSearchOpen(true)}
-                    className="group flex items-center gap-2 px-5 py-3 bg-white/5 hover:bg-primary hover:text-black hover:font-bold rounded-xl transition-all border border-white/10"
+                    className="group flex items-center gap-2 px-5 py-3 md:px-8 md:py-4 bg-white/5 hover:bg-primary hover:text-black hover:font-bold rounded-2xl transition-all border border-white/10 active:scale-95"
                 >
-                    <UserPlusIcon className="w-5 h-5" />
-                    <span className="hidden sm:inline text-sm">Buscar Amigos</span>
+                    <UserPlusIcon className="w-5 h-5 md:w-6 md:h-6" />
+                    <span className="hidden sm:inline text-xs md:text-sm font-black tracking-widest uppercase">Buscar Amigos</span>
                 </button>
             </header>
 
