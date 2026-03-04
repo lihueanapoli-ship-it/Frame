@@ -236,7 +236,7 @@ const StatsView = () => {
         <div className="min-h-screen pt-12 pb-24 px-4 md:px-8 max-w-7xl mx-auto">
             <header className="mb-12 md:mb-16 flex flex-col md:flex-row md:items-end justify-between border-b border-white/5 pb-8 gap-8">
                 <div className="animate-slide-in-left">
-                    <h1 className="text-4xl md:text-7xl font-display font-black text-white mb-2 tracking-tight">
+                    <h1 className="text-4xl md:text-7xl font-display font-extrabold text-white mb-2 tracking-tight">
                         ADN <span className="text-primary italic">FILM</span>
                     </h1>
                     <p className="font-mono text-[10px] md:text-xs text-primary/60 uppercase tracking-[0.3em] font-black">
@@ -269,7 +269,7 @@ const StatsView = () => {
                                 <TrophyIcon className="w-10 h-10 md:w-12 md:h-12 text-primary" />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <h3 className="text-5xl md:text-8xl font-display font-black text-white tracking-tight italic leading-none mb-3 group-hover:text-primary transition-colors truncate">
+                                <h3 className="text-5xl md:text-8xl font-display font-extrabold text-white tracking-tight italic leading-none mb-3 group-hover:text-primary transition-colors truncate">
                                     {currentRank.title.toUpperCase()}
                                 </h3>
                                 <p className="font-mono text-xs md:text-sm text-gray-400 font-bold opacity-70 tracking-tight max-w-xl">

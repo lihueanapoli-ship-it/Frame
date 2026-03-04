@@ -195,7 +195,7 @@ const LibraryView = ({ onSelectMovie }) => {
         <div className="min-h-screen pt-12 pb-24 px-4 md:px-8 max-w-7xl mx-auto">
             <header className="mb-12 md:mb-16 flex flex-col md:flex-row md:items-end justify-between border-b border-white/5 pb-8 gap-8">
                 <div className="animate-slide-in-left">
-                    <h1 className="text-4xl md:text-7xl font-display font-black text-white mb-2 tracking-tight">
+                    <h1 className="text-4xl md:text-7xl font-display font-extrabold text-white mb-2 tracking-tight">
                         MI <span className="text-primary italic">BIBLIOTECA</span>
                     </h1>
                     <p className="font-mono text-[10px] md:text-xs text-primary/60 uppercase tracking-[0.3em] font-black">
