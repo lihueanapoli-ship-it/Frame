@@ -4,7 +4,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { useUserProfile } from '../contexts/UserProfileContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    ResponsiveContainer,
     RadarChart,
     PolarGrid,
     PolarAngleAxis,
@@ -34,6 +33,28 @@ import { cn } from '../lib/utils';
 import { getGenresForMovies } from '../utils/genreCache';
 import { OSCAR_BEST_PICTURE_WINNERS } from '../constants/oscarWinners';
 import { CINEMA_RANKS } from '../constants/cinemaRanks';
+
+// Bulletproof chart wrapper: uses ResizeObserver to measure real pixel dimensions
+// before rendering, so Recharts never sees width/height of 0 or -1.
+const ChartWrapper = ({ children, height }) => {
+    const ref = useRef(null);
+    const [width, setWidth] = useState(0);
+    useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        const ro = new ResizeObserver(([entry]) => {
+            const w = Math.floor(entry.contentRect.width);
+            if (w > 0) setWidth(w);
+        });
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, []);
+    return (
+        <div ref={ref} style={{ width: '100%', height }}>
+            {width > 0 && React.cloneElement(children, { width, height })}
+        </div>
+    );
+};
 
 const formatRuntime = (mins) => {
     const days = Math.floor(mins / 1440);
@@ -353,8 +374,8 @@ const StatsView = () => {
                     </div>
 
                     <div className="w-full h-[350px]">
-                        {chartsReady && !statsLoading && currentRadarData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                        {!statsLoading && currentRadarData.length > 0 ? (
+                            <ChartWrapper height={350}>
                                 <RadarChart cx="50%" cy="50%" outerRadius="80%" data={currentRadarData}>
                                     <PolarGrid stroke="#ffffff10" strokeDasharray="5 5" />
                                     <PolarAngleAxis
@@ -382,7 +403,7 @@ const StatsView = () => {
                                         itemStyle={{ fontFamily: 'monospace', color: '#00F0FF', fontSize: '12px' }}
                                     />
                                 </RadarChart>
-                            </ResponsiveContainer>
+                            </ChartWrapper>
                         ) : (
                             <div className="flex flex-col items-center justify-center h-full text-gray-700 animate-pulse">
                                 <ChartBarIcon className="w-12 h-12 mb-4 opacity-20" />
@@ -403,8 +424,8 @@ const StatsView = () => {
                     </div>
 
                     <div className="w-full h-[220px] mb-8 relative">
-                        {chartsReady && topCountries.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                        {topCountries.length > 0 ? (
+                            <ChartWrapper height={220}>
                                 <PieChart>
                                     <Pie
                                         data={topCountries}
@@ -425,7 +446,7 @@ const StatsView = () => {
                                         itemStyle={{ color: '#fff', fontSize: '11px', fontFamily: 'monospace' }}
                                     />
                                 </PieChart>
-                            </ResponsiveContainer>
+                            </ChartWrapper>
                         ) : (
                             <div className="h-full flex items-center justify-center opacity-10">
                                 <GlobeAltIcon className="w-20 h-20" />
@@ -471,38 +492,36 @@ const StatsView = () => {
                         </div>
                     </div>
                     <div className="w-full h-[180px]">
-                        {chartsReady && (
-                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                                <AreaChart data={cinePulseData}>
-                                    <defs>
-                                        <linearGradient id="pulseGradient" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#00F0FF" stopOpacity={0.4} />
-                                            <stop offset="95%" stopColor="#00F0FF" stopOpacity={0} />
-                                        </linearGradient>
-                                    </defs>
-                                    <XAxis
-                                        dataKey="date"
-                                        tickFormatter={(val) => val.slice(8)}
-                                        stroke="#ffffff10"
-                                        tick={{ fill: '#6B7280', fontSize: 10, fontWeight: 900 }}
-                                        minTickGap={20}
-                                    />
-                                    <Tooltip
-                                        contentStyle={{ backgroundColor: '#111', borderRadius: '12px', border: '1px solid #ffffff10' }}
-                                        itemStyle={{ color: '#00F0FF', fontFamily: 'monospace', fontWeight: 900 }}
-                                    />
-                                    <Area
-                                        type="monotone"
-                                        dataKey="score"
-                                        stroke="#00F0FF"
-                                        fillOpacity={1}
-                                        fill="url(#pulseGradient)"
-                                        strokeWidth={4}
-                                        animationDuration={2000}
-                                    />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                        )}
+                        <ChartWrapper height={180}>
+                            <AreaChart data={cinePulseData}>
+                                <defs>
+                                    <linearGradient id="pulseGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#00F0FF" stopOpacity={0.4} />
+                                        <stop offset="95%" stopColor="#00F0FF" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <XAxis
+                                    dataKey="date"
+                                    tickFormatter={(val) => val.slice(8)}
+                                    stroke="#ffffff10"
+                                    tick={{ fill: '#6B7280', fontSize: 10, fontWeight: 900 }}
+                                    minTickGap={20}
+                                />
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: '#111', borderRadius: '12px', border: '1px solid #ffffff10' }}
+                                    itemStyle={{ color: '#00F0FF', fontFamily: 'monospace', fontWeight: 900 }}
+                                />
+                                <Area
+                                    type="monotone"
+                                    dataKey="score"
+                                    stroke="#00F0FF"
+                                    fillOpacity={1}
+                                    fill="url(#pulseGradient)"
+                                    strokeWidth={4}
+                                    animationDuration={2000}
+                                />
+                            </AreaChart>
+                        </ChartWrapper>
                     </div>
                 </div>
 
@@ -515,28 +534,26 @@ const StatsView = () => {
                         CURVA DE EXIGENCIA
                     </h3>
                     <div className="w-full h-[180px]">
-                        {chartsReady && (
-                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                                <BarChart data={ratingDistribution} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                                    <XAxis
-                                        dataKey="rating"
-                                        stroke="#ffffff10"
-                                        tick={{ fill: '#6B7280', fontSize: 10, fontFamily: 'monospace', fontWeight: 900 }}
-                                    />
-                                    <Tooltip
-                                        cursor={{ fill: 'rgba(255,255,255,0.05)', radius: 8 }}
-                                        contentStyle={{ backgroundColor: '#111', borderRadius: '12px', border: '1px solid #ffffff10' }}
-                                        itemStyle={{ color: '#00F0FF', fontWeight: 900 }}
-                                    />
-                                    <Bar
-                                        dataKey="count"
-                                        fill="#222"
-                                        radius={[8, 8, 0, 0]}
-                                        activeBar={{ fill: '#00F0FF', stroke: '#00F0FF', strokeWidth: 0 }}
-                                    />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        )}
+                        <ChartWrapper height={180}>
+                            <BarChart data={ratingDistribution} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                                <XAxis
+                                    dataKey="rating"
+                                    stroke="#ffffff10"
+                                    tick={{ fill: '#6B7280', fontSize: 10, fontFamily: 'monospace', fontWeight: 900 }}
+                                />
+                                <Tooltip
+                                    cursor={{ fill: 'rgba(255,255,255,0.05)', radius: 8 }}
+                                    contentStyle={{ backgroundColor: '#111', borderRadius: '12px', border: '1px solid #ffffff10' }}
+                                    itemStyle={{ color: '#00F0FF', fontWeight: 900 }}
+                                />
+                                <Bar
+                                    dataKey="count"
+                                    fill="#222"
+                                    radius={[8, 8, 0, 0]}
+                                    activeBar={{ fill: '#00F0FF', stroke: '#00F0FF', strokeWidth: 0 }}
+                                />
+                            </BarChart>
+                        </ChartWrapper>
                     </div>
                     <div className="flex justify-between mt-4 text-[10px] font-mono text-gray-500 uppercase tracking-widest italic font-bold">
                         <span>Generoso</span>
