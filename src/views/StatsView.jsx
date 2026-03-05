@@ -264,7 +264,7 @@ const StatsView = () => {
 
     return (
         <div className="py-6 md:py-10">
-            <header className="mb-12 md:mb-16 flex flex-col md:flex-row md:items-end justify-between border-b border-white/5 pb-8 gap-8">
+            <header className="mb-6 md:mb-10 flex flex-col md:flex-row md:items-end justify-between border-b border-white/5 pb-4 gap-4">
                 <div className="animate-slide-in-left">
                     <h1 className="text-3xl md:text-6xl font-display font-bold text-white mb-2 tracking-normal uppercase">
                         ADN <span className="text-primary italic">FILM</span>
@@ -273,12 +273,12 @@ const StatsView = () => {
                         ANÁLISIS DE TELEMETRÍA :: ID_{user.displayName?.toUpperCase().split(' ')[0]}
                     </p>
                 </div>
-                <div className="flex gap-12 md:gap-16">
-                    <div className="text-left shrink-0">
+                <div className="flex gap-8 md:gap-16 justify-center md:justify-end">
+                    <div className="text-center md:text-left shrink-0">
                         <span className="block font-mono text-[10px] text-gray-600 uppercase tracking-widest mb-1 font-black">Cine consumido</span>
                         <span className="text-4xl md:text-6xl font-display font-bold text-white leading-none tracking-tighter">{watched.length}</span>
                     </div>
-                    <div className="text-left border-l border-white/10 pl-8 md:pl-12 shrink-0">
+                    <div className="text-center md:text-left border-l border-white/10 pl-8 md:pl-12 shrink-0">
                         <span className="block font-mono text-[10px] text-gray-600 uppercase tracking-widest mb-1 font-black">En espera</span>
                         <span className="text-4xl md:text-6xl font-display font-bold text-white opacity-30 leading-none tracking-tighter">{watchlist.length}</span>
                     </div>
