@@ -221,7 +221,7 @@ const FriendsView = () => {
 
     return (
         <div className="py-6 md:py-10">
-            <header className="mb-12 md:mb-16 flex flex-col md:flex-row md:items-end justify-between border-b border-white/5 pb-8 gap-8">
+            <header className="mb-6 md:mb-10 flex flex-col md:flex-row md:items-end justify-between border-b border-white/5 pb-4 gap-4">
                 <div className="animate-slide-in-left">
                     <h1 className="text-3xl md:text-6xl font-display font-bold text-white mb-2 tracking-normal uppercase">
                         CÍRCULO <span className="text-primary italic">SOCIAL</span>
@@ -239,7 +239,7 @@ const FriendsView = () => {
                 </button>
             </header>
 
-            <div className="flex p-1.5 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl mb-12 items-center max-w-md mx-auto sm:mx-0">
+            <div className="flex p-1.5 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl mb-5 items-center max-w-md mx-auto sm:mx-0">
                 <button
                     onClick={() => setActiveTab('friends')}
                     className={cn(
