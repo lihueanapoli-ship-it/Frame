@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useMovies } from '../contexts/MovieContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserProfile } from '../contexts/UserProfileContext';
@@ -94,6 +94,15 @@ const StatsView = () => {
     const [movieMetadata, setMovieMetadata] = useState({});
     const [radarMode, setRadarMode] = useState('consumption');
     const [statsLoading, setStatsLoading] = useState(true);
+    const [chartsReady, setChartsReady] = useState(false);
+
+    // Defer chart rendering to next animation frame so containers have real dimensions
+    useEffect(() => {
+        const rafId = requestAnimationFrame(() => {
+            setChartsReady(true);
+        });
+        return () => cancelAnimationFrame(rafId);
+    }, []);
 
     useEffect(() => {
         const fetchAllMetadata = async () => {
@@ -347,7 +356,7 @@ const StatsView = () => {
                     </div>
 
                     <div className="w-full h-[350px]">
-                        {!statsLoading && currentRadarData.length > 0 ? (
+                        {chartsReady && !statsLoading && currentRadarData.length > 0 ? (
                             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                 <RadarChart cx="50%" cy="50%" outerRadius="80%" data={currentRadarData}>
                                     <PolarGrid stroke="#ffffff10" strokeDasharray="5 5" />
@@ -399,7 +408,7 @@ const StatsView = () => {
                     </div>
 
                     <div className="w-full h-[220px] mb-8 relative">
-                        {topCountries.length > 0 ? (
+                        {chartsReady && topCountries.length > 0 ? (
                             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                 <PieChart>
                                     <Pie
@@ -469,36 +478,38 @@ const StatsView = () => {
                         </div>
                     </div>
                     <div className="w-full h-[180px]">
-                        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                            <AreaChart data={cinePulseData}>
-                                <defs>
-                                    <linearGradient id="pulseGradient" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#00F0FF" stopOpacity={0.4} />
-                                        <stop offset="95%" stopColor="#00F0FF" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <XAxis
-                                    dataKey="date"
-                                    tickFormatter={(val) => val.slice(8)}
-                                    stroke="#ffffff10"
-                                    tick={{ fill: '#6B7280', fontSize: 10, fontWeight: 900 }}
-                                    minTickGap={20}
-                                />
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: '#111', borderRadius: '12px', border: '1px solid #ffffff10' }}
-                                    itemStyle={{ color: '#00F0FF', fontFamily: 'monospace', fontWeight: 900 }}
-                                />
-                                <Area
-                                    type="monotone"
-                                    dataKey="score"
-                                    stroke="#00F0FF"
-                                    fillOpacity={1}
-                                    fill="url(#pulseGradient)"
-                                    strokeWidth={4}
-                                    animationDuration={2000}
-                                />
-                            </AreaChart>
-                        </ResponsiveContainer>
+                        {chartsReady && (
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                                <AreaChart data={cinePulseData}>
+                                    <defs>
+                                        <linearGradient id="pulseGradient" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#00F0FF" stopOpacity={0.4} />
+                                            <stop offset="95%" stopColor="#00F0FF" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <XAxis
+                                        dataKey="date"
+                                        tickFormatter={(val) => val.slice(8)}
+                                        stroke="#ffffff10"
+                                        tick={{ fill: '#6B7280', fontSize: 10, fontWeight: 900 }}
+                                        minTickGap={20}
+                                    />
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: '#111', borderRadius: '12px', border: '1px solid #ffffff10' }}
+                                        itemStyle={{ color: '#00F0FF', fontFamily: 'monospace', fontWeight: 900 }}
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="score"
+                                        stroke="#00F0FF"
+                                        fillOpacity={1}
+                                        fill="url(#pulseGradient)"
+                                        strokeWidth={4}
+                                        animationDuration={2000}
+                                    />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        )}
                     </div>
                 </motion.div>
 
@@ -513,26 +524,28 @@ const StatsView = () => {
                         CURVA DE EXIGENCIA
                     </h3>
                     <div className="w-full h-[180px]">
-                        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                            <BarChart data={ratingDistribution} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                                <XAxis
-                                    dataKey="rating"
-                                    stroke="#ffffff10"
-                                    tick={{ fill: '#6B7280', fontSize: 10, fontFamily: 'monospace', fontWeight: 900 }}
-                                />
-                                <Tooltip
-                                    cursor={{ fill: 'rgba(255,255,255,0.05)', radius: 8 }}
-                                    contentStyle={{ backgroundColor: '#111', borderRadius: '12px', border: '1px solid #ffffff10' }}
-                                    itemStyle={{ color: '#00F0FF', fontWeight: 900 }}
-                                />
-                                <Bar
-                                    dataKey="count"
-                                    fill="#222"
-                                    radius={[8, 8, 0, 0]}
-                                    activeBar={{ fill: '#00F0FF', stroke: '#00F0FF', strokeWidth: 0 }}
-                                />
-                            </BarChart>
-                        </ResponsiveContainer>
+                        {chartsReady && (
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                                <BarChart data={ratingDistribution} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                                    <XAxis
+                                        dataKey="rating"
+                                        stroke="#ffffff10"
+                                        tick={{ fill: '#6B7280', fontSize: 10, fontFamily: 'monospace', fontWeight: 900 }}
+                                    />
+                                    <Tooltip
+                                        cursor={{ fill: 'rgba(255,255,255,0.05)', radius: 8 }}
+                                        contentStyle={{ backgroundColor: '#111', borderRadius: '12px', border: '1px solid #ffffff10' }}
+                                        itemStyle={{ color: '#00F0FF', fontWeight: 900 }}
+                                    />
+                                    <Bar
+                                        dataKey="count"
+                                        fill="#222"
+                                        radius={[8, 8, 0, 0]}
+                                        activeBar={{ fill: '#00F0FF', stroke: '#00F0FF', strokeWidth: 0 }}
+                                    />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        )}
                     </div>
                     <div className="flex justify-between mt-4 text-[10px] font-mono text-gray-500 uppercase tracking-widest italic font-bold">
                         <span>Generoso</span>
