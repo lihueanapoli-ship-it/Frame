@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useMovies } from '../contexts/MovieContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserProfile } from '../contexts/UserProfileContext';
+import { useLists } from '../contexts/ListContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     RadarChart,
@@ -111,6 +112,19 @@ const AchievementBadge = ({ icon, title, desc, unlocked }) => (
 const StatsView = () => {
     const { watched, watchlist } = useMovies();
     const { user } = useAuth();
+    const { myLists } = useLists();
+
+    // Total unique pending movies across ALL user lists (excluding already watched)
+    const totalPending = useMemo(() => {
+        const watchedIds = new Set(watched.map(m => m.id));
+        const allIds = new Set();
+        myLists.forEach(list => {
+            (list.movies || []).forEach(m => {
+                if (!watchedIds.has(m.id)) allIds.add(m.id);
+            });
+        });
+        return allIds.size;
+    }, [myLists, watched]);
 
     const [movieMetadata, setMovieMetadata] = useState({});
     const [radarMode, setRadarMode] = useState('consumption');
@@ -280,7 +294,7 @@ const StatsView = () => {
                     </div>
                     <div className="text-center md:text-left border-l border-white/10 pl-8 md:pl-12 shrink-0">
                         <span className="block font-mono text-[10px] text-gray-600 uppercase tracking-widest mb-1 font-black">En espera</span>
-                        <span className="text-4xl md:text-6xl font-display font-bold text-white opacity-30 leading-none tracking-tighter">{watchlist.length}</span>
+                        <span className="text-4xl md:text-6xl font-display font-bold text-white opacity-30 leading-none tracking-tighter">{totalPending}</span>
                     </div>
                 </div>
             </header>
