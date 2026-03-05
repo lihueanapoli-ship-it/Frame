@@ -205,7 +205,7 @@ const SearchView = ({ onSelectMovie }) => {
 
     return (
         <div className="py-6 md:py-10 relative">
-            <header className="mb-12 md:mb-16 flex flex-col md:flex-row md:items-end justify-between border-b border-white/5 pb-8 gap-8">
+            <header className="mb-6 md:mb-10 flex flex-col md:flex-row md:items-end justify-between border-b border-white/5 pb-4 gap-8">
                 <div className="animate-slide-in-left">
                     <h1 className="text-3xl md:text-6xl font-display font-bold text-white mb-2 tracking-normal uppercase">
                         EXPLORAR <span className="text-primary italic">PELÍCULAS</span>
@@ -216,7 +216,7 @@ const SearchView = ({ onSelectMovie }) => {
                 </div>
             </header>
 
-            <div className="flex gap-3 items-start mb-8">
+            <div className="flex gap-3 items-start mb-6">
                 <div className="flex-1">
                     <SearchBar onSelectMovie={onSelectMovie} onSearchCallback={handleSearch} placeholder="Buscar películas..." />
                 </div>

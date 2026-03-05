@@ -206,7 +206,7 @@ const DiscoverView = ({ onSelectMovie }) => {
 
     return (
         <div className="py-6 md:py-10">
-            <header className="mb-12 md:mb-16 flex flex-col md:flex-row md:items-end justify-between border-b border-white/5 pb-8 gap-8">
+            <header className="mb-6 md:mb-10 flex flex-col md:flex-row md:items-end justify-between border-b border-white/5 pb-4 gap-8">
                 <div className="animate-slide-in-left">
                     <h1 className="text-3xl md:text-6xl font-display font-bold text-white mb-2 tracking-normal uppercase">
                         DESCUBRIR <span className="text-primary italic">CINE</span>
@@ -221,7 +221,7 @@ const DiscoverView = ({ onSelectMovie }) => {
                 <HeroCarousel movies={data.trending.slice(0, 5)} onSelectMovie={onSelectMovie} />
             </div>
 
-            <div className="space-y-6 mt-6">
+            <div className="space-y-6 mt-4">
                 {watched.length > 0 ? (
                     <MovieSection
                         title="Tu ADN"

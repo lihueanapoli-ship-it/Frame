@@ -193,7 +193,7 @@ const LibraryView = ({ onSelectMovie }) => {
 
     return (
         <div className="py-6 md:py-10">
-            <header className="mb-12 md:mb-16 flex flex-col md:flex-row md:items-end justify-between border-b border-white/5 pb-8 gap-8">
+            <header className="mb-6 md:mb-10 flex flex-col md:flex-row md:items-end justify-between border-b border-white/5 pb-4 gap-8">
                 <div className="animate-slide-in-left">
                     <h1 className="text-3xl md:text-6xl font-display font-bold text-white mb-2 tracking-normal uppercase">
                         MI <span className="text-primary italic">BIBLIOTECA</span>
@@ -204,7 +204,7 @@ const LibraryView = ({ onSelectMovie }) => {
                 </div>
             </header>
 
-            <div className="sticky top-20 z-30 bg-[#0A0A0A] py-4 -mx-4 px-4 border-b border-white/5 mb-6 shadow-xl">
+            <div className="sticky top-20 z-30 bg-[#0A0A0A] py-2 -mx-4 px-4 border-b border-white/5 mb-4 shadow-xl">
                 <div className="flex p-1 bg-surface rounded-xl relative overflow-hidden">
                     <button onClick={() => setActiveTab('watchlist')} className={cn("flex-1 flex items-center justify-center gap-2 py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all z-10", activeTab === 'watchlist' ? "text-white" : "text-gray-500 hover:text-gray-300")}>
                         <FilmIcon className="w-4 h-4" /> <span>Por ver</span>
@@ -221,7 +221,7 @@ const LibraryView = ({ onSelectMovie }) => {
                 </div>
             </div>
 
-            <div className="space-y-4 mb-6">
+            <div className="space-y-4 mb-4">
                 {activeTab === 'watchlist' && (
                     <div className="relative z-10 space-y-4">
                         <div className="relative">
