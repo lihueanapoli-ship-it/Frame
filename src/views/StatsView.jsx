@@ -53,7 +53,7 @@ const StatCard = ({ icon: Icon, label, value, colorClass = "text-primary" }) => 
         </div>
         <span className="text-[10px] font-mono font-black text-gray-500 uppercase tracking-[0.2em] mb-1">{label}</span>
         <span className="text-2xl font-display font-bold text-white tracking-tight">{value}</span>
-    </div>
+    </motion.div>
 );
 
 const AchievementBadge = ({ icon, title, desc, unlocked }) => (
@@ -84,7 +84,7 @@ const AchievementBadge = ({ icon, title, desc, unlocked }) => (
         <span className="font-mono text-[9px] text-center text-gray-500 leading-relaxed px-2 font-black uppercase">
             {desc}
         </span>
-    </div>
+    </motion.div>
 );
 
 const StatsView = () => {
@@ -308,9 +308,8 @@ const StatsView = () => {
                     {/* Background decorations */}
                     <div className="absolute top-0 right-0 w-80 h-80 bg-primary/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2 pointer-events-none group-hover:bg-primary/20 transition-all duration-1000" />
                     <div className="absolute bottom-0 left-0 w-40 h-40 bg-pink-500/5 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2 pointer-events-none" />
-                </div>
+                </motion.div>
 
-                {/* Stat Cards Stack */}
                 <div className="flex flex-col gap-6">
                     <StatCard icon={ClockIcon} label="Tiempo de Vuelo" value={formatRuntime(runtimes)} />
                     <StatCard icon={FilmIcon} label="Academia (Oscar)" value={`${oscarStats.count}/${oscarStats.total}`} colorClass="text-yellow-500" />
