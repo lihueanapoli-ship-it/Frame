@@ -348,7 +348,7 @@ const StatsView = () => {
 
                     <div className="w-full h-[350px]">
                         {!statsLoading && currentRadarData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                 <RadarChart cx="50%" cy="50%" outerRadius="80%" data={currentRadarData}>
                                     <PolarGrid stroke="#ffffff10" strokeDasharray="5 5" />
                                     <PolarAngleAxis
@@ -400,7 +400,7 @@ const StatsView = () => {
 
                     <div className="w-full h-[220px] mb-8 relative">
                         {topCountries.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                 <PieChart>
                                     <Pie
                                         data={topCountries}
@@ -469,7 +469,7 @@ const StatsView = () => {
                         </div>
                     </div>
                     <div className="w-full h-[180px]">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                             <AreaChart data={cinePulseData}>
                                 <defs>
                                     <linearGradient id="pulseGradient" x1="0" y1="0" x2="0" y2="1">
@@ -513,7 +513,7 @@ const StatsView = () => {
                         CURVA DE EXIGENCIA
                     </h3>
                     <div className="w-full h-[180px]">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                             <BarChart data={ratingDistribution} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                                 <XAxis
                                     dataKey="rating"
