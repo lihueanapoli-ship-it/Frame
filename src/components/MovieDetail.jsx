@@ -499,6 +499,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             removeMovie(movie.id);
+                                            onClose();
                                         }}
                                         className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all border border-red-500/10 hover:border-red-500/30 group"
                                         title="Eliminar de mi historial"
