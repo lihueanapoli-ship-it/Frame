@@ -225,6 +225,12 @@ export const ListProvider = ({ children }) => {
         return generalList?.movies?.some(m => m.id === movieId) || false;
     };
 
+    const isInAnyList = (movieId) => {
+        return [...myLists, ...collabLists].some(list =>
+            list.movies?.some(m => m.id === movieId)
+        );
+    };
+
     // 2. Create List - Handles both (obj) and (name, desc, privacy) signatures
     const createList = async (arg1, arg2, arg3) => {
         if (!user) return;
@@ -564,7 +570,8 @@ export const ListProvider = ({ children }) => {
         generalList,
         addToGeneralList,
         removeFromGeneralList,
-        isInGeneralList
+        isInGeneralList,
+        isInAnyList
     };
 
     return (
