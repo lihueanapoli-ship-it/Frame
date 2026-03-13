@@ -161,7 +161,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-[180] flex items-end sm:items-center justify-center sm:p-[30px]">
+        <div className="fixed inset-0 z-[180] flex items-center justify-center p-4 pb-[80px] sm:p-[30px]">
             <motion.div
                 variants={overlayVariants}
                 initial="hidden"
@@ -176,7 +176,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                 initial="hidden"
                 animate="visible"
                 exit="exit"
-                className="relative w-full sm:max-w-7xl bg-[#0F0F0F] rounded-t-[2rem] sm:rounded-[2.5rem] overflow-hidden shadow-[0_-10px_50px_rgba(0,0,0,0.8)] sm:shadow-[0_20px_50px_rgba(0,0,0,0.8)] h-[92vh] sm:h-[calc(100vh-60px)] sm:max-h-[90vh] flex flex-col border-t border-x border-white/10 sm:border"
+                className="relative w-full max-w-2xl sm:max-w-7xl bg-[#0F0F0F] rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)] h-[calc(100vh-100px)] sm:h-[calc(100vh-60px)] sm:max-h-[90vh] flex flex-col border border-white/10"
             >
                 {!isFullVideoOpen && (
                     <button
