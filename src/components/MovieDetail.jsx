@@ -496,10 +496,19 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                         </button>
                                     )}
                                     <button
-                                        onClick={(e) => {
+                                        onClick={async (e) => {
                                             e.stopPropagation();
+                                            // 1. Remove from personal watched (clears rating too)
                                             removeMovie(movie.id);
-                                            onClose();
+                                            // 2. Unset watched:true flag in every list that has it,
+                                            //    so it disappears from the "Visitas" computed list
+                                            const allL = [...myLists, ...collabLists];
+                                            await Promise.all(
+                                                allL
+                                                    .filter(l => l.movies?.some(m => m.id === movie.id && m.watched))
+                                                    .map(l => setMovieWatchedInList(l.id, movie.id, false))
+                                            );
+                                            // Modal stays open — user can re-add to any list
                                         }}
                                         className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all border border-red-500/10 hover:border-red-500/30 group"
                                         title="Eliminar de mi historial"
