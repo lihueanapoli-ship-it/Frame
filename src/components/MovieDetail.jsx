@@ -351,9 +351,9 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                 </div>
 
 
-                <div className="p-4 bg-surface-elevated/95 backdrop-blur-xl border-t border-white/10 z-[60] relative">
-                    {user && (
-                        <div className="flex justify-end mb-3">
+                <div className="px-4 pt-3 pb-4 bg-surface-elevated/95 backdrop-blur-xl border-t border-white/10 z-[60] relative">
+                    {!watchedState && user && (
+                        <div className="flex justify-end mb-2">
                             <button
                                 onClick={() => setShowShareFriend(true)}
                                 className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-primary transition-colors group"
@@ -481,23 +481,36 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                     )}
 
                     {watchedState && (
-                        <div className="space-y-4 max-w-4xl mx-auto">
-                            <div className="flex items-center justify-between mb-2">
+                        <div className="max-w-4xl mx-auto space-y-2">
+                            {/* Header row: label + actions */}
+                            <div className="flex items-center justify-between">
                                 <span className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">Tu Calificación</span>
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        removeMovie(movie.id);
-                                    }}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all border border-red-500/10 hover:border-red-500/30 group"
-                                    title="Eliminar de mi historial"
-                                >
-                                    <TrashIcon className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                                    <span className="text-[10px] font-bold tracking-wider uppercase">Borrar Vista</span>
-                                </button>
+                                <div className="flex items-center gap-3">
+                                    {user && (
+                                        <button
+                                            onClick={() => setShowShareFriend(true)}
+                                            className="flex items-center gap-1 text-[10px] font-semibold text-gray-500 hover:text-primary transition-colors"
+                                        >
+                                            <UserGroupIcon className="w-3.5 h-3.5" />
+                                            <span className="hidden xs:inline">Recomendar</span>
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            removeMovie(movie.id);
+                                        }}
+                                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all border border-red-500/10 hover:border-red-500/30 group"
+                                        title="Eliminar de mi historial"
+                                    >
+                                        <TrashIcon className="w-3 h-3 group-hover:scale-110 transition-transform" />
+                                        <span className="text-[10px] font-bold tracking-wider uppercase">Borrar</span>
+                                    </button>
+                                </div>
                             </div>
 
-                            <div className="flex justify-between items-center px-0.5" onMouseLeave={() => setHoverRating(0)}>
+                            {/* Stars row */}
+                            <div className="flex justify-between items-center" onMouseLeave={() => setHoverRating(0)}>
                                 {Array.from({ length: 10 }, (_, i) => i + 1).map(star => {
                                     const isActive = (hoverRating || userRating) >= star;
                                     return (
@@ -507,14 +520,15 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                             triggerConfetti();
                                             playSuccess();
                                             addToWatched(movie, star);
-                                        }} className="group p-0.5 xs:p-1 sm:p-1.5 md:p-2 transition-transform hover:scale-125 focus:outline-none flex-1 flex justify-center touch-manipulation">
-                                            {isActive ? <StarIconSolid className={cn("w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 transition-colors duration-200", star <= 4 ? "text-red-500" : star <= 7 ? "text-yellow-500" : "text-primary")} /> : <StarIcon className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-gray-700 group-hover:text-gray-500 transition-colors" />}
+                                        }} className="group p-0.5 sm:p-1 transition-transform hover:scale-125 focus:outline-none flex-1 flex justify-center touch-manipulation">
+                                            {isActive ? <StarIconSolid className={cn("w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 transition-colors duration-200", star <= 4 ? "text-red-500" : star <= 7 ? "text-yellow-500" : "text-primary")} /> : <StarIcon className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-gray-700 group-hover:text-gray-500 transition-colors" />}
                                         </button>
                                     );
                                 })}
                             </div>
 
-                            <div className="h-8 flex flex-col items-center justify-center mt-2">
+                            {/* Rating label */}
+                            <div className="h-6 flex items-center justify-center">
                                 {(hoverRating || userRating) > 0 ? (
                                     <motion.div
                                         key={hoverRating || userRating}
@@ -523,7 +537,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                         className="text-center"
                                     >
                                         <span className={cn(
-                                            "font-display text-lg font-bold tracking-wide",
+                                            "font-display text-sm font-bold tracking-wide",
                                             (hoverRating || userRating) <= 4 ? "text-red-400" :
                                                 (hoverRating || userRating) <= 7 ? "text-yellow-400" :
                                                     "text-primary"
