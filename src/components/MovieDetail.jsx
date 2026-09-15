@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { X as XMarkIcon, Calendar as CalendarIcon, Clock as ClockIcon, List as ListBulletIcon, ChevronDown as ChevronDownIcon, Trash2 as TrashIcon, Globe as GlobeAltIcon } from 'lucide-react';
 import { Star as StarIconSolid, Plus as PlusIcon, Check as CheckIcon, Star as StarIcon, Play as PlayIcon } from 'lucide-react';
-import { getBackdropUrl, getPosterUrl, getMovieDetails, getMovieVideos, getWatchProviders } from '../api/tmdb';
+import { getBackdropUrl, getPosterUrl, getMovieDetails, getMovieMetadata, getMovieVideos, getWatchProviders, normalizeMovie } from '../services/tmdb';
 import { useMovies } from '../contexts/MovieContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useLists } from '../contexts/ListContext';
@@ -16,7 +16,7 @@ import useScrollLock from '../hooks/useScrollLock';
 const MovieDetail = ({ movie: initialMovie, onClose }) => {
     // MovieDetail only renders when a movie is selected, so lock is always active
     useScrollLock(true);
-    const [movie, setMovie] = useState(initialMovie);
+    const [movie, setMovie] = useState(() => ({ ...initialMovie, ...normalizeMovie(initialMovie) }));
     const [showListModal, setShowListModal] = useState(false);
     const [showDropdown, setShowDropdown] = useState(false);
     const [videoKey, setVideoKey] = useState(null);
@@ -24,6 +24,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
     const [isFullVideoOpen, setIsFullVideoOpen] = useState(false);
     const [hoverRating, setHoverRating] = useState(0);
     const [watchProviders, setWatchProviders] = useState(null);
+    const [metadata, setMetadata] = useState(null);
     const dropdownRef = useRef(null);
 
     const { addToWatched, isWatched, removeMovie, watched } = useMovies();
@@ -51,27 +52,35 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
     const userRating = userMovie?.rating || 0;
 
     useEffect(() => {
+        let cancelled = false;
+        let videoTimer;
+        setMovie({ ...initialMovie, ...normalizeMovie(initialMovie) });
+        setMetadata(null);
+        setWatchProviders(null);
+        setVideoKey(null);
+        setShowVideo(false);
         const loadData = async () => {
-            const details = await getMovieDetails(movie.id);
-            if (details) {
-                setMovie(prev => ({ ...prev, ...details }));
-            }
-
-            const videos = await getMovieVideos(movie.id);
-            const trailer = videos.find(v => v.type === 'Trailer' && v.site === 'YouTube');
-            const teaser = videos.find(v => v.type === 'Teaser' && v.site === 'YouTube');
-            const bestVideo = trailer || teaser || videos[0];
+            // The service shares the appended detail response across these callers.
+            const [details, extra, videos, providers] = await Promise.all([
+                getMovieDetails(initialMovie.id), getMovieMetadata(initialMovie.id),
+                getMovieVideos(initialMovie.id), getWatchProviders(initialMovie.id)
+            ]);
+            if (cancelled) return;
+            if (details) setMovie(prev => ({
+                ...prev, ...details,
+                runtime: extra?.runtime || 0, origin_country: extra?.originCountries || []
+            }));
+            setMetadata(extra);
+            setWatchProviders(providers);
+            const bestVideo = videos.find(v => v.type === 'Trailer') || videos[0];
             if (bestVideo) {
                 setVideoKey(bestVideo.key);
-                setTimeout(() => setShowVideo(true), 800);
+                videoTimer = setTimeout(() => setShowVideo(true), 800);
             }
-
-            const providers = await getWatchProviders(movie.id);
-            setWatchProviders(providers);
         };
-
         loadData();
-    }, [movie.id]);
+        return () => { cancelled = true; clearTimeout(videoTimer); };
+    }, [initialMovie.id]);
 
     useEffect(() => {
         document.body.style.overflow = 'hidden';
@@ -144,20 +153,6 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
         exit: { y: "100%", transition: { type: "tween", ease: "easeInOut", duration: 0.3 } }
     };
 
-    const getDirectStreamingLink = (providerName, movieTitle) => {
-        const name = providerName.toLowerCase();
-        const query = encodeURIComponent(movieTitle);
-
-        if (name.includes('netflix')) return `https://www.netflix.com/search?q=${query}`;
-        if (name.includes('disney')) return `https://www.disneyplus.com/search?q=${query}`;
-        if (name.includes('amazon') || name.includes('prime')) return `https://www.amazon.com/s?k=${query}&i=instant-video`;
-        if (name.includes('hbo') || name.includes('max')) return `https://www.max.com/search/${query}`;
-        if (name.includes('apple')) return `https://tv.apple.com/search?term=${query}`;
-        if (name.includes('google')) return `https://play.google.com/store/search?q=${query}&c=movies`;
-
-        return `https://www.google.com/search?q=ver+${query}+en+${encodeURIComponent(providerName)}`;
-    };
-
     return (
         <div className="fixed inset-0 z-[180] flex items-center justify-center p-4 pb-[80px] sm:p-[30px]">
             <motion.div
@@ -203,7 +198,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                             showVideo ? "opacity-0" : "opacity-100"
                         )}>
                             <img
-                                src={getBackdropUrl(movie.backdrop_path) || getPosterUrl(movie.poster_path)}
+                                src={movie.backdropPath ? getBackdropUrl(movie.backdropPath) : getPosterUrl(movie.posterPath)}
                                 alt={movie.title}
                                 className="w-full h-full object-cover"
                             />
@@ -250,20 +245,20 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                 transition={{ delay: 0.4 }}
                                 className="flex flex-wrap gap-2 text-xs sm:text-sm font-medium text-gray-200"
                             >
-                                {movie.release_date && (
-                                    <span className="flex items-center gap-1 sm:gap-1.5 backdrop-blur-sm bg-black/30 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-white/5"><CalendarIcon className="w-3 h-3 sm:w-4 sm:h-4" /> {movie.release_date.split('-')[0]}</span>
+                                {movie.releaseDate && (
+                                    <span className="flex items-center gap-1 sm:gap-1.5 backdrop-blur-sm bg-black/30 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-white/5"><CalendarIcon className="w-3 h-3 sm:w-4 sm:h-4" /> {movie.releaseDate.split('-')[0]}</span>
                                 )}
                                 {movie.runtime > 0 && (
                                     <span className="flex items-center gap-1 sm:gap-1.5 backdrop-blur-sm bg-black/30 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-white/5"><ClockIcon className="w-3 h-3 sm:w-4 sm:h-4" /> {Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m</span>
                                 )}
-                                {movie.production_countries?.length > 0 && (
+                                {metadata?.productionCountries?.length > 0 && (
                                     <span className="flex items-center gap-1 sm:gap-1.5 backdrop-blur-sm bg-black/30 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-white/5 uppercase">
                                         <GlobeAltIcon className="w-3 h-3 sm:w-4 sm:h-4 text-blue-400" />
-                                        {movie.production_countries[0].iso_3166_1}
+                                        {metadata.productionCountries[0].code}
                                     </span>
                                 )}
-                                {movie.vote_average > 0 && (
-                                    <span className="flex items-center gap-1 sm:gap-1.5 text-yellow-400 backdrop-blur-sm bg-black/30 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-white/5"><StarIconSolid fill="currentColor" className="w-3 h-3 sm:w-4 sm:h-4" /> {movie.vote_average.toFixed(1)}</span>
+                                {movie.voteAverage > 0 && (
+                                    <span className="flex items-center gap-1 sm:gap-1.5 text-yellow-400 backdrop-blur-sm bg-black/30 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-white/5"><StarIconSolid fill="currentColor" className="w-3 h-3 sm:w-4 sm:h-4" /> {movie.voteAverage.toFixed(1)}</span>
                                 )}
                             </motion.div>
                         </div>
@@ -288,50 +283,50 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                 </div>
                             )}
 
-                            {watchProviders !== null && (
-                                <div>
-                                    <h3 className="text-lg md:text-xl font-bold text-white mb-3">Dónde Ver</h3>
-                                    {watchProviders?.flatrate?.length > 0 ? (
-                                        <div className="flex flex-wrap gap-3">
-                                            {watchProviders.flatrate.map(p => (
-                                                <a
-                                                    key={p.provider_id}
-                                                    href={getDirectStreamingLink(p.provider_name, movie.title)}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    onClick={e => e.stopPropagation()}
-                                                    title={`Ver en ${p.provider_name}`}
-                                                    className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2 hover:border-primary/40 hover:bg-white/10 transition-all group cursor-pointer"
-                                                >
-                                                    <img
-                                                        src={`https://image.tmdb.org/t/p/w45${p.logo_path}`}
-                                                        alt={p.provider_name}
-                                                        className="w-7 h-7 rounded-lg object-cover"
-                                                    />
-                                                    <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">
-                                                        {p.provider_name}
-                                                    </span>
-                                                </a>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center gap-2 text-sm text-gray-500 bg-white/[0.03] border border-white/5 rounded-xl px-4 py-3">
-                                            <span className="text-lg">😔</span>
-                                            <span>Sin disponibilidad de streaming en tu región por el momento</span>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+                            <div>
+                                <h3 className="text-lg md:text-xl font-bold text-white mb-3">Dónde ver en Argentina</h3>
+                                {!watchProviders ? (
+                                    <p className="text-sm text-gray-500">Consultando disponibilidad...</p>
+                                ) : watchProviders.status === 'error' ? (
+                                    <p className="text-sm text-gray-500">No pudimos consultar las plataformas. Intentá nuevamente más tarde.</p>
+                                ) : watchProviders.status !== 'available' ? (
+                                    <p className="text-sm text-gray-500">Sin opciones de suscripción, alquiler o compra informadas para Argentina.</p>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {[['flatrate', 'Suscripción'], ['rent', 'Alquiler'], ['buy', 'Compra']].map(([type, label]) => (
+                                            watchProviders[type].length > 0 && (
+                                                <div key={type}>
+                                                    <h4 className="text-sm font-semibold text-gray-400 mb-2">{label}</h4>
+                                                    <div className="flex flex-wrap gap-3">
+                                                        {watchProviders[type].map(provider => (
+                                                            <a key={provider.id} href={watchProviders.link || undefined}
+                                                                target="_blank" rel="noopener noreferrer"
+                                                                onClick={event => event.stopPropagation()}
+                                                                title={provider.name}
+                                                                className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2 hover:border-primary/40">
+                                                                <img src={provider.logoUrl} alt="" className="w-7 h-7 rounded-lg object-cover"
+                                                                    onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = '/logo.png'; }} />
+                                                                <span className="text-sm text-gray-300">{provider.name}</span>
+                                                            </a>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )
+                                        ))}
+                                    </div>
+                                )}
+                                <p className="text-xs text-gray-600 mt-3">Disponibilidad: JustWatch / TMDB</p>
+                            </div>
 
-                            {movie.credits?.cast?.length > 0 && (
+                            {metadata?.cast?.length > 0 && (
                                 <div>
                                     <h3 className="text-xl font-bold text-white mb-4">Elenco Principal</h3>
                                     <div className="flex gap-4 overflow-x-auto pb-6 hide-scrollbar">
-                                        {movie.credits.cast.slice(0, 10).map(actor => (
+                                        {metadata.cast.slice(0, 10).map(actor => (
                                             <div key={actor.id} className="w-28 flex-shrink-0 text-center group">
                                                 <div className="w-24 h-24 mx-auto mb-3 rounded-full overflow-hidden bg-surface-elevated border border-white/5 group-hover:border-primary/50 transition-colors">
-                                                    {actor.profile_path ? (
-                                                        <img src={`https://image.tmdb.org/t/p/w185${actor.profile_path}`} className="w-full h-full object-cover" alt={actor.name} />
+                                                    {actor.profilePath ? (
+                                                        <img src={getPosterUrl(actor.profilePath, 'w185')} className="w-full h-full object-cover" alt={actor.name} />
                                                     ) : (
                                                         <div className="w-full h-full flex items-center justify-center text-xs text-gray-600">N/A</div>
                                                     )}

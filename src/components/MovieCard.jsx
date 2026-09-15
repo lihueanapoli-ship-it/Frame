@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getPosterUrl, getBackdropUrl } from '../api/tmdb';
+import { getPosterUrl, normalizeMovie } from '../services/tmdb';
 import { Star, CheckCircle, Clock } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useSound } from '../contexts/SoundContext';
@@ -9,7 +9,8 @@ import { useLists } from '../contexts/ListContext';
 import OscarBadge from './badges/OscarBadge';
 import { isOscarWinner } from '../constants/oscarWinners';
 
-const MovieCard = ({ movie, onClick, rating, variant = 'default', onAddToWatchlist, onMarkWatched }) => {
+const MovieCard = ({ movie: sourceMovie, onClick, rating, variant = 'default', onAddToWatchlist, onMarkWatched }) => {
+    const movie = normalizeMovie(sourceMovie);
     const [isHovered, setIsHovered] = useState(false);
     const { playHover, playClick } = useSound();
     const { isWatched } = useMovies();
@@ -19,13 +20,13 @@ const MovieCard = ({ movie, onClick, rating, variant = 'default', onAddToWatchli
     const pending = !watched && isInAnyList(movie.id);
 
     // Metadata helpers
-    const year = movie.release_date ? movie.release_date.split('-')[0] : 'N/A';
+    const year = movie.releaseDate ? movie.releaseDate.split('-')[0] : 'N/A';
 
     return (
         <div
             onClick={() => {
                 playClick();
-                onClick(movie);
+                onClick?.(sourceMovie);
             }}
             onMouseEnter={() => {
                 setIsHovered(true);
@@ -43,8 +44,8 @@ const MovieCard = ({ movie, onClick, rating, variant = 'default', onAddToWatchli
                 "w-full overflow-hidden relative aspect-[2/3] bg-surface-elevated",
             )}>
                 <img
-                    src={getPosterUrl(movie.poster_path, 'w342')}
-                    srcSet={`${getPosterUrl(movie.poster_path, 'w185')} 185w, ${getPosterUrl(movie.poster_path, 'w342')} 342w, ${getPosterUrl(movie.poster_path, 'w500')} 500w`}
+                    src={getPosterUrl(movie.posterPath, 'w342')}
+                    srcSet={`${getPosterUrl(movie.posterPath, 'w185')} 185w, ${getPosterUrl(movie.posterPath, 'w342')} 342w, ${getPosterUrl(movie.posterPath, 'w500')} 500w`}
                     sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 250px"
                     alt={`Póster de ${movie.title}`}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
@@ -83,11 +84,11 @@ const MovieCard = ({ movie, onClick, rating, variant = 'default', onAddToWatchli
                 <div className="flex justify-between items-center mt-1">
                     <span className="text-secondary text-xs font-medium flex items-center gap-2">
                         <span>{year}</span>
-                        {!rating && movie.vote_average > 0 && (
+                        {!rating && movie.voteAverage > 0 && (
                             <>
                                 <span className="text-white/20">•</span>
                                 <span className="flex items-center gap-1 text-yellow-500/80">
-                                    <Star size={10} fill="currentColor" /> {movie.vote_average.toFixed(1)}
+                                    <Star size={10} fill="currentColor" /> {movie.voteAverage.toFixed(1)}
                                 </span>
                             </>
                         )}

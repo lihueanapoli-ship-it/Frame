@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { getTrendingMovies, getMoviesByGenre, searchMovies, discoverMovies } from '../api/tmdb';
+import { getTrendingMovies, getMoviesByGenre, searchMovies, discoverMovies, filterMoviesByProviders } from '../services/tmdb';
 import { getOscarWinners } from '../api/oscarApi';
 import SearchBar from '../components/SearchBar';
 import MovieCard from '../components/MovieCard';
@@ -37,6 +37,7 @@ const GENRES = [
 const SearchView = ({ onSelectMovie }) => {
 
     const navigate = useNavigate();
+    const latestRequest = useRef(0);
 
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedGenre, setSelectedGenre] = useState(null);
@@ -91,7 +92,7 @@ const SearchView = ({ onSelectMovie }) => {
 
         if (selectedPlatforms.length > 0) {
             params['with_watch_providers'] = selectedPlatforms.join('|');
-            params['watch_region'] = 'AR';
+            params['with_watch_monetization_types'] = 'flatrate';
         }
 
         if (originCountry !== 'any') {
@@ -102,24 +103,23 @@ const SearchView = ({ onSelectMovie }) => {
     };
 
     const fetchMovies = useCallback(async (pageNum, reset = false) => {
+        const requestId = ++latestRequest.current;
         setLoading(true);
         try {
             let data = [];
             const filterParams = getFilterParams();
 
             if (searchQuery) {
-                data = await searchMovies(searchQuery);
-                if (minRating > 0) data = data.filter(m => m.vote_average >= minRating);
+                data = await searchMovies(searchQuery, pageNum);
             }
             else if (isOscars) {
                 data = await getOscarWinners();
-                if (minRating > 0) data = data.filter(m => m.vote_average >= minRating);
             }
             else if (selectedGenre) {
                 data = await getMoviesByGenre(selectedGenre, filterParams, pageNum);
             }
             else {
-                const hasFilters = minRating > 0 || runtimeFilter !== 'any' || yearRange.min > 1900 || sortOption !== 'popularity.desc' || selectedFilterGenres.length > 0 || selectedPlatforms.length > 0;
+                const hasFilters = minRating > 0 || runtimeFilter !== 'any' || yearRange.min > 1900 || sortOption !== 'popularity.desc' || selectedFilterGenres.length > 0 || selectedPlatforms.length > 0 || originCountry !== 'any' || yearRange.max < 2050;
 
                 if (hasFilters) {
                     data = await discoverMovies({ ...filterParams, page: pageNum });
@@ -128,41 +128,44 @@ const SearchView = ({ onSelectMovie }) => {
                 }
             }
 
-            if (data.length === 0 && pageNum > 1) {
-                setHasMore(false);
-            } else {
-                setResults(prev => {
-                    const base = reset ? [] : prev;
-                    if (data.length === 0) return base;
-                    const combined = [...base, ...data];
-                    const uniqueMap = new Map();
-                    combined.forEach(item => { if (item.id) uniqueMap.set(item.id, item); });
-                    return Array.from(uniqueMap.values());
-                });
-                if (data.length < 20 && !isOscars) setHasMore(false);
-                else setHasMore(true);
+            const sourceCount = data.length;
+            if ((searchQuery || isOscars) && minRating > 0) {
+                data = data.filter(movie => movie.voteAverage >= minRating);
             }
+            if ((searchQuery || isOscars) && selectedPlatforms.length > 0) {
+                data = await filterMoviesByProviders(data, selectedPlatforms, {
+                    isCancelled: () => requestId !== latestRequest.current
+                });
+            }
+            if (requestId !== latestRequest.current) return;
+            setResults(previous => {
+                const combined = [...(reset ? [] : previous), ...data];
+                return [...new Map(combined.map(movie => [movie.id, movie])).values()];
+            });
+            // A page may have zero local platform matches while more API pages exist.
+            setHasMore(!isOscars && sourceCount >= 20);
 
         } catch (error) {
             console.error("Error fetching content:", error);
         } finally {
-            setLoading(false);
+            if (requestId === latestRequest.current) setLoading(false);
         }
-    }, [searchQuery, selectedGenre, isOscars, minRating, runtimeFilter, yearRange, sortOption, selectedFilterGenres]);
+    }, [searchQuery, selectedGenre, isOscars, minRating, runtimeFilter, yearRange, sortOption, selectedFilterGenres, selectedPlatforms, originCountry]);
 
     useEffect(() => {
         setPage(1);
         setHasMore(true);
         fetchMovies(1, true);
+        return () => { latestRequest.current++; };
     }, [searchQuery, selectedGenre, isOscars, minRating, runtimeFilter, yearRange, sortOption, selectedFilterGenres, fetchMovies]);
 
-    const handleSearch = (query) => {
+    const handleSearch = useCallback((query) => {
         setSearchQuery(query);
         if (query) {
             setSelectedGenre(null);
             setIsOscars(false);
         }
-    };
+    }, []);
 
     const handleGenreClick = (id) => {
         if (selectedGenre === id) setSelectedGenre(null);

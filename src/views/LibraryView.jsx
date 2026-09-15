@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useMovies } from '../contexts/MovieContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useLists } from '../contexts/ListContext';
 import { useMovieFilter } from '../hooks/useMovieFilter';
-import { getMovieDetails, getWatchProviders } from '../api/tmdb';
+import { filterMoviesByProviders } from '../services/tmdb';
 import { getCachedGenres } from '../utils/genreCache';
 import MovieCard from '../components/MovieCard';
 import BottomSheet from '../components/ui/BottomSheet';
@@ -72,7 +72,6 @@ const LibraryView = ({ onSelectMovie }) => {
     const [platformFilteredMovies, setPlatformFilteredMovies] = useState(null);
     const [isFetchingProviders, setIsFetchingProviders] = useState(false);
     const [countryFilter, setCountryFilter] = useState('any');
-    const providersCacheRef = useRef({});
 
     const clearFilters = () => {
         setSelectedGenres([]);
@@ -149,33 +148,19 @@ const LibraryView = ({ onSelectMovie }) => {
     useEffect(() => {
         if (selectedPlatforms.length === 0) {
             setPlatformFilteredMovies(null);
+            setIsFetchingProviders(false);
             return;
         }
         let cancelled = false;
-        const run = async () => {
-            setIsFetchingProviders(true);
-            const BATCH = 5;
-            const movies = filteredMovies.slice(0, 200);
-            for (let i = 0; i < movies.length; i += BATCH) {
-                if (cancelled) break;
-                await Promise.all(
-                    movies.slice(i, i + BATCH).map(async (m) => {
-                        if (!providersCacheRef.current[m.id]) {
-                            providersCacheRef.current[m.id] = await getWatchProviders(m.id);
-                        }
-                    })
-                );
-            }
-            if (!cancelled) {
-                const result = movies.filter(m => {
-                    const ids = (providersCacheRef.current[m.id]?.flatrate || []).map(p => p.provider_id);
-                    return selectedPlatforms.some(id => ids.includes(id));
-                });
-                setPlatformFilteredMovies(result);
-                setIsFetchingProviders(false);
-            }
-        };
-        run();
+        setIsFetchingProviders(true);
+        setPlatformFilteredMovies([]);
+        filterMoviesByProviders(filteredMovies, selectedPlatforms, { isCancelled: () => cancelled })
+            .then(result => {
+                if (!cancelled) {
+                    setPlatformFilteredMovies(result);
+                    setIsFetchingProviders(false);
+                }
+            });
         return () => { cancelled = true; };
     }, [selectedPlatforms, filteredMovies]);
 

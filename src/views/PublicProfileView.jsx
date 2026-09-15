@@ -1,3 +1,4 @@
+import { getPosterUrl } from '../services/tmdb';
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -171,7 +172,7 @@ const PublicProfileView = ({ onSelectMovie }) => {
                     ) : (
                         <div className="flex items-center gap-4 p-3 bg-surface-elevated hover:bg-white/5 border border-white/5 rounded-xl transition-colors cursor-pointer group">
                             <img
-                                src={`https://image.tmdb.org/t/p/w92${movie.poster_path}`}
+                                src={getPosterUrl(movie.poster_path, 'w92')}
                                 alt=""
                                 className="w-10 h-14 object-cover rounded shadow-sm opacity-80 group-hover:opacity-100"
                             />
@@ -330,7 +331,7 @@ const PublicProfileView = ({ onSelectMovie }) => {
                                     list.name,
                                     list.movies?.length || 0,
                                     'custom',
-                                    list.movies?.[0] ? `https://image.tmdb.org/t/p/w500${list.movies[0].poster_path}` : null,
+                                    list.movies?.[0] ? getPosterUrl(list.movies[0].poster_path, 'w500') : null,
                                     () => navigate(`/lists/${list.id}`)
                                 )
                             ))}

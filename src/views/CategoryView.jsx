@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getCustomCollection, getTrendingMovies, getTopRatedMovies, getMoviesByGenre } from '../api/tmdb';
+import { getCustomCollection, getTrendingMovies, getTopRatedMovies, getMoviesByGenre } from '../services/tmdb';
 import { getPersonalizedRecommendations } from '../utils/recommendations';
 import { useMovies } from '../contexts/MovieContext';
 import { useUserProfile } from '../contexts/UserProfileContext';
@@ -65,11 +65,11 @@ const CategoryView = ({ onSelectMovie }) => {
                     pageTitle = 'MEJOR RANKEADAS';
                     break;
                 case 'action_pure':
-                    results = await getMoviesByGenre(28, pageNum);
+                    results = await getMoviesByGenre(28, {}, pageNum);
                     pageTitle = 'ACCIÓN PURA';
                     break;
                 case 'horror_rec':
-                    results = await getMoviesByGenre(27, pageNum);
+                    results = await getMoviesByGenre(27, {}, pageNum);
                     pageTitle = 'TERROR';
                     break;
                 default:

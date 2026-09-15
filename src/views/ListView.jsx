@@ -1,3 +1,4 @@
+import { getPosterUrl, getBackdropUrl } from '../services/tmdb';
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -163,7 +164,7 @@ const ListView = ({ onSelectMovie }) => {
         </div>
     );
 
-    const coverImage = list.movies?.[0] ? `https://image.tmdb.org/t/p/original${list.movies[0].poster_path}` : null;
+    const coverImage = list.movies?.[0] ? getBackdropUrl(list.movies[0].poster_path, 'original') : null;
     const canEdit = isOwner || isCollaborator;
 
     return (
@@ -180,7 +181,7 @@ const ListView = ({ onSelectMovie }) => {
                 <div className="absolute bottom-0 left-0 w-full p-6 md:p-12 z-30 flex flex-col md:flex-row items-end gap-6">
                     <div className="hidden md:grid grid-cols-2 w-48 h-48 rounded-xl overflow-hidden shadow-2xl bg-black/50 backdrop-blur-sm border border-white/10">
                         {list.movies?.slice(0, 4).map(m => (
-                            <img key={m.id} src={`https://image.tmdb.org/t/p/w200${m.poster_path}`} className="w-full h-full object-cover" alt="" />
+                            <img key={m.id} src={getPosterUrl(m.poster_path, 'w185')} className="w-full h-full object-cover" alt="" />
                         ))}
                     </div>
 

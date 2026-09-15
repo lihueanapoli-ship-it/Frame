@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Search, Check, Sparkles } from 'lucide-react';
-import { searchMovies } from '../../api/tmdb';
+import { searchMovies } from '../../services/tmdb';
 import { useMovies } from '../../contexts/MovieContext';
 import { useUserProfile } from '../../contexts/UserProfileContext';
-import { getPosterUrl } from '../../api/tmdb';
+import { getPosterUrl } from '../../services/tmdb';
 import Button from '../../design-system/components/Button';
 
 /**
@@ -253,7 +253,7 @@ const OnboardingModal = ({ isOpen, onComplete }) => {
                                                     whileTap={{ scale: 0.95 }}
                                                 >
                                                     <img
-                                                        src={getPosterUrl(movie.poster_path, 'w342')}
+                                                        src={getPosterUrl(movie.posterPath, 'w342')}
                                                         alt={movie.title}
                                                         className="w-full aspect-[2/3] object-cover"
                                                     />

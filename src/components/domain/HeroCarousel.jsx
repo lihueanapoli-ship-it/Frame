@@ -1,9 +1,10 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { getBackdropUrl, getPosterUrl, getGenreNames } from '../../api/tmdb';
+import { getBackdropUrl, normalizeMovie } from '../../services/tmdb';
 
 const MAX_SLIDES = 5;
 
-const HeroCarousel = ({ movies, onSelectMovie }) => {
+const HeroCarousel = ({ movies: sourceMovies, onSelectMovie }) => {
+    const movies = React.useMemo(() => (sourceMovies || []).map(normalizeMovie), [sourceMovies]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isTransitioning, setIsTransitioning] = useState(false);
     const touchStartX = useRef(null);
@@ -67,8 +68,8 @@ const HeroCarousel = ({ movies, onSelectMovie }) => {
                     aria-hidden={i !== currentIndex}
                 >
                     <img
-                        src={getBackdropUrl(m.backdrop_path, 'w780')}
-                        srcSet={`${getBackdropUrl(m.backdrop_path, 'w780')} 780w, ${getBackdropUrl(m.backdrop_path, 'w1280')} 1280w`}
+                        src={getBackdropUrl(m.backdropPath || m.posterPath, 'w780')}
+                        srcSet={`${getBackdropUrl(m.backdropPath || m.posterPath, 'w780')} 780w, ${getBackdropUrl(m.backdropPath || m.posterPath, 'w1280')} 1280w`}
                         sizes="(max-width: 768px) 780px, 1280px"
                         alt={`Póster de ${m.title}`}
                         className="w-full h-full object-cover"
@@ -90,7 +91,7 @@ const HeroCarousel = ({ movies, onSelectMovie }) => {
                     style={{ animation: 'heroFadeUp 0.5s ease-out 0.2s both' }}
                 >
                     <span className="inline-block px-3 py-1 mb-2 md:mb-3 text-[10px] md:text-xs font-bold tracking-wider text-primary uppercase bg-primary/10 rounded-full border border-primary/20 backdrop-blur-md">
-                        {getGenreNames(movie.genre_ids).slice(0, 3).join(', ') || 'Tendencia Global'}
+                        {movie.genres.slice(0, 3).map(genre => genre.name).join(', ') || 'Tendencia Global'}
                     </span>
                     <h2 className="text-2xl md:text-5xl font-bold text-white mb-2 leading-tight max-w-xl">
                         {movie.title}

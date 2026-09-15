@@ -1,19 +1,18 @@
 import fs from 'fs';
 import path from 'path';
-import axios from 'axios';
+import { loadEnv } from 'vite';
+import { createTmdbServiceFromEnv } from '../src/services/tmdb.js';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const API_KEY = 'dc99676fa7a2c875f922675a6a46aa59';
+const tmdb = createTmdbServiceFromEnv(loadEnv('development', process.cwd(), 'VITE_'));
+tmdb.setApiLanguage('en-US');
 const FILE_PATH = path.join(__dirname, '../src/constants/oscarWinners.js');
 
 async function searchMovie(title, year) {
     try {
-        const url = `https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(title)}&year=${year}`;
-        const response = await axios.get(url);
-        if (response.data.results && response.data.results.length > 0) {
-            return response.data.results[0]; // Assume first result is best
-        }
+        const [found] = await tmdb.searchMovies(title, 1, { year });
+        return found || null;
     } catch (e) {
         console.error(`Search error for ${title}: ${e.message}`);
     }
@@ -51,8 +50,8 @@ async function verifyAndFix() {
 
         try {
             // Check current ID
-            const response = await axios.get(`https://api.themoviedb.org/3/movie/${movie.currentId}?api_key=${API_KEY}`);
-            const data = response.data;
+            const data = await tmdb.getMovieDetails(movie.currentId);
+            if (!data) throw new Error('No movie details available');
             const apiTitle = data.title.toLowerCase();
             const expectedTitleLower = movie.cleanTitle.toLowerCase();
 
@@ -61,7 +60,7 @@ async function verifyAndFix() {
                 console.log(`❌ Mismatch for "${movie.cleanTitle}" (ID: ${movie.currentId} -> ${data.title})`);
                 const found = await searchMovie(movie.cleanTitle, movie.year);
                 if (found) {
-                    console.log(`   ✅ Found correct ID: ${found.id} (${found.title} - ${found.release_date})`);
+                    console.log(`   ✅ Found correct ID: ${found.id} (${found.title} - ${found.releaseDate})`);
                     correctId = found.id;
                 } else {
                     console.log(`   ⚠️  Could not find correct ID for "${movie.cleanTitle}"`);
@@ -74,7 +73,7 @@ async function verifyAndFix() {
             console.log(`❌ Error/404 for "${movie.cleanTitle}" (ID: ${movie.currentId})`);
             const found = await searchMovie(movie.cleanTitle, movie.year);
             if (found) {
-                console.log(`   ✅ Found correct ID: ${found.id} (${found.title} - ${found.release_date})`);
+                console.log(`   ✅ Found correct ID: ${found.id} (${found.title} - ${found.releaseDate})`);
                 correctId = found.id;
             } else {
                 console.log(`   ⚠️  Could not find correct ID for "${movie.cleanTitle}"`);

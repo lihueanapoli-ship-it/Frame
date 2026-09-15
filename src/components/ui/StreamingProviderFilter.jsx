@@ -1,32 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { cn } from '../../lib/utils';
-import { getAvailableProvidersInRegion } from '../../api/tmdb';
-
-// Provider IDs we care about (main platforms in Argentina), in display order
-const PLATFORM_IDS = [8, 119, 337, 384, 531, 350, 619, 100, 1899];
-
-// Module-level cache so we only fetch once per app session
-let platformsCache = null;
+import { getStreamingPlatforms } from '../../services/tmdb';
 
 const StreamingProviderFilter = ({ selected, onChange }) => {
-    const [platforms, setPlatforms] = useState(platformsCache || []);
-    const [loading, setLoading] = useState(!platformsCache);
+    const [platforms, setPlatforms] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (platformsCache) {
-            setPlatforms(platformsCache);
-            setLoading(false);
-            return;
-        }
-        getAvailableProvidersInRegion('AR').then(all => {
-            // Filter to only known platforms, preserving our preferred order
-            const filtered = PLATFORM_IDS
-                .map(id => all.find(p => p.provider_id === id))
-                .filter(Boolean);
-            platformsCache = filtered;
-            setPlatforms(filtered);
+        let cancelled = false;
+        getStreamingPlatforms().then(platforms => {
+            if (cancelled) return;
+            setPlatforms(platforms);
             setLoading(false);
         });
+        return () => { cancelled = true; };
     }, []);
 
     const toggle = (id) => {
@@ -37,7 +24,7 @@ const StreamingProviderFilter = ({ selected, onChange }) => {
         <div>
             <div className="flex justify-between items-center mb-3">
                 <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest">
-                    Plataformas
+                    Suscripción en Argentina
                 </h4>
                 {selected.length > 0 && (
                     <span className="text-xs text-primary">{selected.length} seleccionadas</span>
@@ -50,14 +37,17 @@ const StreamingProviderFilter = ({ selected, onChange }) => {
                         <div key={i} className="h-11 rounded-xl bg-white/5 animate-pulse" />
                     ))}
                 </div>
+            ) : platforms.length === 0 ? (
+                <p className="text-xs text-gray-500">No pudimos cargar las plataformas.</p>
             ) : (
                 <div className="grid grid-cols-2 gap-2">
                     {platforms.map(p => {
-                        const isOn = selected.includes(p.provider_id);
+                        const isOn = selected.includes(p.id);
                         return (
                             <button
-                                key={p.provider_id}
-                                onClick={() => toggle(p.provider_id)}
+                                key={p.id}
+                                onClick={() => toggle(p.id)}
+                                aria-pressed={isOn}
                                 className={cn(
                                     'flex items-center gap-2.5 px-3 py-2.5 rounded-xl border transition-all text-left',
                                     isOn
@@ -66,15 +56,15 @@ const StreamingProviderFilter = ({ selected, onChange }) => {
                                 )}
                             >
                                 <img
-                                    src={`https://image.tmdb.org/t/p/w45${p.logo_path}`}
-                                    alt={p.provider_name}
+                                    src={p.logoUrl}
+                                    alt={p.name}
                                     className="w-6 h-6 rounded-md object-cover flex-shrink-0"
                                     onError={(e) => {
                                         e.target.style.display = 'none';
                                     }}
                                 />
                                 <span className="text-sm font-semibold truncate">
-                                    {p.provider_name}
+                                    {p.name}
                                 </span>
                                 {isOn && (
                                     <span className="ml-auto text-primary text-xs flex-shrink-0">✓</span>

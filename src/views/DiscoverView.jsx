@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { getTrendingMovies, getCustomCollection } from '../api/tmdb';
+import { getTrendingMovies, getCustomCollection } from '../services/tmdb';
 import { useUserProfile } from '../contexts/UserProfileContext';
 import { useMovies } from '../contexts/MovieContext';
 import { getPersonalizedRecommendations } from '../utils/recommendations';

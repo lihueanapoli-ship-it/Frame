@@ -4,6 +4,7 @@ import { useAuth } from './AuthContext';
 import { db } from '../api/firebase';
 import { doc, setDoc, onSnapshot } from 'firebase/firestore';
 
+import { toStoredMovie } from '../api/tmdb';
 import { useLists } from './ListContext';
 
 const MovieContext = createContext();
@@ -150,6 +151,7 @@ export const MovieProvider = ({ children }) => {
     // We only need: id, title, poster_path, rating, dates, runtime, genres
     // ========================================
     const stripMovieData = (movie) => {
+        movie = { ...movie, ...toStoredMovie(movie) };
         // Normalize genres to IDs
         let genre_ids = movie.genre_ids || [];
         if ((!genre_ids || genre_ids.length === 0) && movie.genres) {

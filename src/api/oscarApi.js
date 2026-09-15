@@ -1,5 +1,5 @@
 import { OSCAR_BEST_PICTURE_WINNERS } from '../constants/oscarWinners';
-import { getMovieDetails } from './tmdb';
+import { getMovieDetails } from '../services/tmdb';
 
 export const getOscarWinners = async () => {
     try {
@@ -17,8 +17,8 @@ export const getOscarWinners = async () => {
         const validMovies = movies
             .filter(movie => movie !== null)
             .sort((a, b) => {
-                const dateA = new Date(a.release_date || '1900-01-01');
-                const dateB = new Date(b.release_date || '1900-01-01');
+                const dateA = new Date(a.releaseDate || '1900-01-01');
+                const dateB = new Date(b.releaseDate || '1900-01-01');
                 return dateB - dateA;
             });
 

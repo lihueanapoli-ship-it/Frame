@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, X, Loader2 } from 'lucide-react';
-import { searchMovies, getPosterUrl } from '../api/tmdb';
+import { searchMovies, getPosterUrl } from '../services/tmdb';
 import { useMovies } from '../contexts/MovieContext';
 
 const SearchBar = ({ onSelectMovie, onSearchCallback }) => {
@@ -20,8 +20,10 @@ const SearchBar = ({ onSelectMovie, onSearchCallback }) => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Debounce search
+    // Debounce search and ignore responses for an older query.
     useEffect(() => {
+        let cancelled = false;
+        setIsLoading(false);
         const timeoutId = setTimeout(async () => {
             if (onSearchCallback) {
                 onSearchCallback(query);
@@ -30,9 +32,10 @@ const SearchBar = ({ onSelectMovie, onSearchCallback }) => {
                 // If local loading/results/isOpen management is still desired, it needs to be added here.
                 setIsOpen(false); // Close dropdown if external search is used
                 setResults([]); // Clear local results
-            } else if (query.length >= 2) {
+            } else if (query.trim().length >= 2) {
                 setIsLoading(true);
                 const data = await searchMovies(query);
+                if (cancelled) return;
                 setResults(data.slice(0, 5));
                 setIsLoading(false);
                 setIsOpen(true);
@@ -42,7 +45,7 @@ const SearchBar = ({ onSelectMovie, onSearchCallback }) => {
             }
         }, 500);
 
-        return () => clearTimeout(timeoutId);
+        return () => { cancelled = true; clearTimeout(timeoutId); };
     }, [query, onSearchCallback]); // Added onSearchCallback to dependency array
 
     const handleSelect = (movie) => {
@@ -94,13 +97,13 @@ const SearchBar = ({ onSelectMovie, onSearchCallback }) => {
                                 onClick={() => handleSelect(movie)}
                             >
                                 <img
-                                    src={getPosterUrl(movie.poster_path, 'w92')}
+                                    src={getPosterUrl(movie.posterPath, 'w92')}
                                     alt={movie.title}
                                     className="w-12 h-18 object-cover rounded-md shadow-sm"
                                 />
                                 <div className="ml-3 flex-1">
                                     <p className="text-sm font-medium text-white">{movie.title}</p>
-                                    <p className="text-xs text-secondary">{movie.release_date ? movie.release_date.split('-')[0] : 'Unknown'}</p>
+                                    <p className="text-xs text-secondary">{movie.releaseDate ? movie.releaseDate.split('-')[0] : 'Unknown'}</p>
                                 </div>
                             </li>
                         ))}

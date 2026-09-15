@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect } from 'react';
 import useLocalStorage from '../hooks/useLocalStorage';
-import { setApiLanguage } from '../api/tmdb';
+import { setApiLanguage } from '../services/tmdb';
 
 const LanguageContext = createContext();
 

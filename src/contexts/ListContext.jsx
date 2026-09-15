@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { toast } from 'sonner';
-import { getMovieDetails } from '../api/tmdb';
+import { getMovieDetails, toStoredMovie } from '../api/tmdb';
 import { db } from '../api/firebase';
 import {
     collection,
@@ -316,6 +316,7 @@ export const ListProvider = ({ children }) => {
 
     // 4. Add Movie to List
     const addMovieToList = async (listId, movie) => {
+        movie = { ...movie, ...toStoredMovie(movie) };
         try {
             // Check for duplicates in local state to avoid adding same movie with diff timestamp
             const currentList = [...myLists, ...collabLists].find(l => l.id === listId);

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X as XMarkIcon, Filter as FunnelIcon, Globe as GlobeAltIcon, Tag as TagIcon, Check as CheckIcon, Search as MagnifyingGlassIcon } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { getCountries } from '../../api/tmdb';
+import { getCountries } from '../../services/tmdb';
 import useScrollLock from '../../hooks/useScrollLock';
 
 const GENRES = [
