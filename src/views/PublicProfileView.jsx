@@ -1,22 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShareIcon, PencilIcon, CheckCircleIcon, RectangleStackIcon, StarIcon, ArrowLeftIcon, Squares2X2Icon, ListBulletIcon, ChevronRightIcon, BookmarkIcon } from '@heroicons/react/24/outline';
+import { Pencil as PencilIcon, CheckCircle2 as CheckCircleIcon, Layers as RectangleStackIcon, Star as StarIcon, ArrowLeft as ArrowLeftIcon, LayoutGrid as Squares2X2Icon, List as ListBulletIcon, ChevronRight as ChevronRightIcon, Bookmark as BookmarkIcon } from 'lucide-react';
 import MovieCard from '../components/MovieCard';
 import ShareModal from '../components/ui/ShareModal';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserProfile } from '../contexts/UserProfileContext';
 import { db } from '../api/firebase';
-import { collection, query, where, getDocs, limit, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, doc, getDoc } from 'firebase/firestore';
 import { cn } from '../lib/utils';
-import { UserCircleIcon } from '@heroicons/react/24/solid';
-import MovieDetail from '../components/MovieDetail';
+import { UserCircle as UserCircleIcon } from 'lucide-react';
+
 import { getRankTitle } from '../constants/cinemaRanks';
 
 const PublicProfileView = ({ onSelectMovie }) => {
     const { username } = useParams();
     const { user: currentUser } = useAuth();
-    const { sendFriendRequest, getFriendshipStatus, unfollowUser } = useUserProfile();
+    const { sendFriendRequest, getFriendshipStatus, updateProfile, loading: profileLoading } = useUserProfile();
     const navigate = useNavigate();
 
     const [profile, setProfile] = useState(null);
@@ -37,96 +37,57 @@ const PublicProfileView = ({ onSelectMovie }) => {
     const [selectedMovie, setSelectedMovie] = useState(null);
 
     useEffect(() => {
+        if (!currentUser || profileLoading) return;
+        let cancelled = false;
         const fetchPublicProfile = async () => {
             setLoading(true);
             setError(null);
+            setProfile(null);
+            setLists([]);
+            setFriendshipStatus('none');
+            setUserMovies({ watchlist: [], watched: [], favorites: [] });
+            setIsEditing(false);
             try {
-                let targetUid = null;
-                if (username === 'me' && currentUser) {
-                    targetUid = currentUser.uid;
-                } else if (currentUser && username === currentUser.displayName?.replace(/\s+/g, '').toLowerCase()) {
-                    targetUid = currentUser.uid;
+                let userSnap;
+                if (username === 'me') {
+                    userSnap = await getDoc(doc(db, 'users', currentUser.uid));
                 } else {
-                    try {
-                        const q = query(collection(db, 'userProfiles'), where('username', '==', username), limit(1));
-                        const querySnapshot = await getDocs(q);
-
-                        if (!querySnapshot.empty) {
-                            const userDoc = querySnapshot.docs[0];
-                            targetUid = userDoc.id;
-                        } else {
-                            const docRef = doc(db, 'userProfiles', username);
-                            const docSnap = await getDoc(docRef);
-                            if (docSnap.exists()) {
-                                targetUid = docSnap.id;
-                            }
-                        }
-                    } catch (e) { console.warn("User fetch failed", e); }
+                    const matches = await getDocs(query(collection(db, 'users'),
+                        where('username', '==', username), limit(1)));
+                    userSnap = matches.docs[0] || await getDoc(doc(db, 'users', username));
                 }
-
-                if (targetUid) {
-                    try {
-                        const [profileSnap, userSnap] = await Promise.all([
-                            getDoc(doc(db, 'userProfiles', targetUid)),
-                            getDoc(doc(db, 'users', targetUid))
-                        ]);
-
-                        let finalProfile = { uid: targetUid };
-                        if (userSnap.exists()) {
-                            finalProfile = { ...finalProfile, ...userSnap.data() };
-                        }
-                        if (profileSnap.exists()) {
-                            const pData = profileSnap.data();
-                            finalProfile = {
-                                ...finalProfile,
-                                ...pData,
-                                displayName: pData.displayName || finalProfile.displayName,
-                                photoURL: pData.photoURL || finalProfile.photoURL,
-                                bio: pData.bio || finalProfile.bio || ''
-                            };
-                        }
-                        setProfile(finalProfile);
-                        setEditForm({ displayName: finalProfile.displayName || '', bio: finalProfile.bio || '' });
-
-                        try {
-                            const listsQuery = query(collection(db, 'lists'), where('ownerId', '==', targetUid));
-                            const listSnap = await getDocs(listsQuery);
-                            setLists(listSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-                        } catch (err) { console.error(err); }
-
-                        if (userSnap.exists()) {
-                            const uData = userSnap.data();
-                            setUserMovies({
-                                watchlist: uData.watchlist || [],
-                                watched: uData.watched || [],
-                                favorites: uData.favorites || []
-                            });
-                        }
-                    } catch (e) { console.error(e); }
-
-                    if (currentUser && targetUid !== currentUser.uid) {
-                        try {
-                            const status = await getFriendshipStatus(targetUid);
-                            setFriendshipStatus(status);
-                        } catch (e) {
-                            console.error("Status check failed", e);
-                        }
-                    }
-
-                } else {
-                    setError("Usuario no encontrado.");
+                if (cancelled) return;
+                if (!userSnap.exists()) {
+                    setError('Usuario no encontrado.');
+                    return;
                 }
-
-            } catch (err) {
-                console.error(err);
-                setError("Error cargando perfil");
+                const targetUid = userSnap.id;
+                const data = { ...userSnap.data(), uid: targetUid };
+                setProfile(data);
+                setEditForm({ displayName: data.displayName || '', bio: data.bio || '' });
+                setUserMovies({
+                    watchlist: data.watchlist || [],
+                    watched: data.watched || [],
+                    favorites: data.favorites || []
+                });
+                const [listSnap, status] = await Promise.all([
+                    getDocs(query(collection(db, 'lists'), where('ownerId', '==', targetUid))),
+                    targetUid === currentUser.uid ? 'none' : getFriendshipStatus(targetUid)
+                ]);
+                if (!cancelled) {
+                    setLists(listSnap.docs.map(d => ({ ...d.data(), id: d.id })));
+                    setFriendshipStatus(status);
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                if (!cancelled) setError('Error cargando perfil');
             } finally {
-                setLoading(false);
+                if (!cancelled) setLoading(false);
             }
         };
-
         fetchPublicProfile();
-    }, [username, currentUser, getFriendshipStatus]);
+        return () => { cancelled = true; };
+    }, [username, currentUser?.uid, profileLoading, getFriendshipStatus]);
 
     const handleConnectClick = async () => {
         if (!currentUser || !profile) return;
@@ -145,10 +106,9 @@ const PublicProfileView = ({ onSelectMovie }) => {
     };
 
     const handleSaveProfile = async () => {
-        if (!currentUser || !profile) return;
+        if (!currentUser || profile?.uid !== currentUser.uid) return;
         try {
-            const userRef = doc(db, 'userProfiles', profile.uid);
-            await updateDoc(userRef, {
+            await updateProfile({
                 displayName: editForm.displayName,
                 bio: editForm.bio
             });

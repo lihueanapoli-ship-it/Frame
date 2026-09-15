@@ -1,156 +1,121 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // --- USER PROFILES (New Social Structure) ---
-    // Anyone can read profiles (needed for social discovery)
-    // Only the user themselves can write/edit their profile
-    match /userProfiles/{userId} {
-      allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == userId;
-
-      // Subcollections (followers/following)
-      match /followers/{followerId} {
-         allow read: if true;
-         // Allow users to add themselves to someone's followers (Follow action)
-         allow write: if request.auth != null; 
-      }
-      match /following/{followingId} {
-         allow read: if true;
-         allow write: if request.auth != null && request.auth.uid == userId;
-      }
+    function signedIn() {
+      return request.auth != null;
     }
 
-    // --- LEGACY USER DATA (MovieContext: Watchlist/Watched) ---
-    // This collection is strictly private to the user
-    // --- USERS (Social Data & Search) ---
-    // Previously strict private, now needs to be readable for Search/Social
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function isRequestParticipant() {
+      return signedIn() && (
+        resource.data.get('fromUid', '') == request.auth.uid ||
+        resource.data.get('toUid', '') == request.auth.uid
+      );
+    }
+
+    // Public profile fields live at the root of the canonical user document.
     match /users/{userId} {
-      allow read: if request.auth != null; // Authenticated users can search others
-      allow write: if request.auth != null && request.auth.uid == userId; // Only owner can edit their profile
-      
-      // Friends Subcollection (Bi-directional check ideally, but we trust client logic for MVP)
-      // Friends Subcollection — only the user or the specific friend can access
+      allow read: if signedIn();
+      allow write: if isOwner(userId);
+
+      match /followers/{followerId} {
+        allow read: if signedIn();
+        allow create, update: if isOwner(followerId) && followerId != userId &&
+          request.resource.data.uid == followerId;
+        allow delete: if isOwner(followerId);
+      }
+
+      match /following/{followingId} {
+        allow read: if signedIn();
+        allow create, update: if isOwner(userId) && followingId != userId &&
+          request.resource.data.uid == followingId;
+        allow delete: if isOwner(userId);
+      }
+
       match /friends/{friendId} {
-         allow read: if request.auth != null && (request.auth.uid == userId || request.auth.uid == friendId);
-         allow write: if request.auth != null && (request.auth.uid == userId || request.auth.uid == friendId);
+        // The recipient accepts a real pending request and consumes it in the
+        // same batch that creates both sides of the friendship.
+        function acceptsFriendRequest() {
+          let requestId = request.resource.data.requestId;
+          let invitation = get(/databases/$(database)/documents/friendRequests/$(requestId)).data;
+          return invitation.status == 'pending' &&
+            request.auth.uid == invitation.toUid &&
+            ((invitation.fromUid == userId && invitation.toUid == friendId) ||
+             (invitation.fromUid == friendId && invitation.toUid == userId)) &&
+            !existsAfter(/databases/$(database)/documents/friendRequests/$(requestId)) &&
+            getAfter(/databases/$(database)/documents/users/$(friendId)/friends/$(userId)).data.uid == userId;
+        }
+
+        allow read: if isOwner(userId) || isOwner(friendId);
+        allow create: if signedIn() && userId != friendId &&
+          request.resource.data.uid == friendId && acceptsFriendRequest();
+        allow update: if signedIn() && request.resource.data.uid == friendId &&
+          (isOwner(userId) || acceptsFriendRequest());
+        allow delete: if isOwner(userId) || isOwner(friendId);
       }
-      
-      // Movies Subcollection (Watchlist / Watched / Favorites)
+
       match /movies/{movieId} {
-        allow read: if request.auth != null; // Publicly readable for profiles
-        allow write: if request.auth != null && request.auth.uid == userId; // Only owner can add/remove movies
+        allow read: if signedIn();
+        allow write: if isOwner(userId);
       }
     }
 
-    // --- FRIEND REQUESTS ---
     match /friendRequests/{requestId} {
-      // Create: Authenticated users can create requests coming FROM them
-      allow create: if request.auth != null && request.resource.data.fromUid == request.auth.uid;
-      
-      // Read: Users can see requests sent TO them or BY them
-      // Using .get() prevents crashes if fields are missing in old docs
-      allow read: if request.auth != null && (
-        resource.data.get('toUid', '') == request.auth.uid || 
-        resource.data.get('fromUid', '') == request.auth.uid
-      );
-      
-      // Delete: Users can cancel their own requests OR reject/accept requests sent to them
-      allow delete: if request.auth != null && (
-        resource.data.get('fromUid', '') == request.auth.uid || 
-        resource.data.get('toUid', '') == request.auth.uid
-      );
+      allow create: if signedIn() &&
+        request.resource.data.fromUid == request.auth.uid &&
+        request.resource.data.toUid is string &&
+        request.resource.data.toUid != request.auth.uid &&
+        request.resource.data.status == 'pending';
+      allow read, delete: if isRequestParticipant();
+      allow update: if false;
     }
-    
-    // --- LIST COLLABORATION REQUESTS ---
+
     match /listRequests/{requestId} {
-      // Create: Any authenticated user can request to join a list
-      allow create: if request.auth != null && request.resource.data.fromUid == request.auth.uid;
-      
-      // Read: Sender and Receiver (List Owner) can see
-      allow read: if request.auth != null && (
-        resource.data.get('fromUid', '') == request.auth.uid || 
-        resource.data.get('toUid', '') == request.auth.uid
-      );
-      
-      // Delete: Sender (cancel) or Receiver (accept/reject)
-      allow delete: if request.auth != null && (
-        resource.data.get('fromUid', '') == request.auth.uid || 
-        resource.data.get('toUid', '') == request.auth.uid
-      );
+      allow create: if signedIn() &&
+        request.resource.data.fromUid == request.auth.uid &&
+        request.resource.data.toUid is string &&
+        request.resource.data.toUid != request.auth.uid &&
+        request.resource.data.status == 'pending' &&
+        get(/databases/$(database)/documents/lists/$(request.resource.data.listId)).data.ownerId == request.resource.data.toUid;
+      allow read, delete: if isRequestParticipant();
+      allow update: if false;
     }
 
-    // --- LISTS (Core Social Feature) ---
     match /lists/{listId} {
-      // READ RULES:
-      // Allowed if Owner OR Collaborator OR Public (if we want public lists)
-      // For this specific request: "collaborator can see". 
-      // Assuming lists are generally public if profile is public, BUT user asked for strict "connected" access logic.
-      // However, sticking to "accessible if authenticated" for simplicity unless strict privacy is requested.
-      // Let's refine: Owner OR Collaborator can always read. Others can read if 'visibility' is 'public'.
-      allow read: if request.auth != null;
-
-      // WRITE RULES:
-      // 1. Create: Anyone authenticated
-      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
-      
-      // 2. Update: 
-      // Owner: Can update everything.
-      // Collaborator: Can ONLY update 'movies' array (add/remove) and 'updatedAt'. Cannot change name, privacy, or delete collaborators (unless themselves?).
-      allow update: if request.auth != null && (
-        resource.data.ownerId == request.auth.uid ||
-        (
-          resource.data.collaborators.hasAny([request.auth.uid]) &&
-          // Ensure critical fields are NOT changed by collaborator
-          request.resource.data.ownerId == resource.data.ownerId &&
-          request.resource.data.name == resource.data.name &&
-          request.resource.data.description == resource.data.description
-          // They can essentially only touch 'movies' and 'updatedAt'
-        )
-      );
-      
-      // 3. Delete: Only Owner
-      allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
-    }
-
-    // --- CHATS (Direct Messaging) ---
-    // chatId is always sorted([uid1, uid2]).join('_')
-    // So we can verify participation by checking if the user's uid appears in chatId.
-    match /chats/{chatId} {
-
-      // Helper: is the requesting user a participant? (checks the chatId string)
-      function isParticipant() {
-        return request.auth != null &&
-          (chatId.matches('.*_' + request.auth.uid) ||
-           chatId.matches(request.auth.uid + '_.*') ||
-           chatId == request.auth.uid);
+      function isCollaborator() {
+        return resource.data.get('collaborators', []).hasAny([request.auth.uid]);
       }
 
-      allow read: if isParticipant() || (resource != null && resource.data.participants.hasAny([request.auth.uid]));
-
-      // Create: user must be in participants array AND in chatId
-      allow create: if isParticipant() &&
-        request.resource.data.participants.hasAny([request.auth.uid]);
-
-      // Update: verify against stored participants (doc exists)
-      allow update: if request.auth != null &&
-        resource.data.participants.hasAny([request.auth.uid]);
-
-      allow delete: if false;
-
-      // Messages subcollection — use chatId string check, no get() needed
-      match /messages/{messageId} {
-        allow read: if isParticipant();
-
-        // Create: sender must match auth uid, and user must be participant
-        allow create: if isParticipant() &&
-          request.resource.data.senderId == request.auth.uid;
-
-        allow update: if false;
-
-        // Only the original sender can delete their own message
-        allow delete: if isParticipant() && resource.data.senderId == request.auth.uid;
+      function editsMovies() {
+        return request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['movies', 'updatedAt']) && request.resource.data.movies is list;
       }
+
+      function leavesList() {
+        return request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['collaborators']) &&
+          request.resource.data.collaborators ==
+            resource.data.collaborators.removeAll([request.auth.uid]);
+      }
+
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow update: if signedIn() &&
+        request.resource.data.ownerId == resource.data.ownerId && (
+          resource.data.ownerId == request.auth.uid ||
+          (isCollaborator() && (editsMovies() || leavesList()))
+        );
+      allow delete: if signedIn() && resource.data.ownerId == request.auth.uid;
     }
+
+    // Messaging is frozen, including every nested messages collection.
+    match /chats/{document=**} {
+      allow read, write: if false;
+    }
+
+    // Unmatched collections and subcollections are denied by default.
   }
 }

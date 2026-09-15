@@ -5,10 +5,10 @@ import { getTrendingMovies, getMoviesByGenre, searchMovies, discoverMovies } fro
 import { getOscarWinners } from '../api/oscarApi';
 import SearchBar from '../components/SearchBar';
 import MovieCard from '../components/MovieCard';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import BottomSheet from '../components/ui/BottomSheet';
 import { cn } from '../lib/utils';
-import { AdjustmentsHorizontalIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { SlidersHorizontal as AdjustmentsHorizontalIcon, Clock as ClockIcon } from 'lucide-react';
 import MovieCardSkeleton from '../components/ui/MovieCardSkeleton';
 import { FilterChip } from '../components/ui/FilterChip';
 import StreamingProviderFilter from '../components/ui/StreamingProviderFilter';

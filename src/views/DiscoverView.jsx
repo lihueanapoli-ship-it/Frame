@@ -10,7 +10,7 @@ import { Link } from 'react-router-dom';
 import MovieCard from '../components/MovieCard';
 import ExclusionModal from '../components/ui/ExclusionModal';
 import FeedbackModal from '../components/ui/FeedbackModal';
-import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
+import { MessagesSquare as ChatBubbleLeftRightIcon } from 'lucide-react';
 
 const MovieSection = ({ title, subtitle, movies, onSelectMovie, categoryId, variant = 'default', isEmpty = false, emptyMessage, showAll = false, headerAction, isLoading: isSectionLoading }) => {
     const [isHovered, setIsHovered] = useState(false);

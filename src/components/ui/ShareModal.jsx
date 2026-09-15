@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { XMarkIcon, ShareIcon, LinkIcon, EnvelopeIcon, ChatBubbleLeftRightIcon, CheckIcon, DevicePhoneMobileIcon } from '@heroicons/react/24/outline';
+import { X as XMarkIcon, Share2 as ShareIcon, Link as LinkIcon, MessagesSquare as ChatBubbleLeftRightIcon, Check as CheckIcon, Smartphone as DevicePhoneMobileIcon } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import html2canvas from 'html2canvas';
 import { toast } from 'sonner';

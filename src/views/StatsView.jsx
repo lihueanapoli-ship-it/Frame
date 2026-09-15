@@ -20,16 +20,7 @@ import {
     Pie,
     Cell
 } from 'recharts';
-import {
-    ClockIcon,
-    TrophyIcon,
-    FireIcon,
-    BookmarkIcon,
-    GlobeAltIcon,
-    FilmIcon,
-    ChartBarIcon,
-    SparklesIcon
-} from '@heroicons/react/24/outline';
+import { Clock as ClockIcon, Trophy as TrophyIcon, Flame as FireIcon, Globe as GlobeAltIcon, Film as FilmIcon, BarChart3 as ChartBarIcon, Sparkles as SparklesIcon } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { getGenresForMovies } from '../utils/genreCache';
 import { OSCAR_BEST_PICTURE_WINNERS } from '../constants/oscarWinners';

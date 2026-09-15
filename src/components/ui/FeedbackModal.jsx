@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { XMarkIcon, PaperAirplaneIcon, MicrophoneIcon, StopIcon, TrashIcon, CheckCircleIcon, BugAntIcon, LightBulbIcon, PaintBrushIcon, HeartIcon } from '@heroicons/react/24/outline';
-import { StarIcon, HandThumbUpIcon } from '@heroicons/react/24/solid';
+import { X as XMarkIcon, Send as PaperAirplaneIcon, Mic as MicrophoneIcon, Square as StopIcon, Trash2 as TrashIcon, CheckCircle2 as CheckCircleIcon, Paintbrush as PaintBrushIcon } from 'lucide-react';
+import { ThumbsUp as HandThumbUpIcon } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useSound } from '../../contexts/SoundContext';
 import { useAuth } from '../../contexts/AuthContext';

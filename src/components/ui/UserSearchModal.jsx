@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { XMarkIcon, MagnifyingGlassIcon, UserPlusIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { X as XMarkIcon, Search as MagnifyingGlassIcon, UserPlus as UserPlusIcon, Check as CheckIcon } from 'lucide-react';
 import { db } from '../../api/firebase';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { useAuth } from '../../contexts/AuthContext';
@@ -29,14 +29,14 @@ const UserSearchModal = ({ isOpen, onClose }) => {
         try {
             const term = val.toLowerCase().trim();
             const q = query(
-                collection(db, 'userProfiles'),
+                collection(db, 'users'),
                 where('username', '>=', term),
                 where('username', '<=', term + '\uf8ff'),
                 limit(10)
             );
             const snap = await getDocs(q);
             const users = snap.docs
-                .map(d => ({ uid: d.id, ...d.data() }))
+                .map(d => ({ ...d.data(), uid: d.id }))
                 .filter(u => u.uid !== currentUser?.uid);
 
             // Fetch statuses

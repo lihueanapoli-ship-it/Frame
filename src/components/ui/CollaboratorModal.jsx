@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { XMarkIcon, UserPlusIcon, CheckIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { X as XMarkIcon, UserPlus as UserPlusIcon, Search as MagnifyingGlassIcon } from 'lucide-react';
 import { db } from '../../api/firebase';
 import { collection, query, where, getDocs, limit, doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { cn } from '../../lib/utils';
@@ -27,14 +27,14 @@ const CollaboratorModal = ({ isOpen, onClose, listId, currentCollaborators = [] 
         try {
             const term = val.toLowerCase().trim();
             const q = query(
-                collection(db, 'userProfiles'),
+                collection(db, 'users'),
                 where('username', '>=', term),
                 where('username', '<=', term + '\uf8ff'),
                 limit(5)
             );
             const snap = await getDocs(q);
             setResults(snap.docs
-                .map(d => ({ uid: d.id, ...d.data() }))
+                .map(d => ({ ...d.data(), uid: d.id }))
                 .filter(u => u.uid !== currentUser?.uid && !currentCollaborators.includes(u.uid))
             );
         } catch (error) {

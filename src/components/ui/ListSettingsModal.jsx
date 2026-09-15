@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { XMarkIcon, UserPlusIcon, CheckIcon, MagnifyingGlassIcon, UserGroupIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { X as XMarkIcon, UserPlus as UserPlusIcon, Search as MagnifyingGlassIcon, Plus as PlusIcon } from 'lucide-react';
 import { db } from '../../api/firebase';
-import { collection, query, where, getDocs, limit, doc, updateDoc, arrayUnion, arrayRemove, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, getDoc, limit, doc, updateDoc, arrayUnion, arrayRemove, serverTimestamp } from 'firebase/firestore';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLists } from '../../contexts/ListContext';
@@ -25,28 +25,28 @@ const ListSettingsModal = ({ isOpen, onClose, list, onUpdate }) => {
     const [collaboratorsProfiles, setCollaboratorsProfiles] = useState([]);
 
     useEffect(() => {
+        if (!isOpen) return;
+        let cancelled = false;
         const fetchCollabs = async () => {
             if (!list?.collaborators?.length) {
                 setCollaboratorsProfiles([]);
                 return;
             }
             try {
-                const profiles = [];
-                for (const uid of list.collaborators) {
-                    const d = await getDocs(query(collection(db, 'userProfiles'), where('uid', '==', uid), limit(1)));
-                    if (!d.empty) {
-                        profiles.push({ uid, ...d.docs[0].data() });
-                    } else {
-                        profiles.push({ uid, displayName: 'Usuario', photoURL: '/logo.png', username: 'anon' });
-                    }
-                }
-                setCollaboratorsProfiles(profiles);
+                const profiles = await Promise.all(list.collaborators.map(async uid => {
+                    const d = await getDoc(doc(db, 'users', uid));
+                    return d.exists()
+                        ? { ...d.data(), uid }
+                        : { uid, displayName: 'Usuario', photoURL: '/logo.png', username: 'anon' };
+                }));
+                if (!cancelled) setCollaboratorsProfiles(profiles);
             } catch (e) {
                 console.error("Error fetching collab profiles", e);
             }
         };
         fetchCollabs();
-    }, [list?.collaborators]);
+        return () => { cancelled = true; };
+    }, [isOpen, list?.collaborators]);
 
     const handleSubmit = async (e) => {
         if (e) e.preventDefault();
@@ -79,14 +79,14 @@ const ListSettingsModal = ({ isOpen, onClose, list, onUpdate }) => {
         try {
             const term = val.toLowerCase().trim();
             const q = query(
-                collection(db, 'userProfiles'),
+                collection(db, 'users'),
                 where('username', '>=', term),
                 where('username', '<=', term + '\uf8ff'),
                 limit(5)
             );
             const snap = await getDocs(q);
             setSearchResults(snap.docs
-                .map(d => ({ uid: d.id, ...d.data() }))
+                .map(d => ({ ...d.data(), uid: d.id }))
                 .filter(u => u.uid !== user?.uid && !list.collaborators?.includes(u.uid))
             );
         } catch (e) {

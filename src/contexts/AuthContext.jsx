@@ -24,14 +24,9 @@ export const AuthProvider = ({ children }) => {
                 const syncUser = async () => {
                     try {
                         const userRef = doc(db, 'users', currentUser.uid);
+                        // UserProfileProvider owns profile defaults and edits.
+                        // A login must not replace them with Google account data.
                         await setDoc(userRef, {
-                            uid: currentUser.uid,
-                            displayName: currentUser.displayName,
-                            email: currentUser.email,
-                            photoURL: currentUser.photoURL,
-                            searchName: currentUser.displayName
-                                ? currentUser.displayName.toLowerCase()
-                                : '',
                             lastLogin: serverTimestamp(),
                         }, { merge: true });
                     } catch (error) {

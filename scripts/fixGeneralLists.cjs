@@ -1,5 +1,7 @@
 
-require('dotenv').config();
+// Node.js 20.12+ loads this maintenance script's optional .env file natively.
+const { existsSync } = require('node:fs');
+if (existsSync('.env')) process.loadEnvFile('.env');
 const { initializeApp } = require('firebase/app');
 const { getFirestore, collection, query, where, getDocs, deleteDoc, doc, updateDoc, arrayUnion } = require('firebase/firestore');
 

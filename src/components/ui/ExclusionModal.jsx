@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { XMarkIcon, FunnelIcon, GlobeAltIcon, TagIcon, CheckIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { X as XMarkIcon, Filter as FunnelIcon, Globe as GlobeAltIcon, Tag as TagIcon, Check as CheckIcon, Search as MagnifyingGlassIcon } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { getCountries } from '../../api/tmdb';
 import useScrollLock from '../../hooks/useScrollLock';

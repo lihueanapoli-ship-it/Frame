@@ -1,14 +1,11 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { db } from '../api/firebase';
-import { doc, getDoc, setDoc, updateDoc, increment, writeBatch } from 'firebase/firestore';
 import {
-    calculateExpertiseLevel,
-    getUIConfigForLevel,
-    calculateCurrentStreak,
-    analyzeGenrePreferences,
-    analyzeDecadePreference
-} from '../utils/userProfiler';
+    doc, getDoc, setDoc, updateDoc, writeBatch, runTransaction,
+    collection, query, where, getDocs, limit, arrayRemove, serverTimestamp
+} from 'firebase/firestore';
+import { getMissingProfileFields } from '../utils/profile';
 
 const UserProfileContext = createContext();
 
@@ -23,123 +20,41 @@ export const UserProfileProvider = ({ children }) => {
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Initial load
+    // Profile defaults and movie data share one document. A transaction preserves
+    // concurrent writes from MovieContext and only fills missing profile fields.
     useEffect(() => {
+        let cancelled = false;
+        setProfile(null);
         if (!user) {
-            setProfile(null);
             setLoading(false);
             return;
         }
-
+        setLoading(true);
         const fetchProfile = async () => {
             try {
-                const docRef = doc(db, 'userProfiles', user.uid);
-                const docSnap = await getDoc(docRef);
-
-                if (docSnap.exists()) {
-                    let data = docSnap.data();
-                    let needsUpdate = false;
-
-                    // --- AUTO-MIGRATION / REPAIR ---
-                    // Fix missing Username
-                    if (!data.username) {
-                        const baseName = (user.displayName || user.email?.split('@')[0] || 'user').replace(/\s+/g, '').toLowerCase();
-                        data.username = `${baseName}${Math.floor(Math.random() * 1000)}`;
-                        needsUpdate = true;
+                const docRef = doc(db, 'users', user.uid);
+                const data = await runTransaction(db, async transaction => {
+                    const snapshot = await transaction.get(docRef);
+                    const stored = snapshot.exists() ? snapshot.data() : {};
+                    const missing = getMissingProfileFields(stored, user);
+                    if (Object.keys(missing).length) {
+                        transaction.set(docRef, missing, { merge: true });
                     }
-                    // Fix missing Social Stats
-                    if (!data.social) {
-                        data.social = { followersCount: 0, followingCount: 0 };
-                        needsUpdate = true;
+                    const merged = { ...stored, ...missing };
+                    for (const key of ['preferences', 'stats', 'gamification', 'privacySettings']) {
+                        merged[key] = { ...stored[key], ...missing[key] };
                     }
-                    if (!data.stats) {
-                        data.stats = { moviesWatched: 0, minutesWatched: 0, averageRating: 0 };
-                        needsUpdate = true;
-                    }
-                    // Fix missing Privacy
-                    if (!data.privacySettings) {
-                        data.privacySettings = { profile: 'public', lists: 'public' };
-                        needsUpdate = true;
-                    }
-                    // Fix missing Preferences
-                    if (!data.preferences) {
-                        data.preferences = { theme: 'dark', language: 'es-MX', reducedMotion: false, excludedGenres: [], excludedCountries: [] };
-                        needsUpdate = true;
-                    } else {
-                        if (data.preferences.excludedGenres === undefined) {
-                            data.preferences.excludedGenres = [];
-                            needsUpdate = true;
-                        }
-                        if (data.preferences.excludedCountries === undefined) {
-                            data.preferences.excludedCountries = [];
-                            needsUpdate = true;
-                        }
-                    }
-                    // Fix missing Custom Lists
-                    if (!data.customLists) {
-                        data.customLists = [];
-                        needsUpdate = true;
-                    }
-
-                    if (needsUpdate) {
-                        console.log("🔧 Auto-repairing user profile with missing fields...");
-                        await updateDoc(docRef, data);
-                    }
-
-                    setProfile(data);
-                } else {
-                    // Create new profile
-                    const initialProfile = {
-                        uid: user.uid,
-                        displayName: user.displayName,
-                        email: user.email,
-                        photoURL: user.photoURL,
-                        createdAt: new Date().toISOString(),
-                        stats: {
-                            moviesWatched: 0,
-                            minutesWatched: 0,
-                            averageRating: 0,
-                            favoriteGenre: null
-                        },
-                        gamification: {
-                            level: 1,
-                            xp: 0,
-                            streak: 0,
-                            badges: []
-                        },
-                        activityLog: [new Date().toISOString()],
-                        onboardingCompleted: false,
-                        preferences: {
-                            theme: 'dark',
-                            language: 'es-MX',
-                            reducedMotion: false,
-                            excludedGenres: [],
-                            excludedCountries: []
-                        },
-                        // Fase 5: Social & Monetization Foundation
-                        username: user.displayName ? user.displayName.replace(/\s+/g, '').toLowerCase() + Math.floor(Math.random() * 1000) : `user${Math.floor(Math.random() * 10000)}`,
-                        isPro: false,
-                        privacySettings: {
-                            profile: 'public', // public, friends, private
-                            lists: 'public'
-                        },
-                        customLists: [],
-                        social: {
-                            followersCount: 0,
-                            followingCount: 0
-                        }
-                    };
-                    await setDoc(docRef, initialProfile);
-                    setProfile(initialProfile);
-                }
+                    return merged;
+                });
+                if (!cancelled) setProfile(data);
             } catch (error) {
-                console.error("Error fetching user profile:", error);
+                console.error('Error fetching user profile:', error);
             } finally {
-                setLoading(false);
+                if (!cancelled) setLoading(false);
             }
         };
-
         fetchProfile();
+        return () => { cancelled = true; };
     }, [user]);
 
     // Track user behavior
@@ -154,11 +69,16 @@ export const UserProfileProvider = ({ children }) => {
     const updateProfile = async (newData) => {
         if (!user) return;
         try {
-            const docRef = doc(db, 'userProfiles', user.uid);
-            await updateDoc(docRef, newData);
-            setProfile(prev => ({ ...prev, ...newData }));
+            const docRef = doc(db, 'users', user.uid);
+            const updates = { ...newData };
+            if (typeof updates.displayName === 'string') {
+                updates.searchName = updates.displayName.trim().toLowerCase();
+            }
+            await updateDoc(docRef, updates);
+            setProfile(prev => ({ ...prev, ...updates }));
         } catch (error) {
             console.error("Error updating profile:", error);
+            throw error;
         }
     };
 
@@ -191,7 +111,7 @@ export const UserProfileProvider = ({ children }) => {
     const isUserFollowing = async (targetUserId) => {
         if (!user || !targetUserId) return false;
         try {
-            const docRef = doc(db, 'userProfiles', user.uid, 'following', targetUserId);
+            const docRef = doc(db, 'users', user.uid, 'following', targetUserId);
             const docSnap = await getDoc(docRef);
             return docSnap.exists();
         } catch (error) {
@@ -201,13 +121,13 @@ export const UserProfileProvider = ({ children }) => {
     };
 
     const followUser = async (targetUser) => {
-        if (!user || !targetUser.uid) return;
+        if (!user || !targetUser?.uid || user.uid === targetUser.uid) return;
 
         try {
             const batch = writeBatch(db);
 
             // 1. Add to My 'following' subcollection
-            const myFollowingRef = doc(db, 'userProfiles', user.uid, 'following', targetUser.uid);
+            const myFollowingRef = doc(db, 'users', user.uid, 'following', targetUser.uid);
             batch.set(myFollowingRef, {
                 uid: targetUser.uid,
                 displayName: targetUser.displayName || 'Usuario',
@@ -216,7 +136,7 @@ export const UserProfileProvider = ({ children }) => {
             });
 
             // 2. Add Me to Their 'followers' subcollection
-            const theirFollowersRef = doc(db, 'userProfiles', targetUser.uid, 'followers', user.uid);
+            const theirFollowersRef = doc(db, 'users', targetUser.uid, 'followers', user.uid);
             batch.set(theirFollowersRef, {
                 uid: user.uid,
                 displayName: user.displayName || 'Usuario',
@@ -224,12 +144,8 @@ export const UserProfileProvider = ({ children }) => {
                 followedAt: new Date().toISOString()
             });
 
-            // 3. Update Counts
-            const myProfileRef = doc(db, 'userProfiles', user.uid);
-            batch.update(myProfileRef, { 'social.followingCount': increment(1) });
-
-            const theirProfileRef = doc(db, 'userProfiles', targetUser.uid);
-            batch.update(theirProfileRef, { 'social.followersCount': increment(1) });
+            // Relationship documents are the source of truth. Never mutate another
+            // user's root document to maintain denormalized counters.
 
             await batch.commit();
             return true;
@@ -240,25 +156,21 @@ export const UserProfileProvider = ({ children }) => {
     };
 
     const unfollowUser = async (targetUserId) => {
-        if (!user || !targetUserId) return;
+        if (!user || !targetUserId || user.uid === targetUserId) return;
 
         try {
             const batch = writeBatch(db);
 
             // 1. Remove from My 'following'
-            const myFollowingRef = doc(db, 'userProfiles', user.uid, 'following', targetUserId);
+            const myFollowingRef = doc(db, 'users', user.uid, 'following', targetUserId);
             batch.delete(myFollowingRef);
 
             // 2. Remove Me from Their 'followers'
-            const theirFollowersRef = doc(db, 'userProfiles', targetUserId, 'followers', user.uid);
+            const theirFollowersRef = doc(db, 'users', targetUserId, 'followers', user.uid);
             batch.delete(theirFollowersRef);
 
-            // 3. Update Counts
-            const myProfileRef = doc(db, 'userProfiles', user.uid);
-            batch.update(myProfileRef, { 'social.followingCount': increment(-1) });
-
-            const theirProfileRef = doc(db, 'userProfiles', targetUserId);
-            batch.update(theirProfileRef, { 'social.followersCount': increment(-1) });
+            // Relationship documents are the source of truth. Never mutate another
+            // user's root document to maintain denormalized counters.
 
             // 4. CRITICAL: Remove ME from any lists owned by THEM (lose access to shared lists)
             // Query lists owned by targetUserId where I am a collaborator
@@ -275,15 +187,7 @@ export const UserProfileProvider = ({ children }) => {
                 });
             });
 
-            // 5. OPTIONAL: Remove THEM from any lists owned by ME?
-            // "If they stop following..." -> usually implies mutual break.
-            // If I unfollow them, I definitely stop seeing THEIR lists. 
-            // Should they stop seeing MINE? The prompt says "if they stop following... the list remains with the creator".
-            // Typically if *I* initiate the break (unfollow), I might still let them see mine if they follow me?
-            // BUT for "Shared Lists" usually implies mutual connection. 
-            // User request: "The lists are always made with friends who follow each other, if they stop following..."
-            // impliying mutual requirement.
-            // Let's remove THEM from MY lists too, to be safe and strict.
+            // As owner, also remove their access to my shared lists.
             const myListsSharedQuery = query(
                 collection(db, 'lists'),
                 where('ownerId', '==', user.uid),
@@ -310,11 +214,11 @@ export const UserProfileProvider = ({ children }) => {
         try {
             await setDoc(doc(db, 'friendRequests', `${user.uid}_${targetUser.uid}`), {
                 fromUid: user.uid,
-                fromName: user.displayName,
-                fromPhoto: user.photoURL,
+                fromName: profile?.displayName || user.displayName || 'Usuario',
+                fromPhoto: profile?.photoURL || user.photoURL || null,
                 toUid: targetUser.uid,
                 status: 'pending',
-                createdAt: new Date().toISOString() // Using ISO string for consistency or serverTimestamp if imported
+                createdAt: serverTimestamp()
             });
             // Using setDoc with composite ID prevents duplicates easily
         } catch (e) {
@@ -323,7 +227,7 @@ export const UserProfileProvider = ({ children }) => {
         }
     };
 
-    const getFriendshipStatus = async (targetUid) => {
+    const getFriendshipStatus = useCallback(async (targetUid) => {
         if (!user) return 'none';
         try {
             // 1. Check if Friends
@@ -331,24 +235,23 @@ export const UserProfileProvider = ({ children }) => {
             const friendSnap = await getDoc(friendRef);
             if (friendSnap.exists()) return 'friend';
 
-            // 2. Check if I sent a request
-            // Note: Since we use composite IDs now, we can check directly if we know ID format, 
-            // but for query reliability:
-            const qSent = doc(db, 'friendRequests', `${user.uid}_${targetUid}`);
-            const sentSnap = await getDoc(qSent);
-            if (sentSnap.exists()) return 'sent';
-
-            // 3. Check if I received a request
-            const qReceived = doc(db, 'friendRequests', `${targetUid}_${user.uid}`);
-            const recSnap = await getDoc(qReceived);
-            if (recSnap.exists()) return 'received';
+            // Queries also handle absent requests under participant-only read rules
+            // and remain compatible with older requests created with random IDs.
+            const [sent, received] = await Promise.all([
+                getDocs(query(collection(db, 'friendRequests'),
+                    where('fromUid', '==', user.uid), where('toUid', '==', targetUid), limit(1))),
+                getDocs(query(collection(db, 'friendRequests'),
+                    where('fromUid', '==', targetUid), where('toUid', '==', user.uid), limit(1)))
+            ]);
+            if (!sent.empty) return 'sent';
+            if (!received.empty) return 'received';
 
             return 'none';
         } catch (e) {
             console.error("Error checking friendship", e);
             return 'none';
         }
-    };
+    }, [user?.uid]);
 
     const value = {
         profile,

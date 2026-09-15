@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeftIcon, LockClosedIcon, GlobeAltIcon, UserGroupIcon, TrashIcon, ShareIcon, PencilIcon, UserPlusIcon, ArrowRightEndOnRectangleIcon } from '@heroicons/react/24/outline';
+import { Globe as GlobeAltIcon, Trash2 as TrashIcon, Share2 as ShareIcon, Pencil as PencilIcon, UserPlus as UserPlusIcon, LogOut as ArrowRightEndOnRectangleIcon } from 'lucide-react';
 
 import { useLists } from '../contexts/ListContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -10,8 +10,6 @@ import { cn } from '../lib/utils';
 import ShareModal from '../components/ui/ShareModal';
 import ListSettingsModal from '../components/ui/ListSettingsModal';
 import AddToListModal from '../components/ui/AddToListModal';
-import ShareWithFriendModal from '../components/ui/ShareWithFriendModal';
-import { useChat } from '../contexts/ChatContext';
 import { toast } from 'sonner';
 import { db } from '../api/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -132,8 +130,6 @@ const ListView = ({ onSelectMovie }) => {
     };
 
     const [requestLoading, setRequestLoading] = useState(false);
-    const [isShareFriendOpen, setIsShareFriendOpen] = useState(false);
-    const { openChatWith } = useChat();
 
     const handleRequestJoin = async () => {
         if (!user) return;
@@ -263,10 +259,6 @@ const ListView = ({ onSelectMovie }) => {
                             </button>
                         )}
 
-                        <button onClick={() => setIsShareFriendOpen(true)} className="p-3 bg-white/10 text-white rounded-full hover:bg-white/20 backdrop-blur-md transition-colors" title="Compartir con amigo">
-                            <UserGroupIcon className="w-5 h-5" />
-                        </button>
-
                         <button onClick={() => setIsShareOpen(true)} className="p-3 bg-white/10 text-white rounded-full hover:bg-white/20 backdrop-blur-md transition-colors" title="Compartir">
                             <ShareIcon className="w-5 h-5" />
                         </button>
@@ -353,12 +345,6 @@ const ListView = ({ onSelectMovie }) => {
                 />
             )}
 
-            <ShareWithFriendModal
-                isOpen={isShareFriendOpen}
-                onClose={() => setIsShareFriendOpen(false)}
-                type="list"
-                payload={list}
-            />
         </div>
     );
 };

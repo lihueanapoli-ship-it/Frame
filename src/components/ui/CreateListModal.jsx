@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { XMarkIcon, PlusIcon, LockClosedIcon, GlobeAltIcon, UserGroupIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { X as XMarkIcon } from 'lucide-react';
 import { useLists } from '../../contexts/ListContext';
 import { cn } from '../../lib/utils';
 import useScrollLock from '../../hooks/useScrollLock';

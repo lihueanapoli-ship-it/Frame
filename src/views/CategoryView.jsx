@@ -6,7 +6,7 @@ import { useMovies } from '../contexts/MovieContext';
 import { useUserProfile } from '../contexts/UserProfileContext';
 import MovieCard from '../components/MovieCard';
 import ExclusionModal from '../components/ui/ExclusionModal';
-import { ArrowLeftIcon, ChevronDownIcon, FunnelIcon } from '@heroicons/react/24/outline';
+import { ChevronDown as ChevronDownIcon, Filter as FunnelIcon } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
 
 const CategoryView = ({ onSelectMovie }) => {

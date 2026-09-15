@@ -76,7 +76,7 @@ export default defineConfig({
           // Animation
           'vendor-motion': ['framer-motion'],
           // Icons (large)
-          'vendor-icons': ['@heroicons/react/24/outline', '@heroicons/react/24/solid', 'lucide-react'],
+          'vendor-icons': ['lucide-react'],
           // Charts
           'vendor-charts': ['recharts'],
           // Toast

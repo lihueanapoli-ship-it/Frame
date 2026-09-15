@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
-import { XMarkIcon, CalendarIcon, ClockIcon, ListBulletIcon, ChevronDownIcon, EllipsisHorizontalIcon, UserGroupIcon, TrashIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
-import { StarIcon as StarIconSolid, PlusIcon, CheckIcon, StarIcon, PlayIcon, FolderIcon } from '@heroicons/react/24/solid';
+import { X as XMarkIcon, Calendar as CalendarIcon, Clock as ClockIcon, List as ListBulletIcon, ChevronDown as ChevronDownIcon, Trash2 as TrashIcon, Globe as GlobeAltIcon } from 'lucide-react';
+import { Star as StarIconSolid, Plus as PlusIcon, Check as CheckIcon, Star as StarIcon, Play as PlayIcon } from 'lucide-react';
 import { getBackdropUrl, getPosterUrl, getMovieDetails, getMovieVideos, getWatchProviders } from '../api/tmdb';
 import { useMovies } from '../contexts/MovieContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -11,7 +11,6 @@ import { useSound } from '../contexts/SoundContext';
 import { cn } from '../lib/utils';
 import { triggerConfetti, triggerSmallConfetti } from '../lib/confetti';
 import AddToListModal from './ui/AddToListModal';
-import ShareWithFriendModal from './ui/ShareWithFriendModal';
 import useScrollLock from '../hooks/useScrollLock';
 
 const MovieDetail = ({ movie: initialMovie, onClose }) => {
@@ -24,7 +23,6 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
     const [showVideo, setShowVideo] = useState(false);
     const [isFullVideoOpen, setIsFullVideoOpen] = useState(false);
     const [hoverRating, setHoverRating] = useState(0);
-    const [showShareFriend, setShowShareFriend] = useState(false);
     const [watchProviders, setWatchProviders] = useState(null);
     const dropdownRef = useRef(null);
 
@@ -265,7 +263,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                     </span>
                                 )}
                                 {movie.vote_average > 0 && (
-                                    <span className="flex items-center gap-1 sm:gap-1.5 text-yellow-400 backdrop-blur-sm bg-black/30 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-white/5"><StarIconSolid className="w-3 h-3 sm:w-4 sm:h-4" /> {movie.vote_average.toFixed(1)}</span>
+                                    <span className="flex items-center gap-1 sm:gap-1.5 text-yellow-400 backdrop-blur-sm bg-black/30 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-white/5"><StarIconSolid fill="currentColor" className="w-3 h-3 sm:w-4 sm:h-4" /> {movie.vote_average.toFixed(1)}</span>
                                 )}
                             </motion.div>
                         </div>
@@ -325,7 +323,6 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                 </div>
                             )}
 
-
                             {movie.credits?.cast?.length > 0 && (
                                 <div>
                                     <h3 className="text-xl font-bold text-white mb-4">Elenco Principal</h3>
@@ -350,19 +347,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                     </div>
                 </div>
 
-
                 <div className="px-4 pt-3 pb-4 bg-surface-elevated/95 backdrop-blur-xl border-t border-white/10 z-[60] relative">
-                    {!watchedState && user && (
-                        <div className="flex justify-end mb-2">
-                            <button
-                                onClick={() => setShowShareFriend(true)}
-                                className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-primary transition-colors group"
-                            >
-                                <UserGroupIcon className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                                Recomendar a un amigo
-                            </button>
-                        </div>
-                    )}
                     {!watchedState && !watchlistState && (
                         <div className="flex gap-3 max-w-4xl mx-auto">
                             <div className="relative flex-1 group" ref={dropdownRef}>
@@ -486,15 +471,6 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                             <div className="flex items-center justify-between">
                                 <span className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">Tu Calificación</span>
                                 <div className="flex items-center gap-3">
-                                    {user && (
-                                        <button
-                                            onClick={() => setShowShareFriend(true)}
-                                            className="flex items-center gap-1 text-[10px] font-semibold text-gray-500 hover:text-primary transition-colors"
-                                        >
-                                            <UserGroupIcon className="w-3.5 h-3.5" />
-                                            <span className="hidden xs:inline">Recomendar</span>
-                                        </button>
-                                    )}
                                     <button
                                         onClick={async (e) => {
                                             e.stopPropagation();
@@ -531,7 +507,7 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
                                             playSuccess();
                                             addToWatched(movie, star);
                                         }} className="group p-0.5 sm:p-1 transition-transform hover:scale-125 focus:outline-none flex-1 flex justify-center touch-manipulation">
-                                            {isActive ? <StarIconSolid className={cn("w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 transition-colors duration-200", star <= 4 ? "text-red-500" : star <= 7 ? "text-yellow-500" : "text-primary")} /> : <StarIcon className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-gray-700 group-hover:text-gray-500 transition-colors" />}
+                                            {isActive ? <StarIconSolid fill="currentColor" className={cn("w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 transition-colors duration-200", star <= 4 ? "text-red-500" : star <= 7 ? "text-yellow-500" : "text-primary")} /> : <StarIcon className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-gray-700 group-hover:text-gray-500 transition-colors" />}
                                         </button>
                                     );
                                 })}
@@ -612,12 +588,6 @@ const MovieDetail = ({ movie: initialMovie, onClose }) => {
 
             <AddToListModal isOpen={showListModal} onClose={() => setShowListModal(false)} movie={movie} />
 
-            <ShareWithFriendModal
-                isOpen={showShareFriend}
-                onClose={() => setShowShareFriend(false)}
-                type="movie"
-                payload={movie}
-            />
         </div>
     );
 };

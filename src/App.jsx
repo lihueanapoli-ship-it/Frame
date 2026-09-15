@@ -1,23 +1,21 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { HomeIcon, MagnifyingGlassIcon, RectangleStackIcon, ChartBarIcon, ChatBubbleLeftRightIcon, ArrowLeftOnRectangleIcon, UsersIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
-import { HomeIcon as HomeIconSolid, MagnifyingGlassIcon as SearchIconSolid, RectangleStackIcon as LibraryIconSolid, ChartBarIcon as ChartBarIconSolid, UsersIcon as UsersIconSolid } from '@heroicons/react/24/solid';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, lazy, Suspense } from 'react';
+import { Home as HomeIcon, Search as MagnifyingGlassIcon, Layers as RectangleStackIcon, BarChart3 as ChartBarIcon, MessagesSquare as ChatBubbleLeftRightIcon, LogOut as ArrowLeftOnRectangleIcon, Users as UsersIcon, ArrowLeft as ArrowLeftIcon } from 'lucide-react';
+import { Home as HomeIconSolid, Search as SearchIconSolid, Layers as LibraryIconSolid, BarChart3 as ChartBarIconSolid, Users as UsersIconSolid } from 'lucide-react';
+
 import { createPortal } from 'react-dom';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, Navigate, NavLink } from 'react-router-dom';
 import { MovieProvider } from './contexts/MovieContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SoundProvider } from './contexts/SoundContext';
-import { UserProfileProvider, useUserProfile } from './contexts/UserProfileContext';
+import { UserProfileProvider } from './contexts/UserProfileContext';
 import { ListProvider } from './contexts/ListContext';
 import { LanguageProvider } from './contexts/LanguageContext';
-import { ChatProvider, useChat } from './contexts/ChatContext';
-import usePresence from './hooks/usePresence';
 
 import WelcomeView from './views/WelcomeView';
 import DiscoverView from './views/DiscoverView';
 import BottomNav from './components/navigation/BottomNav';
 import DynamicLogo from './components/ui/DynamicLogo';
-import BottomSheet from './components/ui/BottomSheet';
+
 import { Toaster } from 'sonner';
 
 const LibraryView = lazy(() => import('./views/LibraryView'));
@@ -29,7 +27,6 @@ const ListView = lazy(() => import('./views/ListView'));
 const CategoryView = lazy(() => import('./views/CategoryView'));
 
 const MovieDetail = lazy(() => import('./components/MovieDetail'));
-const ChatWindow = lazy(() => import('./components/ui/ChatWindow'));
 const FeedbackModal = lazy(() => import('./components/ui/FeedbackModal'));
 const SpotlightCursor = lazy(() => import('./components/ui/SpotlightCursor'));
 const PageTransitionOverlay = lazy(() => import('./components/ui/PageTransitionOverlay'));
@@ -143,31 +140,13 @@ const AppContent = () => {
     ];
 
     const { user, loading, logout } = useAuth();
-    const { loading: profileLoading } = useUserProfile();
-    const { setOpenMovieDetailFn } = useChat();
     const navigate = useNavigate();
     const location = useLocation();
     const isHome = location.pathname === '/';
 
-    usePresence();
-
-    useEffect(() => {
-        setOpenMovieDetailFn(setSelectedMovie);
-    }, [setOpenMovieDetailFn, setSelectedMovie]);
-
     if (!loading && !user) {
         return <WelcomeView />;
     }
-
-    const FriendsBadge = () => {
-        const { totalUnread } = useChat();
-        if (!totalUnread) return null;
-        return (
-            <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-primary text-black text-[9px] font-black rounded-full flex items-center justify-center px-1 shadow-lg shadow-primary/40 z-10">
-                {totalUnread > 9 ? '9+' : totalUnread}
-            </span>
-        );
-    };
 
     return (
         <div className="min-h-screen bg-background text-white font-sans selection:bg-primary selection:text-white pb-safe">
@@ -215,7 +194,6 @@ const AppContent = () => {
                                         <item.icon className={`w-4 h-4 ${isActive ? "hidden" : "block transition-transform group-hover:scale-110"}`} />
                                         <item.activeIcon className={`w-4 h-4 text-primary ${isActive ? "block scale-110" : "hidden"}`} />
                                         <span className={isActive ? "font-bold text-white shadow-primary/20 drop-shadow-md" : ""}>{item.name}</span>
-                                        {item.name === 'Amigos' && <span className="relative"><FriendsBadge /></span>}
                                         {isActive && (
                                             <span className="absolute inset-0 rounded-full bg-white/10 border border-white/5 -z-10" />
                                         )}
@@ -284,7 +262,6 @@ const AppContent = () => {
                     onClose={() => setIsFeedbackOpen(false)}
                 />
 
-                <ChatWindow />
                 <SpotlightCursor />
                 <PageTransitionOverlay />
             </Suspense>
@@ -297,39 +274,16 @@ const AppContent = () => {
     );
 };
 
-const AuthenticatedProviders = ({ children }) => {
-    const { user, loading } = useAuth();
-
-    if (loading || !user) {
-        return (
-            <UserProfileProvider>
-                <ListProvider>
-                    <MovieProvider>
-                        <SoundProvider>
-                            <ChatProvider>
-                                {children}
-                            </ChatProvider>
-                        </SoundProvider>
-                    </MovieProvider>
-                </ListProvider>
-            </UserProfileProvider>
-        );
-    }
-
-    return (
-        <UserProfileProvider>
-            <ListProvider>
-                <MovieProvider>
-                    <SoundProvider>
-                        <ChatProvider>
-                            {children}
-                        </ChatProvider>
-                    </SoundProvider>
-                </MovieProvider>
-            </ListProvider>
-        </UserProfileProvider>
-    );
-};
+// Messaging and presence are frozen; only active feature providers mount here.
+const AuthenticatedProviders = ({ children }) => (
+    <UserProfileProvider>
+        <ListProvider>
+            <MovieProvider>
+                <SoundProvider>{children}</SoundProvider>
+            </MovieProvider>
+        </ListProvider>
+    </UserProfileProvider>
+);
 
 function App() {
     return (

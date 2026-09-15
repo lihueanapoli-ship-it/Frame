@@ -2,66 +2,26 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
-import { useUserProfile } from '../contexts/UserProfileContext';
-import {
-    UsersIcon,
-    UserPlusIcon,
-    MagnifyingGlassIcon,
-    ChatBubbleLeftEllipsisIcon,
-    ChatBubbleOvalLeftEllipsisIcon,
-    CheckIcon,
-    XMarkIcon,
-    TrashIcon,
-    RectangleStackIcon
-} from '@heroicons/react/24/outline';
-import { UsersIcon as UsersIconSolid } from '@heroicons/react/24/solid';
+
+import { Users as UsersIcon, UserPlus as UserPlusIcon, MessageSquare as ChatBubbleLeftEllipsisIcon, Check as CheckIcon, X as XMarkIcon, Trash2 as TrashIcon, Layers as RectangleStackIcon } from 'lucide-react';
+
 import { db } from '../api/firebase';
-import {
-    collection,
-    query,
-    where,
-    onSnapshot,
-    addDoc,
-    serverTimestamp,
-    doc,
-    updateDoc,
-    arrayUnion,
-    arrayRemove,
-    getDoc,
-    deleteDoc,
-    setDoc
-} from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, arrayUnion, getDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import UserSearchModal from '../components/ui/UserSearchModal';
 import { cn } from '../lib/utils';
 import { toast } from 'sonner';
-import { useChat } from '../contexts/ChatContext';
 
-import { CINEMA_RANKS, getRankTitle } from '../constants/cinemaRanks';
+import { getRankTitle } from '../constants/cinemaRanks';
 
 const FriendsView = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
-    const { openChatWith, unreadPerFriend } = useChat();
     const [activeTab, setActiveTab] = useState('friends');
     const [friends, setFriends] = useState([]);
     const [requests, setRequests] = useState([]);
     const [listRequests, setListRequests] = useState([]);
     const [sentRequests, setSentRequests] = useState([]);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
-    const [onlineStatus, setOnlineStatus] = useState({});
-
-    useEffect(() => {
-        if (friends.length === 0) return;
-        const unsubs = friends.map(friend =>
-            onSnapshot(doc(db, 'users', friend.uid), (snap) => {
-                setOnlineStatus(prev => ({
-                    ...prev,
-                    [friend.uid]: snap.data()?.isOnline === true,
-                }));
-            })
-        );
-        return () => unsubs.forEach(u => u());
-    }, [friends.length]);
 
     useEffect(() => {
         if (!user) return;
@@ -92,7 +52,7 @@ const FriendsView = () => {
                 try {
                     const userSnap = await getDoc(doc(db, 'users', f.uid));
                     const watchedCount = userSnap.exists() ? (userSnap.data().watched?.length || 0) : 0;
-                    return { ...f, watchedCount };
+                    return { ...f, ...(userSnap.exists() ? userSnap.data() : {}), uid: f.uid, watchedCount };
                 } catch (e) {
                     console.error("Error fetching friend stats", e);
                     return { ...f, watchedCount: 0 };
@@ -141,7 +101,9 @@ const FriendsView = () => {
     const acceptRequest = async (request) => {
         try {
             const myFriendRef = doc(db, 'users', user.uid, 'friends', request.fromUid);
-            await setDoc(myFriendRef, {
+            const batch = writeBatch(db);
+            batch.set(myFriendRef, {
+                requestId: request.requestId,
                 uid: request.fromUid,
                 displayName: request.fromName,
                 photoURL: request.fromPhoto,
@@ -150,14 +112,16 @@ const FriendsView = () => {
             });
 
             const otherFriendRef = doc(db, 'users', request.fromUid, 'friends', user.uid);
-            await setDoc(otherFriendRef, {
+            batch.set(otherFriendRef, {
+                requestId: request.requestId,
                 uid: user.uid,
                 displayName: user.displayName,
                 photoURL: user.photoURL,
                 since: serverTimestamp()
             });
 
-            await deleteDoc(doc(db, 'friendRequests', request.requestId));
+            batch.delete(doc(db, 'friendRequests', request.requestId));
+            await batch.commit();
 
         } catch (e) {
             console.error("Error accepting", e);
@@ -308,15 +272,6 @@ const FriendsView = () => {
                                     >
                                         <div className="relative flex-shrink-0">
                                             <img src={friend.photoURL || "/logo.png"} alt="" className="w-14 h-14 rounded-2xl object-cover ring-2 ring-white/5 group-hover:ring-primary/40 transition-all shadow-2xl" />
-                                            <div className={cn(
-                                                "absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-4 border-black transition-colors duration-700 shadow-sm",
-                                                onlineStatus[friend.uid] ? "bg-green-500" : "bg-red-500"
-                                            )} />
-                                            {unreadPerFriend[friend.uid] > 0 && (
-                                                <span className="absolute -top-2 -right-2 min-w-[22px] h-[22px] bg-primary border-4 border-black text-black text-[10px] font-black rounded-full flex items-center justify-center px-1 shadow-lg shadow-primary/30 animate-bounce">
-                                                    {unreadPerFriend[friend.uid] > 9 ? '9+' : unreadPerFriend[friend.uid]}
-                                                </span>
-                                            )}
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <h3 className="font-bold text-white group-hover:text-primary transition-colors truncate text-base">{friend.displayName}</h3>
@@ -325,16 +280,6 @@ const FriendsView = () => {
                                             </p>
                                         </div>
                                         <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    openChatWith(friend);
-                                                }}
-                                                className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-xl transition-all"
-                                                title="Enviar mensaje"
-                                            >
-                                                <ChatBubbleOvalLeftEllipsisIcon className="w-5 h-5" />
-                                            </button>
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
